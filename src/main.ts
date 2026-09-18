@@ -6,6 +6,7 @@ import { EditorCanvas } from './utils/canvas'
 
 // Estado Global da Aplicação
 const estado: EstadoAplicacao = {
+  cracha: JSON.parse(localStorage.getItem('explore_its_cracha') || 'null'),
   recantoAtual: null,
   missaoAtual: null,
   descobertas: Number(localStorage.getItem('explore_its_descobertas')) || 0,
@@ -20,6 +21,7 @@ const app = document.querySelector<HTMLDivElement>('#app')!
 
 function salvarProgresso() {
   try {
+    localStorage.setItem('explore_its_cracha', JSON.stringify(estado.cracha))
     localStorage.setItem('explore_its_descobertas', estado.descobertas.toString())
     localStorage.setItem('explore_its_concluidas', JSON.stringify(Array.from(estado.missoesConcluidas)))
     localStorage.setItem('explore_its_dados', JSON.stringify(estado.dadosColetados))
@@ -30,6 +32,7 @@ function salvarProgresso() {
 
 function resetarEstadoCompleto() {
   localStorage.clear()
+  estado.cracha = null
   estado.recantoAtual = null
   estado.missaoAtual = null
   estado.descobertas = 0
@@ -42,17 +45,77 @@ function renderizarHeader(): string {
   return `
     <header style="background: #1b4332; color: white; padding: 1rem; text-align: center; border-bottom: 4px solid #2d6a4f; position: relative;">
       <h1 style="margin: 0; font-size: 1.4rem;">🌱 Explore ITS</h1>
-      <p style="margin: 0.3rem 0 0; font-size: 0.85rem; opacity: 0.9;">Trilha da Semente Peregrina • EF II</p>
+      <p style="margin: 0.2rem 0 0; font-size: 0.85rem; opacity: 0.9;">Trilha da Semente Peregrina • EF II</p>
       
-      <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 0.5rem;">
-        <div style="background: #2d6a4f; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: bold;">
-          🔍 Descobertas: <span>${estado.descobertas}</span>
+      ${estado.cracha ? `
+        <div style="background: #2d6a4f; margin-top: 0.6rem; padding: 0.5rem; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.5rem;">${estado.cracha.avatar}</span>
+            <div style="text-align: left;">
+              <strong>Equipe: ${estado.cracha.nomeEquipe}</strong>
+              <div style="font-size: 0.7rem; opacity: 0.85;">${estado.cracha.membros.join(', ')}</div>
+            </div>
+          </div>
+          <div style="background: #52b788; color: #1b4332; padding: 0.2rem 0.6rem; border-radius: 12px; font-weight: bold;">
+            ⭐ ${estado.descobertas} PTS
+          </div>
         </div>
-        <button id="btn-reset-app" style="background: #d90429; color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold; cursor: pointer;">
-          🔄 Inicio
+      ` : ''}
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 0.5rem;">
+        <button id="btn-reset-app" style="background: #d90429; color: white; border: none; padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.7rem; font-weight: bold; cursor: pointer;">
+          🔄 Resetar
         </button>
       </div>
     </header>
+  `
+}
+
+function renderizarFormularioCracha(): string {
+  return `
+    <main style="padding: 1rem; max-width: 600px; margin: 0 auto;">
+      <div style="background: white; border: 2px solid #2d6a4f; padding: 1.2rem; border-radius: 12px; text-align: center;">
+        <span style="font-size: 3rem;">🪪</span>
+        <h2 style="color: #1b4332; margin: 0.5rem 0;">Crachá Digital de Investigador</h2>
+        <p style="font-size: 0.85rem; color: #495057; margin-bottom: 1rem;">
+          Pactuem o Contrato de Investigação Ecológica e criem a identidade da equipe para liberar as estações da trilha.
+        </p>
+
+        <form id="form-cracha" style="display: flex; flex-direction: column; gap: 0.8rem; text-align: left;">
+          <div>
+            <label style="font-size: 0.8rem; font-weight: bold; color: #1b4332;">Nome da Equipe ou Investigador:</label>
+            <input type="text" id="input-nome-equipe" placeholder="Ex: Guardiões do Cerrado" required style="width: 100%; padding: 0.6rem; border: 1px solid #ced4da; border-radius: 6px; margin-top: 0.2rem; box-sizing: border-box;" />
+          </div>
+
+          <div>
+            <label style="font-size: 0.8rem; font-weight: bold; color: #1b4332;">Integrantes da Equipe:</label>
+            <input type="text" id="input-membros" placeholder="Ex: Ana, Bruno, Carlos" required style="width: 100%; padding: 0.6rem; border: 1px solid #ced4da; border-radius: 6px; margin-top: 0.2rem; box-sizing: border-box;" />
+          </div>
+
+          <div>
+            <label style="font-size: 0.8rem; font-weight: bold; color: #1b4332;">Escolham o Mascote da Expedição:</label>
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.4rem; justify-content: space-around;">
+              <label style="cursor: pointer; font-size: 1.8rem; padding: 0.4rem; border: 2px solid #ced4da; border-radius: 8px;">
+                <input type="radio" name="avatar" value="🦊" checked style="display:none;"> 🦊
+              </label>
+              <label style="cursor: pointer; font-size: 1.8rem; padding: 0.4rem; border: 2px solid #ced4da; border-radius: 8px;">
+                <input type="radio" name="avatar" value="🦉" style="display:none;"> 🦉
+              </label>
+              <label style="cursor: pointer; font-size: 1.8rem; padding: 0.4rem; border: 2px solid #ced4da; border-radius: 8px;">
+                <input type="radio" name="avatar" value="🐆" style="display:none;"> 🐆
+              </label>
+              <label style="cursor: pointer; font-size: 1.8rem; padding: 0.4rem; border: 2px solid #ced4da; border-radius: 8px;">
+                <input type="radio" name="avatar" value="🌳" style="display:none;"> 🌳
+              </label>
+            </div>
+          </div>
+
+          <button type="submit" style="background: #2d6a4f; color: white; border: none; padding: 0.8rem; border-radius: 8px; font-weight: bold; font-size: 1rem; margin-top: 0.8rem; cursor: pointer;">
+            ✍️ Assinar Contrato e Emitir Crachá
+          </button>
+        </form>
+      </div>
+    </main>
   `
 }
 
@@ -67,7 +130,7 @@ function renderizarListaRecantos(): string {
             <button 
               class="btn-recanto" 
               data-id="${recanto.id}"
-              style="display: flex; align-items: center; gap: 0.8rem; background: ${concluida ? '#d8f3dc' : '#f8f9fa'}; border: 2px solid ${concluida ? '#52b788' : '#e9ecef'}; padding: 1rem; border-radius: 12px; text-align: left; cursor: pointer; width: 100%; transition: transform 0.1s;"
+              style="display: flex; align-items: center; gap: 0.8rem; background: ${concluida ? '#d8f3dc' : '#f8f9fa'}; border: 2px solid ${concluida ? '#52b788' : '#e9ecef'}; padding: 1rem; border-radius: 12px; text-align: left; cursor: pointer; width: 100%;"
             >
               <span style="font-size: 2rem;">${recanto.icone}</span>
               <div style="flex: 1;">
@@ -122,6 +185,10 @@ function renderizarMissao(missao: MissaoCientifica): string {
   const requerAudio = missao.recursoRequerido === 'audio' || missao.permiteAudio
   const requerDesenho = missao.recursoRequerido === 'desenho' || missao.permiteDesenho
 
+  if (missao.id === 'saci-01' && !estado.cracha) {
+    return renderizarFormularioCracha()
+  }
+
   return `
     <main style="padding: 1rem; max-width: 600px; margin: 0 auto;">
       <button id="btn-cancelar-missao" style="background: #6c757d; color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 0.8rem; width: 100%;">❌ Cancelar Missão</button>
@@ -130,7 +197,6 @@ function renderizarMissao(missao: MissaoCientifica): string {
         <h3 style="margin: 0 0 0.5rem; color: #1b4332;">${missao.titulo}</h3>
         <p style="font-size: 0.9rem; color: #343a40; margin-bottom: 1rem;">${missao.orientacaoCientifica}</p>
 
-        <!-- Módulo de Foto / Canvas de Desenho -->
         ${requerFoto || requerDesenho ? `
           <div style="text-align: center; margin: 1rem 0; background: #e9ecef; padding: 1rem; border-radius: 8px;">
             <div id="preview-foto-container" style="display: ${fotoExistente ? 'block' : 'none'}; margin-bottom: 1rem;">
@@ -150,7 +216,6 @@ function renderizarMissao(missao: MissaoCientifica): string {
           </div>
         ` : ''}
 
-        <!-- Módulo de Gravação de Áudio -->
         ${requerAudio ? `
           <div style="text-align: center; margin: 1rem 0; background: #e9ecef; padding: 1rem; border-radius: 8px;">
             <div id="preview-audio-container" style="display: ${audioExistente ? 'block' : 'none'}; margin-bottom: 1rem;">
@@ -162,7 +227,6 @@ function renderizarMissao(missao: MissaoCientifica): string {
           </div>
         ` : ''}
 
-        <!-- Formulário Quiz -->
         ${missao.opcoes && missao.opcoes.length > 0 ? `
           <form id="form-quiz" style="display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem;">
             ${missao.pergunta ? `<p style="font-weight: bold; color: #1b4332; margin-bottom: 0.5rem;">${missao.pergunta}</p>` : ''}
@@ -185,7 +249,9 @@ function renderizarMissao(missao: MissaoCientifica): string {
 function renderApp() {
   let conteudo = renderizarHeader()
 
-  if (estado.missaoAtual) {
+  if (!estado.cracha) {
+    conteudo += renderizarFormularioCracha()
+  } else if (estado.missaoAtual) {
     conteudo += renderizarMissao(estado.missaoAtual)
   } else if (estado.recantoAtual) {
     conteudo += renderizarDetalheRecanto(estado.recantoAtual)
@@ -198,8 +264,27 @@ function renderApp() {
 }
 
 function vincularEventos() {
+  document.querySelector('#form-cracha')?.addEventListener('submit', (e) => {
+    e.preventDefault()
+    const nomeEquipe = (document.querySelector('#input-nome-equipe') as HTMLInputElement).value
+    const membros = (document.querySelector('#input-membros') as HTMLInputElement).value.split(',').map(m => m.trim())
+    const avatar = (document.querySelector('input[name="avatar"]:checked') as HTMLInputElement)?.value || '🦊'
+
+    estado.cracha = {
+      nomeEquipe,
+      membros,
+      avatar,
+      dataInicio: new Date().toISOString()
+    }
+
+    estado.missoesConcluidas.add('saci-01')
+    estado.descobertas += 10
+    salvarProgresso()
+    renderApp()
+  })
+
   document.querySelector('#btn-reset-app')?.addEventListener('click', () => {
-    if (confirm('Deseja voltar para a tela inicial e resetar as missões?')) {
+    if (confirm('Deseja resetar o crachá e recomeçar a trilha?')) {
       resetarEstadoCompleto()
     }
   })
@@ -231,7 +316,6 @@ function vincularEventos() {
     renderApp()
   })
 
-  // Capturar Foto e Inicializar Canvas com Retardo Técnico para Ajuste no DOM
   document.querySelector('#btn-capturar-foto')?.addEventListener('click', async () => {
     try {
       const foto = await capturarFotoCampo()
@@ -243,7 +327,6 @@ function vincularEventos() {
 
         const canvasEl = document.querySelector<HTMLCanvasElement>('#canvas-desenho')
         if (canvasEl) {
-          // Garante a criação do objeto Canvas e o carregamento imediato da foto
           editorCanvas = new EditorCanvas(canvasEl)
           await editorCanvas.carregarImagem(foto.base64)
         } else if (imgPreview) {
@@ -262,12 +345,10 @@ function vincularEventos() {
     }
   })
 
-  // Limpar Canvas
   document.querySelector('#btn-limpar-canvas')?.addEventListener('click', () => {
     editorCanvas?.limpar()
   })
 
-  // Gravar / Parar Áudio
   document.querySelector('#btn-gravar-audio')?.addEventListener('click', async () => {
     const lblBtn = document.querySelector<HTMLSpanElement>('#lbl-btn-audio')
 
@@ -277,7 +358,7 @@ function vincularEventos() {
         gravandoAudio = true
         if (lblBtn) lblBtn.innerText = '🔴 Gravando... Clique p/ Parar'
       } catch (erro) {
-        alert('Não foi possível aceder ao microfone. Verifique as permissões.')
+        alert('Não foi possível aceder ao microfone.')
       }
     } else {
       try {
@@ -301,13 +382,11 @@ function vincularEventos() {
         }
         if (lblBtn) lblBtn.innerText = '🎙️ Gravado (Clique p/ Novo)'
       } catch (erro) {
-        console.error('Erro ao encerrar gravação:', erro)
         gravandoAudio = false
       }
     }
   })
 
-  // Submeter Quiz
   document.querySelector('#form-quiz')?.addEventListener('submit', (e) => {
     e.preventDefault()
     const form = e.target as HTMLFormElement
@@ -325,12 +404,11 @@ function vincularEventos() {
         estado.missaoAtual = null
         renderApp()
       } else {
-        alert(estado.missaoAtual.dica || 'Revise suas observações de campo e tente novamente.')
+        alert(estado.missaoAtual.dica || 'Revise suas observações de campo.')
       }
     }
   })
 
-  // Concluir Missão Genérica
   document.querySelector('#btn-concluir-generico')?.addEventListener('click', () => {
     if (estado.missaoAtual) {
       if (editorCanvas) {
@@ -339,7 +417,7 @@ function vincularEventos() {
           fotoComDesenho: editorCanvas.exportarResultado()
         }
       }
-      alert('Evidência científica registrada no banco de dados local!')
+      alert('Evidência científica registrada no relatório!')
       estado.missoesConcluidas.add(estado.missaoAtual.id)
       estado.descobertas += 10
       salvarProgresso()

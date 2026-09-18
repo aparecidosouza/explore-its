@@ -1,35 +1,50 @@
-export type AspectoAmbiental = 'clima' | 'flora' | 'fauna' | 'microfauna' | 'agua' | 'microflora'
-export type TipoRecurso = 'quiz' | 'camera' | 'cronometro' | 'audio' | 'desenho' | 'medicao_clima'
+export type TipoRecurso = 'quiz' | 'camera' | 'audio' | 'desenho' | 'texto'
 
 export interface MissaoCientifica {
   id: string
-  aspecto: AspectoAmbiental
   titulo: string
   orientacaoCientifica: string
+  recursoRequerido: TipoRecurso
+  permiteFoto?: boolean
+  permiteAudio?: boolean
+  permiteDesenho?: boolean
   pergunta?: string
   opcoes?: string[]
   correta?: number
   sucesso?: string
   dica?: string
-  recursoRequerido: TipoRecurso
-  permiteFoto?: boolean
-  permiteAudio?: boolean
-  permiteDesenho?: boolean
 }
 
 export interface Recanto {
   id: string
-  icone: string
   titulo: string
   eixoAmbiental: string
+  icone: string
   descricao: string
   missoes: MissaoCientifica[]
 }
 
+export interface CrachaInvestigador {
+  nomeEquipe: string
+  membros: string[]
+  avatar: string
+  dataInicio: string
+}
+
+export interface DadoColetadoMissao {
+  foto?: string
+  fotoComDesenho?: string
+  audio?: string
+  duracao?: number
+  dataHora?: string
+  respostaQuiz?: number
+}
+
 export interface EstadoAplicacao {
+  cracha: CrachaInvestigador | null
   recantoAtual: Recanto | null
   missaoAtual: MissaoCientifica | null
   descobertas: number
   missoesConcluidas: Set<string>
-  dadosColetados: Record<string, any>
+  dadosColetados: Record<string, DadoColetadoMissao>
 }
