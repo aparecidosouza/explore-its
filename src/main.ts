@@ -6,12 +6,20 @@ interface Mascote {
   emoji: string
 }
 
+interface OpcaoQuiz {
+  id: string
+  texto: string
+  correta: boolean
+  explicacao: string
+}
+
 interface Missao {
   id: string
   titulo: string
   descricao: string
   instrucoesHtml?: string
-  tipo: 'foto' | 'temperatura' | 'audio' | 'texto'
+  tipo: 'foto' | 'temperatura' | 'audio' | 'texto' | 'quiz'
+  opcoesQuiz?: OpcaoQuiz[]
   requerHorario?: boolean
 }
 
@@ -85,33 +93,51 @@ const estacoes: Estacao[] = [
   {
     id: 'recanto-pioneiras',
     nome: '4. Recanto das Pioneiras',
-    descricao: 'Investigação sobre a regeneração do solo, plantas pioneiras e organismos regeneradores.',
+    descricao: 'Investigação sobre plantas pioneiras e os organismos que ajudam a regenerar a mata.',
     icone: '🌱',
     missoes: [
       {
-        id: 'm-pio-busca-insetos',
-        titulo: '🔎 Quem ajuda a floresta a voltar?',
-        descricao: 'Procure no ambiente organismos que ajudam a regenerar a mata e registre as interações ecológicas.',
+        id: 'm-pio-quiz-organismos',
+        titulo: '🧠 Quem Ajuda a Floresta a Voltar?',
+        descricao: 'Marque a opção que lista TODOS os organismos capazes de auxiliar as plantas pioneiras na regeneração da área.',
+        tipo: 'quiz',
+        opcoesQuiz: [
+          {
+            id: 'opt-a',
+            texto: 'Apenas insetos grandes que comem as folhas das árvores adultas.',
+            correta: false,
+            explicacao: 'Incorreto. A regeneração precisa de dispersores de sementes, polinizadores e decompositores.'
+          },
+          {
+            id: 'opt-b',
+            texto: 'Formigas dispersoras de sementes, aves frugívoras, abelhas polinizadoras, minhocas e fungos decompositores.',
+            correta: true,
+            explicacao: 'Correto! Todos esses organismos atuam juntos transportando sementes, polinizando e enriquecendo o solo.'
+          },
+          {
+            id: 'opt-c',
+            texto: 'Apenas grandes mamíferos que caminham pela vegetação.',
+            correta: false,
+            explicacao: 'Incorreto. Pequenos insetos, fungos e aves têm papel fundamental no solo e nas sementes.'
+          }
+        ]
+      },
+      {
+        id: 'm-pio-busca-foto',
+        titulo: '🔎 Desafio do Detetive: Foto no Campo',
+        descricao: 'Agora que você aprendeu quem são os ajudantes da floresta, procure no local e fotografe 1 ou 2 organismos (ou sinais deles) atuando no solo ou na vegetação.',
         instrucoesHtml: `
           <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:8px; font-size:0.88rem; margin-bottom:12px; color:#166534;">
-            <p style="margin-bottom:8px;"><strong>As plantas pioneiras não trabalham sozinhas!</strong> Procure ao seu redor:</p>
-            <ul style="padding-left:18px; margin:6px 0; line-height:1.4;">
-              <li>🐜 Insetos carregando sementes</li>
-              <li>🐦 Aves comendo frutos ou transportando sementes</li>
-              <li>🐝 Insetos visitando flores (polinizadores)</li>
-              <li>🪱 Organismos transformando matéria orgânica</li>
-              <li>🍄 Fungos atuando sobre folhas e restos de plantas</li>
+            <p style="margin-bottom:6px;"><strong>O que procurar no solo ou nas plantas:</strong></p>
+            <ul style="padding-left:18px; margin:4px 0;">
+              <li>🐜 Formigas carregando folhas ou sementes</li>
+              <li>🐝 Insetos visitando flores</li>
+              <li>🍄 Fungos/cogumelos em troncos ou matéria orgânica</li>
+              <li>🪱 Pequenos invertebrados no solo</li>
             </ul>
-            <p style="margin-top:8px;"><strong>🎯 Desafio:</strong> Fotografe o registro e descreva abaixo o que estava acontecendo e como esse organismo ajuda a planta a ocupar um novo lugar!</p>
           </div>
         `,
         tipo: 'foto'
-      },
-      {
-        id: 'm-pio-relato',
-        titulo: '📝 Análise das Interações Ecológicas',
-        descricao: 'Descreva detalhadamente o que o grupo observou nas interações ecológicas do Recanto das Pioneiras.',
-        tipo: 'texto'
       }
     ]
   },
@@ -145,6 +171,7 @@ let estacaoAtual: Estacao | null = null
 let missaoAtual: Missao | null = null
 let fotoTemp: string | null = null
 let audioTemp: string | null = null
+let opcaoSelecionadaQuiz: string | null = null
 let verTabelaTemp = false
 let verCaderno = false
 let verConquistas = false
@@ -168,7 +195,7 @@ function obterCategoriaCientifica(): { titulo: string, descricao: string, icone:
   if (concluidas >= total) {
     return {
       titulo: 'Cientista Investigador do Cerrado 🌟',
-      descricao: 'Incrível! O grupo concluiu 100% das investigações com precisão científica e coleta rigorosa de dados.',
+      descricao: 'Incrível! O grupo concluiu 100% das investigações com precisão científica.',
       icone: '🏆'
     }
   } else if (concluidas >= Math.ceil(total * 0.6)) {
@@ -357,6 +384,17 @@ function render() {
         ${missaoAtual.instrucoesHtml ? missaoAtual.instrucoesHtml : ''}
 
         <form id="form-missao">
+          ${missaoAtual.tipo === 'quiz' && missaoAtual.opcoesQuiz ? `
+            <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px;">
+              ${missaoAtual.opcoesQuiz.map(opt => `
+                <label style="display:flex; align-items:flex-start; gap:10px; background:#f8fafc; border:2px solid ${opcaoSelecionadaQuiz === opt.id ? 'var(--primary)' : 'var(--border)'}; padding:12px; border-radius:8px; cursor:pointer;">
+                  <input type="radio" name="opcao-quiz" value="${opt.id}" ${opcaoSelecionadaQuiz === opt.id ? 'checked' : ''} style="margin-top:3px;" />
+                  <span style="font-size:0.9rem; color:var(--text);">${opt.texto}</span>
+                </label>
+              `).join('')}
+            </div>
+          ` : ''}
+
           ${missaoAtual.tipo === 'temperatura' ? `
             <div class="form-group">
               <label>Temperatura lida no Termômetro Digital (°C):</label>
@@ -369,12 +407,8 @@ function render() {
           ` : ''}
 
           ${missaoAtual.tipo === 'foto' ? `
-            <div class="form-group">
-              <label>Explicação da Interação Ecológica (O que o grupo encontrou?):</label>
-              <textarea id="inp-texto-foto" rows="3" placeholder="Ex: Encontramos formigas carregando sementes perto do tronco da árvore..."></textarea>
-            </div>
             <input type="file" id="input-foto" accept="image/*" capture="environment" style="display:none" />
-            <button type="button" id="btn-foto" class="btn-secondary">📷 Capturar Foto do Organismo / Interação</button>
+            <button type="button" id="btn-foto" class="btn-secondary">📷 Capturar Foto do Organismo</button>
             <div class="preview-box">
               ${fotoTemp ? `<img src="${fotoTemp}" class="img-preview"/>` : '<small>Nenhuma foto tirada</small>'}
             </div>
@@ -382,7 +416,7 @@ function render() {
 
           ${missaoAtual.tipo === 'texto' ? `
             <div class="form-group">
-              <textarea id="inp-texto" rows="4" required placeholder="Digite os detalhes das observações ecológicas do grupo..."></textarea>
+              <textarea id="inp-texto" rows="3" required placeholder="Digite suas observações..."></textarea>
             </div>
           ` : ''}
 
@@ -567,12 +601,19 @@ function bindEvents() {
       const id = btn.getAttribute('data-id')
       fotoTemp = null
       audioTemp = null
+      opcaoSelecionadaQuiz = null
       missaoAtual = estacaoAtual?.missoes.find(m => m.id === id) || null
       render()
     })
   })
 
   document.querySelector('#btn-voltar-estacao')?.addEventListener('click', () => { missaoAtual = null; render() })
+
+  document.querySelectorAll('input[name="opcao-quiz"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      opcaoSelecionadaQuiz = (e.target as HTMLInputElement).value
+    })
+  })
 
   const btnFoto = document.querySelector('#btn-foto')
   const inputFoto = document.querySelector('#input-foto') as HTMLInputElement
@@ -601,7 +642,17 @@ function bindEvents() {
     let conteudo = ''
     let midiaUrl = undefined
 
-    if (missaoAtual.tipo === 'temperatura') {
+    if (missaoAtual.tipo === 'quiz') {
+      if (!opcaoSelecionadaQuiz) return alert('Por favor, escolha uma das opções!')
+      const opt = missaoAtual.opcoesQuiz?.find(o => o.id === opcaoSelecionadaQuiz)
+      if (!opt) return
+
+      if (!opt.correta) {
+        return alert(`❌ Resposta incorreta!\n\n${opt.explicacao}\n\nTente novamente!`)
+      }
+
+      conteudo = `Resposta Correta: ${opt.texto}`
+    } else if (missaoAtual.tipo === 'temperatura') {
       const tempVal = parseFloat((document.querySelector('#inp-temp') as HTMLInputElement).value)
       const horaVal = (document.querySelector('#inp-hora') as HTMLInputElement).value
 
@@ -619,8 +670,7 @@ function bindEvents() {
       conteudo = `Temperatura: ${tempVal} °C às ${horaVal}`
     } else if (missaoAtual.tipo === 'foto') {
       if (!fotoTemp) return alert('Por favor, tire uma foto!')
-      const descr = (document.querySelector('#inp-texto-foto') as HTMLTextAreaElement)?.value || 'Foto registrada'
-      conteudo = `Registro: ${descr}`
+      conteudo = 'Foto registrada no local'
       midiaUrl = fotoTemp
     } else if (missaoAtual.tipo === 'texto') {
       conteudo = (document.querySelector('#inp-texto') as HTMLTextAreaElement).value
