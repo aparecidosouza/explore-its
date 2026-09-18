@@ -11,7 +11,7 @@ interface Mascote {
 interface Pergunta {
   id: string
   texto: string
-  tipo: 'multipla_escolha' | 'texto' | 'foto' | 'audio' | 'sensor_clima'
+  tipo: 'multipla_escolha' | 'texto' | 'foto' | 'audio' | 'termometro'
   opcoes?: string[]
   respostaCorreta?: number
 }
@@ -38,8 +38,7 @@ interface RespostaSubmetida {
   perguntaTexto: string
   respostaDada: string
   midiaUrl?: string
-  tipoMidia?: 'foto' | 'audio' | 'texto'
-  estaCorreta?: boolean
+  tipoMidia?: 'foto' | 'audio' | 'texto' | 'termometro'
   dataHora: string
 }
 
@@ -78,38 +77,39 @@ let audioChunks: Blob[] = []
 let gravandoAudio = false
 let fotoCapturadaBase64: string | null = null
 let audioGravadoBase64: string | null = null
+let dadosTermometro: { temp: number; umidade: number; sombra: string } | null = null
 let modalSucessoAberto = false
 let mensagemSucessoModal = ''
 let exibindoRelatorio = false
 
-// Estações com Sensores, Câmera e Gravador de Áudio
+// Estações com Termômetro, Câmera e Gravador de Áudio
 const recantos: Recanto[] = [
   {
     id: 'estacao-barauna',
     nome: 'Estação Baraúna',
-    descricao: 'Explore a imponente árvore símbolo do Cerrado, registre fotos e meça as condições da sombra.',
+    descricao: 'Explore a imponente árvore símbolo do Cerrado, registre fotos e meça a temperatura do microclima.',
     icone: '🌳',
     missoes: [
       {
         id: 'm-bar-1',
-        titulo: 'Registro Fotográfico do Tronco',
-        descricao: 'Tire uma foto bem de perto da casca espessa da Baraúna para registrar suas fissuras.',
+        titulo: 'Termômetro Microclimático',
+        descricao: 'Afera a temperatura ambiental e umidade relativa sob a copa da Baraúna.',
         concluida: false,
         pergunta: {
           id: 'p-bar-1',
-          texto: 'Fotografe a casca do tronco da árvore:',
-          tipo: 'foto'
+          texto: 'Aferição do Termômetro sob a Sombra:',
+          tipo: 'termometro'
         }
       },
       {
         id: 'm-bar-2',
-        titulo: 'Coleta Microclimática',
-        descricao: 'Utilize o sensor do aplicativo para aferir a temperatura e umidade sob a copa da Baraúna.',
+        titulo: 'Registro Fotográfico do Tronco',
+        descricao: 'Tire uma foto bem de perto da casca espessa da Baraúna para registrar suas fissuras.',
         concluida: false,
         pergunta: {
           id: 'p-bar-2',
-          texto: 'Afera a temperatura e condições ambientais neste ponto:',
-          tipo: 'sensor_clima'
+          texto: 'Fotografe a casca do tronco da árvore:',
+          tipo: 'foto'
         }
       }
     ]
@@ -123,7 +123,7 @@ const recantos: Recanto[] = [
       {
         id: 'm-saci-1',
         titulo: 'Sons da Mata',
-        descricao: 'Grave um áudio de 10 segundos capturando o barulho do vento nas folhas ou os pássaros ao redor.',
+        descricao: 'Grave um áudio capturando o som do vento nas folhas ou dos pássaros ao redor.',
         concluida: false,
         pergunta: {
           id: 'p-saci-1',
@@ -181,16 +181,27 @@ const recantos: Recanto[] = [
   {
     id: 'estacao-nego-dagua',
     nome: 'Estação Nego D\'Água',
-    descricao: 'Analise a umidade ao redor do curso d\'água e grave o som do fluxo de água.',
+    descricao: 'Analise a umidade e o microclima próximo ao curso d\'água.',
     icone: '💧',
     missoes: [
       {
         id: 'm-neg-1',
+        titulo: 'Termômetro do Córrego',
+        descricao: 'Meça a variação térmica próximo à água.',
+        concluida: false,
+        pergunta: {
+          id: 'p-neg-1',
+          texto: 'Afera o microclima úmido da margem:',
+          tipo: 'termometro'
+        }
+      },
+      {
+        id: 'm-neg-2',
         titulo: 'Som do Córrego',
         descricao: 'Grave um áudio perto do curso d\'água para registrar o barulho da correnteza.',
         concluida: false,
         pergunta: {
-          id: 'p-neg-1',
+          id: 'p-neg-2',
           texto: 'Grave o áudio do fluxo d\'água:',
           tipo: 'audio'
         }
@@ -236,7 +247,6 @@ function renderizarHeader(): string {
   `
 }
 
-// TELA INICIAL COM ESCOLHA DE MASCOTE
 function renderizarFormularioCracha(): string {
   return `
     <section class="card-container">
@@ -353,6 +363,25 @@ function renderizarMissao(missao: Missao): string {
         <h3>${missao.pergunta.texto}</h3>
 
         <form id="form-resposta">
+          ${tipo === 'termometro' ? `
+            <div class="termometro-container">
+              <button type="button" id="btn-medir-termometro" class="btn-secondary">🌡️ Ler Termômetro Digital</button>
+              
+              <div class="termometro-display ${dadosTermometro ? 'ativo' : ''}">
+                <div class="termometro-icone">🌡️</div>
+                <div class="termometro-dados">
+                  ${dadosTermometro ? `
+                    <div class="temp-valor">${dadosTermometro.temp}°C</div>
+                    <div class="temp-subtext">💧 Umidade: <strong>${dadosTermometro.umidade}%</strong></div>
+                    <div class="temp-subtext">🍃 Sombra: <strong>${dadosTermometro.sombra}</strong></div>
+                  ` : `
+                    <p class="temp-placeholder">Aperte o botão acima para aferir o microclima da estação em tempo real.</p>
+                  `}
+                </div>
+              </div>
+            </div>
+          ` : ''}
+
           ${tipo === 'foto' ? `
             <div class="media-container">
               <input type="file" id="input-camera" accept="image/*" capture="environment" style="display:none;" />
@@ -370,15 +399,6 @@ function renderizarMissao(missao: Missao): string {
               </button>
               <div id="preview-audio-container" class="preview-box">
                 ${audioGravadoBase64 ? `<audio controls src="${audioGravadoBase64}"></audio>` : '<p>Nenhum áudio gravado</p>'}
-              </div>
-            </div>
-          ` : ''}
-
-          ${tipo === 'sensor_clima' ? `
-            <div class="sensor-container">
-              <button type="button" id="btn-ler-sensor" class="btn-secondary">🌡️ Ler Dados do Ambiente</button>
-              <div id="dados-sensor" class="sensor-box">
-                <p>Clique acima para aferir a temperatura e umidade da estação.</p>
               </div>
             </div>
           ` : ''}
@@ -416,7 +436,7 @@ function renderizarRelatorioCientifico(): string {
 
       ${estado.respostas.length === 0 ? `
         <div class="empty-state">
-          <p>Seu caderno está vazio. Explore as estações para registrar fotos, áudios e respostas!</p>
+          <p>Seu caderno está vazio. Explore as estações para registrar fotos, áudios e leituras de termômetro!</p>
         </div>
       ` : `
         <div class="respostas-historico">
@@ -557,6 +577,7 @@ function vincularEventos() {
       if (estado.recantoAtual) {
         fotoCapturadaBase64 = null
         audioGravadoBase64 = null
+        dadosTermometro = null
         estado.missaoAtual = estado.recantoAtual.missoes.find(m => m.id === missaoId) || null
         renderApp()
       }
@@ -567,6 +588,24 @@ function vincularEventos() {
     estado.missaoAtual = null
     renderApp()
   })
+
+  // TERMÔMETRO MICROCLIMÁTICO
+  const btnMedirTermometro = document.querySelector('#btn-medir-termometro')
+  if (btnMedirTermometro) {
+    btnMedirTermometro.addEventListener('click', () => {
+      const tempSugerida = parseFloat((25 + Math.random() * 5).toFixed(1))
+      const umidadeSugerida = Math.floor(50 + Math.random() * 20)
+      const opcoesSombra = ['Sombra Densa (Copa)', 'Sombra Parcial', 'Exposição Solar Direta']
+      const sombraSugerida = opcoesSombra[Math.floor(Math.random() * opcoesSombra.length)]
+
+      dadosTermometro = {
+        temp: tempSugerida,
+        umidade: umidadeSugerida,
+        sombra: sombraSugerida
+      }
+      renderApp()
+    })
+  }
 
   // CÂMERA
   const btnTirarFoto = document.querySelector('#btn-tirar-foto')
@@ -623,23 +662,6 @@ function vincularEventos() {
     })
   }
 
-  // SENSOR
-  const btnLerSensor = document.querySelector('#btn-ler-sensor')
-  if (btnLerSensor) {
-    btnLerSensor.addEventListener('click', () => {
-      const box = document.querySelector('#dados-sensor')
-      if (box) {
-        const tempSimulada = (26 + Math.random() * 4).toFixed(1)
-        const umidadeSimulada = (55 + Math.random() * 15).toFixed(0)
-        box.innerHTML = `
-          <p>🌡️ <strong>Temperatura Estimada:</strong> ${tempSimulada} °C</p>
-          <p>💧 <strong>Umidade Relativa:</strong> ${umidadeSimulada}%</p>
-          <p>☀️ <strong>Luminosidade:</strong> Típica do Cerrado</p>
-        `
-      }
-    })
-  }
-
   // SUBMIT RESPOSTA
   const formResposta = document.querySelector('#form-resposta') as HTMLFormElement
   if (formResposta && estado.missaoAtual && estado.recantoAtual) {
@@ -648,9 +670,13 @@ function vincularEventos() {
       const tipo = estado.missaoAtual!.pergunta.tipo
       let respostaTexto = 'Registro Efetuado'
       let midiaUrl: string | undefined = undefined
-      let tipoMidia: 'foto' | 'audio' | 'texto' = 'texto'
+      let tipoMidia: 'foto' | 'audio' | 'texto' | 'termometro' = 'texto'
 
-      if (tipo === 'foto') {
+      if (tipo === 'termometro') {
+        if (!dadosTermometro) return alert('Por favor, faça a leitura do termômetro primeiro!')
+        respostaTexto = `Temperatura: ${dadosTermometro.temp}°C | Umidade: ${dadosTermometro.umidade}% | ${dadosTermometro.sombra}`
+        tipoMidia = 'termometro'
+      } else if (tipo === 'foto') {
         if (!fotoCapturadaBase64) return alert('Por favor, tire uma foto antes de salvar.')
         midiaUrl = fotoCapturadaBase64
         respostaTexto = 'Fotografia capturada'
@@ -660,9 +686,6 @@ function vincularEventos() {
         midiaUrl = audioGravadoBase64
         respostaTexto = 'Áudio gravado'
         tipoMidia = 'audio'
-      } else if (tipo === 'sensor_clima') {
-        const box = document.querySelector('#dados-sensor')
-        respostaTexto = box?.textContent || 'Aferição de temperatura efetuada'
       } else if (tipo === 'multipla_escolha') {
         const selecionada = document.querySelector('input[name="resposta"]:checked') as HTMLInputElement
         if (selecionada) {
