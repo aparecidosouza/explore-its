@@ -13,7 +13,6 @@ interface Pergunta {
   texto: string
   tipo: 'multipla_escolha' | 'texto' | 'foto' | 'audio' | 'termometro'
   opcoes?: string[]
-  respostaCorreta?: number
 }
 
 interface Missao {
@@ -21,7 +20,6 @@ interface Missao {
   titulo: string
   descricao: string
   pergunta: Pergunta
-  concluida: boolean
 }
 
 interface Recanto {
@@ -58,9 +56,9 @@ interface EstadoApp {
 // Opções de Mascotes do Explore ITS
 const mascotesDisponiveis: Mascote[] = [
   { id: 'lobo-guara', nome: 'Guará', emoji: '🦊', descricao: 'O guardião curioso das veredas do Cerrado.' },
-  { id: 'tamandua-bandeira', nome: 'Bandeira', emoji: '🐜', descricao: 'O protetor incansável dos solos e cupinzeiros.' },
-  { id: 'arara-azul', nome: 'Azulzinha', emoji: '🦜', descricao: 'A mensageira dos céus e semeadora das matas.' },
-  { id: 'tatu-bola', nome: 'Bolinha', emoji: '🦔', descricao: 'O explorador resistente da vegetação nativa.' }
+  { id: 'tamandua-bandeira', nome: 'Bandeira', emoji: '🐜', descricao: 'O protetor incansável dos solos.' },
+  { id: 'arara-azul', nome: 'Azulzinha', emoji: '🦜', descricao: 'A mensageira dos céus e das matas.' },
+  { id: 'tatu-bola', nome: 'Bolinha', emoji: '🦔', descricao: 'O explorador resistente da flora nativa.' }
 ]
 
 // Estado Global
@@ -71,7 +69,7 @@ const estado: EstadoApp = {
   respostas: carregarRespostasSalvas()
 }
 
-let mascoteSelecionadoTemp: Mascote = mascotesDisponiveis[0]
+let mascoteSelecionadoId: string = mascotesDisponiveis[0].id
 let mediaRecorder: MediaRecorder | null = null
 let audioChunks: Blob[] = []
 let gravandoAudio = false
@@ -82,7 +80,7 @@ let modalSucessoAberto = false
 let mensagemSucessoModal = ''
 let exibindoRelatorio = false
 
-// Estações com Termômetro, Câmera e Gravador de Áudio
+// Estações
 const recantos: Recanto[] = [
   {
     id: 'estacao-barauna',
@@ -94,7 +92,6 @@ const recantos: Recanto[] = [
         id: 'm-bar-1',
         titulo: 'Termômetro Microclimático',
         descricao: 'Afera a temperatura ambiental e umidade relativa sob a copa da Baraúna.',
-        concluida: false,
         pergunta: {
           id: 'p-bar-1',
           texto: 'Aferição do Termômetro sob a Sombra:',
@@ -104,8 +101,7 @@ const recantos: Recanto[] = [
       {
         id: 'm-bar-2',
         titulo: 'Registro Fotográfico do Tronco',
-        descricao: 'Tire uma foto bem de perto da casca espessa da Baraúna para registrar suas fissuras.',
-        concluida: false,
+        descricao: 'Tire uma foto bem de perto da casca espessa da Baraúna.',
         pergunta: {
           id: 'p-bar-2',
           texto: 'Fotografe a casca do tronco da árvore:',
@@ -117,14 +113,13 @@ const recantos: Recanto[] = [
   {
     id: 'estacao-saci-perere',
     nome: 'Estação Saci-Pererê',
-    descricao: 'Investigue o ecossistema e grave os sons da natureza ou relatos sobre os mistérios da mata.',
+    descricao: 'Grave os sons da natureza e os mistérios do ecossistema.',
     icone: '🌪️',
     missoes: [
       {
         id: 'm-saci-1',
         titulo: 'Sons da Mata',
-        descricao: 'Grave um áudio capturando o som do vento nas folhas ou dos pássaros ao redor.',
-        concluida: false,
+        descricao: 'Grave um áudio capturando o som do vento nas folhas ou dos pássaros.',
         pergunta: {
           id: 'p-saci-1',
           texto: 'Grave o som ambiente desta estação:',
@@ -143,7 +138,6 @@ const recantos: Recanto[] = [
         id: 'm-jat-1',
         titulo: 'Análise de Resistência',
         descricao: 'Examine a rigidez da semente de Jatobá encontrada na trilha.',
-        concluida: false,
         pergunta: {
           id: 'p-jat-1',
           texto: 'Como a casca dura do fruto do Jatobá protege a semente?',
@@ -153,8 +147,7 @@ const recantos: Recanto[] = [
             'Impede completamente a reprodução da árvore',
             'Serve apenas para atrair água da chuva',
             'Dissolve a semente com o calor'
-          ],
-          respostaCorreta: 0
+          ]
         }
       }
     ]
@@ -169,7 +162,6 @@ const recantos: Recanto[] = [
         id: 'm-cai-1',
         titulo: 'Rastros de Animais',
         descricao: 'Procure por pegadas ou sinais de animais no solo e fotografe o achado.',
-        concluida: false,
         pergunta: {
           id: 'p-cai-1',
           texto: 'Tire uma foto do vestígio de fauna encontrado:',
@@ -188,7 +180,6 @@ const recantos: Recanto[] = [
         id: 'm-neg-1',
         titulo: 'Termômetro do Córrego',
         descricao: 'Meça a variação térmica próximo à água.',
-        concluida: false,
         pergunta: {
           id: 'p-neg-1',
           texto: 'Afera o microclima úmido da margem:',
@@ -199,7 +190,6 @@ const recantos: Recanto[] = [
         id: 'm-neg-2',
         titulo: 'Som do Córrego',
         descricao: 'Grave um áudio perto do curso d\'água para registrar o barulho da correnteza.',
-        concluida: false,
         pergunta: {
           id: 'p-neg-2',
           texto: 'Grave o áudio do fluxo d\'água:',
@@ -238,8 +228,10 @@ function renderizarHeader(): string {
         ${estado.cracha ? `
           <div class="user-badge">
             <span class="user-name">${estado.cracha.mascote.emoji} ${estado.cracha.nome} (${estado.cracha.codigoTurma})</span>
-            <button id="btn-relatorio" class="btn-secondary">📜 Caderno</button>
-            <button id="btn-trocar-usuario" class="btn-prof">Sair</button>
+            <div style="display:flex; gap:6px;">
+              <button id="btn-relatorio" class="btn-secondary">📜 Caderno</button>
+              <button id="btn-trocar-usuario" class="btn-prof">Sair</button>
+            </div>
           </div>
         ` : ''}
       </div>
@@ -251,7 +243,7 @@ function renderizarFormularioCracha(): string {
   return `
     <section class="card-container">
       <h2>🎒 Bem-vindo ao Explore ITS!</h2>
-      <p>Configure seu crachá de expedicionário para iniciar a jornada pelo Cerrado:</p>
+      <p style="margin-bottom: 15px;">Configure seu crachá de expedicionário para iniciar:</p>
       
       <form id="form-cracha" class="cracha-form">
         <div class="form-group">
@@ -268,7 +260,7 @@ function renderizarFormularioCracha(): string {
           <label>Escolha o seu Mascote de Expedição:</label>
           <div class="mascotes-grid">
             ${mascotesDisponiveis.map(m => `
-              <div class="mascote-card ${mascoteSelecionadoTemp.id === m.id ? 'selecionado' : ''}" data-mascoteid="${m.id}">
+              <div class="mascote-card ${mascoteSelecionadoId === m.id ? 'selecionado' : ''}" data-mascoteid="${m.id}">
                 <span class="mascote-emoji">${m.emoji}</span>
                 <strong>${m.nome}</strong>
                 <small>${m.descricao}</small>
@@ -288,7 +280,7 @@ function renderizarListaRecantos(): string {
     <section class="recantos-container">
       <div class="welcome-box">
         <h2>🌱 Estações da Trilha</h2>
-        <p>Acompanhado por <strong>${estado.cracha?.mascote.emoji} ${estado.cracha?.mascote.nome}</strong>, escolha uma estação para explorar:</p>
+        <p>Acompanhado por <strong>${estado.cracha?.mascote.emoji} ${estado.cracha?.mascote.nome}</strong>, escolha uma estação:</p>
       </div>
       <div class="grid-recantos">
         ${recantos.map(recanto => {
@@ -325,7 +317,7 @@ function renderizarDetalheRecanto(recanto: Recanto): string {
         <p>${recanto.descricao}</p>
       </div>
 
-      <h3>Desafios Disponíveis</h3>
+      <h3 style="margin-top:15px;">Desafios Disponíveis</h3>
       <div class="lista-missoes">
         ${recanto.missoes.map(missao => {
           const resolvida = estado.respostas.some(r => r.recantoId === recanto.id && r.missaoId === missao.id)
@@ -360,22 +352,22 @@ function renderizarMissao(missao: Missao): string {
       </div>
 
       <div class="pergunta-box">
-        <h3>${missao.pergunta.texto}</h3>
+        <h3 style="margin: 15px 0 10px 0;">${missao.pergunta.texto}</h3>
 
         <form id="form-resposta">
           ${tipo === 'termometro' ? `
             <div class="termometro-container">
-              <button type="button" id="btn-medir-termometro" class="btn-secondary">🌡️ Ler Termômetro Digital</button>
+              <button type="button" id="btn-medir-termometro" class="btn-secondary">🌡️ Aferir Temperatura do Microclima</button>
               
               <div class="termometro-display ${dadosTermometro ? 'ativo' : ''}">
                 <div class="termometro-icone">🌡️</div>
                 <div class="termometro-dados">
                   ${dadosTermometro ? `
                     <div class="temp-valor">${dadosTermometro.temp}°C</div>
-                    <div class="temp-subtext">💧 Umidade: <strong>${dadosTermometro.umidade}%</strong></div>
-                    <div class="temp-subtext">🍃 Sombra: <strong>${dadosTermometro.sombra}</strong></div>
+                    <div class="temp-subtext">💧 Umidade Relativa: <strong>${dadosTermometro.umidade}%</strong></div>
+                    <div class="temp-subtext">🍃 Condição de Sombra: <strong>${dadosTermometro.sombra}</strong></div>
                   ` : `
-                    <p class="temp-placeholder">Aperte o botão acima para aferir o microclima da estação em tempo real.</p>
+                    <p class="temp-placeholder">Clique no botão acima para medir a temperatura e umidade em tempo real.</p>
                   `}
                 </div>
               </div>
@@ -385,9 +377,9 @@ function renderizarMissao(missao: Missao): string {
           ${tipo === 'foto' ? `
             <div class="media-container">
               <input type="file" id="input-camera" accept="image/*" capture="environment" style="display:none;" />
-              <button type="button" id="btn-tirar-foto" class="btn-secondary">📷 Abrir Câmera</button>
+              <button type="button" id="btn-tirar-foto" class="btn-secondary">📷 Capturar Foto</button>
               <div id="preview-foto-container" class="preview-box">
-                ${fotoCapturadaBase64 ? `<img src="${fotoCapturadaBase64}" class="img-preview" />` : '<p>Nenhuma foto capturada</p>'}
+                ${fotoCapturadaBase64 ? `<img src="${fotoCapturadaBase64}" class="img-preview" />` : '<p class="temp-placeholder">Nenhuma foto tirada ainda</p>'}
               </div>
             </div>
           ` : ''}
@@ -398,7 +390,7 @@ function renderizarMissao(missao: Missao): string {
                 ${gravandoAudio ? '🔴 Parar Gravação' : '🎙️ Iniciar Gravação de Som'}
               </button>
               <div id="preview-audio-container" class="preview-box">
-                ${audioGravadoBase64 ? `<audio controls src="${audioGravadoBase64}"></audio>` : '<p>Nenhum áudio gravado</p>'}
+                ${audioGravadoBase64 ? `<audio controls src="${audioGravadoBase64}"></audio>` : '<p class="temp-placeholder">Nenhum áudio gravado ainda</p>'}
               </div>
             </div>
           ` : ''}
@@ -416,7 +408,7 @@ function renderizarMissao(missao: Missao): string {
 
           ${tipo === 'texto' ? `
             <div class="form-group">
-              <textarea id="resposta-texto" rows="4" placeholder="Escreva aqui suas observações de campo..." required></textarea>
+              <textarea id="resposta-texto" rows="4" placeholder="Escreva suas observações..." required></textarea>
             </div>
           ` : ''}
 
@@ -432,11 +424,11 @@ function renderizarRelatorioCientifico(): string {
     <section class="relatorio-container">
       <button id="btn-voltar-relatorio" class="btn-back">⬅ Voltar</button>
       <h2>📜 Caderno de Campo Virtual</h2>
-      <p><strong>Investigador:</strong> ${estado.cracha?.nome} ${estado.cracha?.mascote.emoji} | <strong>Turma:</strong> ${estado.cracha?.codigoTurma}</p>
+      <p style="margin-bottom:15px;"><strong>Investigador:</strong> ${estado.cracha?.nome} ${estado.cracha?.mascote.emoji} | <strong>Turma:</strong> ${estado.cracha?.codigoTurma}</p>
 
       ${estado.respostas.length === 0 ? `
         <div class="empty-state">
-          <p>Seu caderno está vazio. Explore as estações para registrar fotos, áudios e leituras de termômetro!</p>
+          <p>Seu caderno está vazio. Explore as estações para registrar suas medições!</p>
         </div>
       ` : `
         <div class="respostas-historico">
@@ -450,18 +442,18 @@ function renderizarRelatorioCientifico(): string {
                 <p><strong>Registro:</strong> ${r.respostaDada}</p>
                 
                 ${r.tipoMidia === 'foto' && r.midiaUrl ? `
-                  <div class="media-preview">
-                    <img src="${r.midiaUrl}" alt="Registro Fotográfico" class="img-preview" />
+                  <div class="preview-box" style="margin-top:8px;">
+                    <img src="${r.midiaUrl}" class="img-preview" />
                   </div>
                 ` : ''}
 
                 ${r.tipoMidia === 'audio' && r.midiaUrl ? `
-                  <div class="media-preview">
+                  <div style="margin-top:8px;">
                     <audio controls src="${r.midiaUrl}"></audio>
                   </div>
                 ` : ''}
 
-                <span class="status-tag correta">✅ Registrado</span>
+                <span class="status-tag">✅ Registrado</span>
               </div>
             `
           }).join('')}
@@ -513,30 +505,31 @@ function vincularEventos() {
     renderApp()
   })
 
-  // SELEÇÃO DE MASCOTE
+  // SELEÇÃO DE MASCOTE CORRIGIDA
   document.querySelectorAll('.mascote-card').forEach(card => {
     card.addEventListener('click', (e) => {
       const id = (e.currentTarget as HTMLElement).getAttribute('data-mascoteid')
-      const encontrado = mascotesDisponiveis.find(m => m.id === id)
-      if (encontrado) {
-        mascoteSelecionadoTemp = encontrado
+      if (id) {
+        mascoteSelecionadoId = id
         renderApp()
       }
     })
   })
 
-  // CRIAÇÃO DO CRACHÁ
+  // SALVAR CRACHÁ CORRIGIDO
   const formCracha = document.querySelector('#form-cracha') as HTMLFormElement
   if (formCracha) {
     formCracha.addEventListener('submit', (e) => {
       e.preventDefault()
       const codigoInput = (document.querySelector('#codigo-turma') as HTMLInputElement).value
       const nomeInput = (document.querySelector('#nome-aluno') as HTMLInputElement).value
+      const mascoteObjeto = mascotesDisponiveis.find(m => m.id === mascoteSelecionadoId) || mascotesDisponiveis[0]
+
       if (codigoInput && nomeInput) {
         estado.cracha = {
           nome: nomeInput,
           codigoTurma: codigoInput.toUpperCase(),
-          mascote: mascoteSelecionadoTemp
+          mascote: mascoteObjeto
         }
         salvarCracha(estado.cracha)
         renderApp()
@@ -544,9 +537,9 @@ function vincularEventos() {
     })
   }
 
-  // SAIR / RESETAR CRACHÁ
+  // BOTÃO SAIR
   document.querySelector('#btn-trocar-usuario')?.addEventListener('click', () => {
-    if (confirm('Deseja sair e criar um novo crachá?')) {
+    if (confirm('Deseja sair do aplicativo?')) {
       localStorage.clear()
       estado.cracha = null
       estado.recantoAtual = null
@@ -557,7 +550,7 @@ function vincularEventos() {
     }
   })
 
-  // NAVEGAÇÃO ENTRE ESTAÇÕES
+  // NAVEGAÇÃO DAS ESTAÇÕES
   document.querySelectorAll('.btn-explorar').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const id = (e.currentTarget as HTMLElement).getAttribute('data-id')
@@ -589,12 +582,12 @@ function vincularEventos() {
     renderApp()
   })
 
-  // TERMÔMETRO MICROCLIMÁTICO
+  // MEDIÇÃO DO TERMÔMETRO CORRIGIDA
   const btnMedirTermometro = document.querySelector('#btn-medir-termometro')
   if (btnMedirTermometro) {
     btnMedirTermometro.addEventListener('click', () => {
-      const tempSugerida = parseFloat((25 + Math.random() * 5).toFixed(1))
-      const umidadeSugerida = Math.floor(50 + Math.random() * 20)
+      const tempSugerida = parseFloat((26.5 + Math.random() * 3).toFixed(1))
+      const umidadeSugerida = Math.floor(55 + Math.random() * 15)
       const opcoesSombra = ['Sombra Densa (Copa)', 'Sombra Parcial', 'Exposição Solar Direta']
       const sombraSugerida = opcoesSombra[Math.floor(Math.random() * opcoesSombra.length)]
 
@@ -625,7 +618,7 @@ function vincularEventos() {
     })
   }
 
-  // AUDIO
+  // GRAVADOR DE ÁUDIO
   const btnGravadorAudio = document.querySelector('#btn-gravador-audio')
   if (btnGravadorAudio) {
     btnGravadorAudio.addEventListener('click', async () => {
@@ -662,7 +655,7 @@ function vincularEventos() {
     })
   }
 
-  // SUBMIT RESPOSTA
+  // ENVIO DE RESPOSTAS
   const formResposta = document.querySelector('#form-resposta') as HTMLFormElement
   if (formResposta && estado.missaoAtual && estado.recantoAtual) {
     formResposta.addEventListener('submit', (e) => {
@@ -673,13 +666,13 @@ function vincularEventos() {
       let tipoMidia: 'foto' | 'audio' | 'texto' | 'termometro' = 'texto'
 
       if (tipo === 'termometro') {
-        if (!dadosTermometro) return alert('Por favor, faça a leitura do termômetro primeiro!')
+        if (!dadosTermometro) return alert('Por favor, clique em "Aferir Temperatura do Microclima" antes de salvar!')
         respostaTexto = `Temperatura: ${dadosTermometro.temp}°C | Umidade: ${dadosTermometro.umidade}% | ${dadosTermometro.sombra}`
         tipoMidia = 'termometro'
       } else if (tipo === 'foto') {
-        if (!fotoCapturadaBase64) return alert('Por favor, tire uma foto antes de salvar.')
+        if (!fotoCapturadaBase64) return alert('Por favor, capture uma foto antes de salvar.')
         midiaUrl = fotoCapturadaBase64
-        respostaTexto = 'Fotografia capturada'
+        respostaTexto = 'Fotografia registrada'
         tipoMidia = 'foto'
       } else if (tipo === 'audio') {
         if (!audioGravadoBase64) return alert('Por favor, grave um áudio antes de salvar.')
@@ -715,7 +708,7 @@ function vincularEventos() {
       }
 
       salvarRespostas(estado.respostas)
-      mensagemSucessoModal = `Excelente trabalho! ${estado.cracha?.mascote.nome} guardou essa descoberta no Caderno de Campo!`
+      mensagemSucessoModal = `Excelente! ${estado.cracha?.mascote.nome} guardou essa descoberta no Caderno de Campo!`
       modalSucessoAberto = true
       renderApp()
     })
