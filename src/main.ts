@@ -1,454 +1,448 @@
-import './style.css'
+import { recantos } from './data/recantos'
+import { EstadoAplicacao, Recanto, MissaoCientifica } from './@types'
+import { capturarFotoCampo } from './utils/camera'
+import { iniciarGravacaoAudio, pararGravacaoAudio } from './utils/audio'
+import { EditorCanvas } from './utils/canvas'
 
-// Interfaces dos Modelos de Dados
-interface Pergunta {
-  id: string
-  texto: string
-  tipo: 'multipla_escolha' | 'texto' | 'foto' | 'audio' | 'sensor_clima'
-  opcoes?: string[]
-  respostaCorreta?: number
+// Extension do Estado da Aplicação para incluir código de turma e modo professor
+interface EstadoExtendido extends EstadoAplicacao {
+  codigoTurma: string | null
+  modoProfessor: boolean
 }
 
-interface Missao {
-  id: string
-  titulo: string
-  descricao: string
-  pergunta: Pergunta
-  concluida: boolean
-}
-
-interface Recanto {
-  id: string
-  nome: string
-  descricao: string
-  icone: string
-  missoes: Missao[]
-}
-
-interface RespostaSubmetida {
-  recantoId: string
-  missaoId: string
-  perguntaTexto: string
-  respostaDada: string
-  midiaUrl?: string // URL da foto ou áudio em base64/blob
-  tipoMidia?: 'foto' | 'audio' | 'texto'
-  estaCorreta?: boolean
-  dataHora: string
-}
-
-interface CrachaEstudante {
-  nome: string
-  codigoTurma: string
-}
-
-interface EstadoApp {
-  cracha: CrachaEstudante | null
-  recantoAtual: Recanto | null
-  missaoAtual: Missao | null
-  respostas: RespostaSubmetida[]
-}
-
-// Estado Global da Aplicação
-const estado: EstadoApp = {
-  cracha: carregarCrachaSalvo(),
+const estado: EstadoExtendido = {
+  cracha: JSON.parse(localStorage.getItem('explore_its_cracha') || 'null'),
+  codigoTurma: localStorage.getItem('explore_its_turma') || null,
+  modoProfessor: false,
   recantoAtual: null,
   missaoAtual: null,
-  respostas: carregarRespostasSalvas()
+  descobertas: Number(localStorage.getItem('explore_its_descobertas')) || 0,
+  missoesConcluidas: new Set(JSON.parse(localStorage.getItem('explore_its_concluidas') || '[]')),
+  dadosColetados: JSON.parse(localStorage.getItem('explore_its_dados') || '{}')
 }
 
-// Controle de Mídias e Modais
-let mediaRecorder: MediaRecorder | null = null
-let audioChunks: Blob[] = []
 let gravandoAudio = false
-let fotoCapturadaBase64: string | null = null
-let audioGravadoBase64: string | null = null
-
-let modalSucessoAberto = false
-let mensagemSucessoModal = ''
+let editorCanvas: EditorCanvas | null = null
 let exibindoRelatorio = false
-
-// Estações com Sensores, Câmera e Gravador de Áudio
-const recantos: Recanto[] = [
-  {
-    id: 'estacao-barauna',
-    nome: 'Estação Baraúna',
-    descricao: 'Explore a imponente árvore símbolo do Cerrado, registre fotos e meça as condições da sombra.',
-    icone: '🌳',
-    missoes: [
-      {
-        id: 'm-bar-1',
-        titulo: 'Registro Fotográfico do Tronco',
-        descricao: 'Tire uma foto bem de perto da casca espessa da Baraúna para registrar suas fissuras.',
-        concluida: false,
-        pergunta: {
-          id: 'p-bar-1',
-          texto: 'Fotografe a casca do tronco da árvore:',
-          tipo: 'foto'
-        }
-      },
-      {
-        id: 'm-bar-2',
-        titulo: 'Coleta Microclimática',
-        descricao: 'Utilize o sensor do aplicativo para aferir a temperatura e umidade sob a copa da Baraúna.',
-        concluida: false,
-        pergunta: {
-          id: 'p-bar-2',
-          texto: 'Afera a temperatura e condições ambientais neste ponto:',
-          tipo: 'sensor_clima'
-        }
-      }
-    ]
-  },
-  {
-    id: 'estacao-saci-perere',
-    nome: 'Estação Saci-Pererê',
-    descricao: 'Investigue o ecossistema e grave os sons da natureza ou relatos sobre os mistérios da mata.',
-    icone: '🌪️',
-    missoes: [
-      {
-        id: 'm-saci-1',
-        titulo: 'Sons da Mata',
-        descricao: 'Grave um áudio de 10 segundos capturando o barulho do vento nas folhas ou os pássaros ao redor.',
-        concluida: false,
-        pergunta: {
-          id: 'p-saci-1',
-          texto: 'Grave o som ambiente desta estação:',
-          tipo: 'audio'
-        }
-      }
-    ]
-  },
-  {
-    id: 'estacao-jatoba',
-    nome: 'Estação Jatobá',
-    descricao: 'Analise os frutos e sementes do Jatobá e responda às questões ecológicas.',
-    icone: '🌰',
-    missoes: [
-      {
-        id: 'm-jat-1',
-        titulo: 'Análise de Resistência',
-        descricao: 'Examine a rigidez da semente de Jatobá encontrada na trilha.',
-        concluida: false,
-        pergunta: {
-          id: 'p-jat-1',
-          texto: 'Como a casca dura do fruto do Jatobá protege a semente?',
-          tipo: 'multipla_escolha',
-          opcoes: [
-            'Protege contra predadores e variações climáticas severas',
-            'Impede completamente a reprodução da árvore',
-            'Serve apenas para atrair água da chuva',
-            'Dissolve a semente com o calor'
-          ],
-          respostaCorreta: 0
-        }
-      }
-    ]
-  },
-  {
-    id: 'estacao-caipora',
-    nome: 'Estação Caipora',
-    descricao: 'Registre evidências de fauna silvestre e pegadas no solo através de fotos.',
-    icone: '🐾',
-    missoes: [
-      {
-        id: 'm-cai-1',
-        titulo: 'Rastros de Animais',
-        descricao: 'Procure por pegadas ou sinais de animais no solo e fotografe o achado.',
-        concluida: false,
-        pergunta: {
-          id: 'p-cai-1',
-          texto: 'Tire uma foto do vestígio de fauna encontrado:',
-          tipo: 'foto'
-        }
-      }
-    ]
-  },
-  {
-    id: 'estacao-nego-dagua',
-    nome: 'Estação Nego D\'Água',
-    descricao: 'Analise a umidade ao redor do curso d\'água e grave o som do fluxo de água.',
-    icone: '💧',
-    missoes: [
-      {
-        id: 'm-neg-1',
-        titulo: 'Som do Córrego',
-        descricao: 'Grave um áudio perto do curso d\'água para registrar o barulho da correnteza.',
-        concluida: false,
-        pergunta: {
-          id: 'p-neg-1',
-          texto: 'Grave o áudio do fluxo d\'água:',
-          tipo: 'audio'
-        }
-      }
-    ]
-  }
-]
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
-// Funções de Armazenamento Local
-function salvarCracha(cracha: CrachaEstudante) {
-  localStorage.setItem('explore_its_cracha', JSON.stringify(cracha))
+function salvarProgresso() {
+  try {
+    localStorage.setItem('explore_its_cracha', JSON.stringify(estado.cracha))
+    localStorage.setItem('explore_its_turma', estado.codigoTurma || '')
+    localStorage.setItem('explore_its_descobertas', estado.descobertas.toString())
+    localStorage.setItem('explore_its_concluidas', JSON.stringify(Array.from(estado.missoesConcluidas)))
+    localStorage.setItem('explore_its_dados', JSON.stringify(estado.dadosColetados))
+  } catch (e) {
+    console.warn('Limite de armazenamento atingido:', e)
+  }
 }
 
-function carregarCrachaSalvo(): CrachaEstudante | null {
-  const salvo = localStorage.getItem('explore_its_cracha')
-  return salvo ? JSON.parse(salvo) : null
+function resetarEstadoCompleto() {
+  localStorage.clear()
+  estado.cracha = null
+  estado.codigoTurma = null
+  estado.recantoAtual = null
+  estado.missaoAtual = null
+  estado.descobertas = 0
+  estado.missoesConcluidas.clear()
+  estado.dadosColetados = {}
+  exibindoRelatorio = false
+  estado.modoProfessor = false
+  renderApp()
 }
 
-function salvarRespostas(respostas: RespostaSubmetida[]) {
-  localStorage.setItem('explore_its_respostas', JSON.stringify(respostas))
+function exportarDadosJSON() {
+  const dadosExportacao = {
+    codigoTurma: estado.codigoTurma || 'SEM_TURMA',
+    equipe: estado.cracha,
+    descobertas: estado.descobertas,
+    missoesConcluidas: Array.from(estado.missoesConcluidas),
+    evidencias: estado.dadosColetados,
+    dataExportacao: new Date().toISOString()
+  }
+
+  const blob = new Blob([JSON.stringify(dadosExportacao, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `censo_its_${estado.codigoTurma || 'equipe'}_${estado.cracha?.nomeEquipe.toLowerCase().replace(/\s+/g, '_') || 'equipe'}.json`
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
-function carregarRespostasSalvas(): RespostaSubmetida[] {
-  const salvas = localStorage.getItem('explore_its_respostas')
-  return salvas ? JSON.parse(salvas) : []
-}
-
-// Componente: Header
 function renderizarHeader(): string {
+  const turmaTexto = estado.codigoTurma ? estado.codigoTurma : 'N/A'
+  const membrosTexto = estado.cracha ? estado.cracha.membros.join(', ') : ''
+
   return `
-    <header class="app-header">
-      <div class="header-content">
-        <h1 id="btn-logo" class="logo">🍃 Explore ITS</h1>
-        ${estado.cracha ? `
-          <div class="user-badge">
-            <span class="user-name">👤 ${estado.cracha.nome} (${estado.cracha.codigoTurma})</span>
-            <button id="btn-relatorio" class="btn-secondary">📜 Caderno</button>
-            <button id="btn-trocar-usuario" class="btn-prof">Sair</button>
+    <header style="background: #1b4332; color: white; padding: 1rem; text-align: center; border-bottom: 4px solid #2d6a4f; position: relative;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+        <h1 style="margin: 0; font-size: 1.3rem;">🌱 Explore ITS</h1>
+        <button id="btn-toggle-professor" style="background: ${estado.modoProfessor ? '#e9c46a' : '#2d6a4f'}; color: ${estado.modoProfessor ? '#1b4332' : 'white'}; border: none; padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.7rem; font-weight: bold; cursor: pointer;">
+          ${estado.modoProfessor ? '📱 Modo Aluno' : '👨‍🏫 Modo Professor'}
+        </button>
+      </div>
+      <p style="margin: 0; font-size: 0.8rem; opacity: 0.9;">Trilha da Semente Peregrina • ITS / PUC Goiás</p>
+      
+      ${estado.cracha && !estado.modoProfessor ? `
+        <div style="background: #2d6a4f; margin-top: 0.6rem; padding: 0.5rem; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.5rem;">${estado.cracha.avatar}</span>
+            <div style="text-align: left;">
+              <strong>Equipe: ${estado.cracha.nomeEquipe}</strong>
+              <div style="font-size: 0.7rem; opacity: 0.85;">Turma: ${turmaTexto} •${membrosTexto}</div>
+            </div>
           </div>
-        ` : ''}
+          <div style="background: #52b788; color: #1b4332; padding: 0.2rem 0.6rem; border-radius: 12px; font-weight: bold;">
+            ⭐ ${estado.descobertas} PTS
+          </div>
+        </div>
+      ` : ''}
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
+        ${estado.cracha && !estado.modoProfessor ? `
+          <button id="btn-abrir-relatorio" style="background: #52b788; color: #1b4332; border: none; padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer;">
+            📜 Ver Relatório
+          </button>
+        ` : '<div></div>'}
+        
+        <button id="btn-reset-app" style="background: #d90429; color: white; border: none; padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.7rem; font-weight: bold; cursor: pointer;">
+          🔄 Resetar
+        </button>
       </div>
     </header>
   `
 }
 
-// Componente: Formulário Inicial
 function renderizarFormularioCracha(): string {
   return `
-    <section class="card-container">
-      <h2>Trilha Explore ITS</h2>
-      <p>Informe a Turma e seu Nome para acessar os recursos de campo (Câmera, Áudio e Sensores):</p>
-      <form id="form-cracha" class="cracha-form">
-        <div class="form-group">
-          <label for="codigo-turma">Código da Turma:</label>
-          <input type="text" id="codigo-turma" placeholder="Ex: ITS-6A" required />
-        </div>
-        <div class="form-group">
-          <label for="nome-aluno">Nome do Aluno:</label>
-          <input type="text" id="nome-aluno" placeholder="Ex: Lucas Mendes" required />
-        </div>
-        <button type="submit" class="btn-primary">Iniciar Expedição</button>
-      </form>
-    </section>
-  `
-}
+    <main style="padding: 1rem; max-width: 600px; margin: 0 auto;">
+      <div style="background: white; border: 2px solid #2d6a4f; padding: 1.2rem; border-radius: 12px; text-align: center;">
+        <span style="font-size: 3rem;">🪪</span>
+        <h2 style="color: #1b4332; margin: 0.5rem 0;">Crachá Digital de Investigador</h2>
+        <p style="font-size: 0.85rem; color: #495057; margin-bottom: 1rem;">
+          Pactuem o Contrato de Investigação Ecológica e digitem o código fornecido pelo professor para liberar a trilha.
+        </p>
 
-// Componente: Lista de Estações
-function renderizarListaRecantos(): string {
-  return `
-    <section class="recantos-container">
-      <div class="welcome-box">
-        <h2>Estações da Trilha</h2>
-        <p>Selecione uma estação para realizar coletas de campo e responder aos desafios:</p>
-      </div>
-      <div class="grid-recantos">
-        ${recantos.map(recanto => {
-          const concluidas = recanto.missoes.filter(m => 
-            estado.respostas.some(r => r.recantoId === recanto.id && r.missaoId === m.id)
-          ).length
-          const total = recanto.missoes.length
+        <form id="form-cracha" style="display: flex; flex-direction: column; gap: 0.8rem; text-align: left;">
+          <div>
+            <label style="font-size: 0.8rem; font-weight: bold; color: #1b4332;">Código da Turma (fornecido pelo professor):</label>
+            <input type="text" id="input-codigo-turma" placeholder="Ex: ITS-7421" required style="width: 100%; padding: 0.6rem; border: 1px solid #ced4da; border-radius: 6px; margin-top: 0.2rem; box-sizing: border-box; text-transform: uppercase;" />
+          </div>
 
-          return `
-            <div class="recanto-card">
-              <div class="recanto-icon">${recanto.icone}</div>
-              <h3>${recanto.nome}</h3>
-              <p>${recanto.descricao}</p>
-              <div class="progress-bar">
-                <div class="progress-fill" style="width: ${(concluidas / total) * 100}%"></div>
-              </div>
-              <span class="progress-text">${concluidas} de${total} concluídos</span>
-              <button class="btn-primary btn-explorar" data-id="${recanto.id}">Explorar Estação</button>
+          <div>
+            <label style="font-size: 0.8rem; font-weight: bold; color: #1b4332;">Nome da Equipe:</label>
+            <input type="text" id="input-nome-equipe" placeholder="Ex: Guardiões do Cerrado" required style="width: 100%; padding: 0.6rem; border: 1px solid #ced4da; border-radius: 6px; margin-top: 0.2rem; box-sizing: border-box;" />
+          </div>
+
+          <div>
+            <label style="font-size: 0.8rem; font-weight: bold; color: #1b4332;">Integrantes da Equipe:</label>
+            <input type="text" id="input-membros" placeholder="Ex: Ana, Bruno, Carlos" required style="width: 100%; padding: 0.6rem; border: 1px solid #ced4da; border-radius: 6px; margin-top: 0.2rem; box-sizing: border-box;" />
+          </div>
+
+          <div>
+            <label style="font-size: 0.8rem; font-weight: bold; color: #1b4332;">Mascote da Expedição:</label>
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.4rem; justify-content: space-around;">
+              <label style="cursor: pointer; font-size: 1.8rem; padding: 0.4rem; border: 2px solid #ced4da; border-radius: 8px;">
+                <input type="radio" name="avatar" value="🦊" checked style="display:none;"> 🦊
+              </label>
+              <label style="cursor: pointer; font-size: 1.8rem; padding: 0.4rem; border: 2px solid #ced4da; border-radius: 8px;">
+                <input type="radio" name="avatar" value="🦉" style="display:none;"> 🦉
+              </label>
+              <label style="cursor: pointer; font-size: 1.8rem; padding: 0.4rem; border: 2px solid #ced4da; border-radius: 8px;">
+                <input type="radio" name="avatar" value="🐆" style="display:none;"> 🐆
+              </label>
+              <label style="cursor: pointer; font-size: 1.8rem; padding: 0.4rem; border: 2px solid #ced4da; border-radius: 8px;">
+                <input type="radio" name="avatar" value="🌳" style="display:none;"> 🌳
+              </label>
             </div>
-          `
-        }).join('')}
-      </div>
-    </section>
-  `
-}
+          </div>
 
-// Componente: Detalhes da Estação
-function renderizarDetalheRecanto(recanto: Recanto): string {
-  return `
-    <section class="recanto-detalhe">
-      <button id="btn-voltar-recantos" class="btn-back">⬅ Voltar para Estações</button>
-      <div class="recanto-header">
-        <span class="recanto-icon-lg">${recanto.icone}</span>
-        <h2>${recanto.nome}</h2>
-        <p>${recanto.descricao}</p>
-      </div>
-
-      <h3>Desafios Disponíveis</h3>
-      <div class="lista-missoes">
-        ${recanto.missoes.map(missao => {
-          const resolvida = estado.respostas.some(r => r.recantoId === recanto.id && r.missaoId === missao.id)
-          return `
-            <div class="missao-card ${resolvida ? 'resolvida' : ''}">
-              <div class="missao-info">
-                <h4>${missao.titulo}${resolvida ? '✅' : ''}</h4>
-                <p>${missao.descricao}</p>
-              </div>
-              <button class="btn-primary btn-iniciar-missao" data-missaoid="${missao.id}">
-                ${resolvida ? 'Refazer Desafio' : 'Iniciar Coleta'}
-              </button>
-            </div>
-          `
-        }).join('')}
-      </div>
-    </section>
-  `
-}
-
-// Componente: Interface da Missão (com Câmera, Áudio, Temperatura)
-function renderizarMissao(missao: Missao): string {
-  const tipo = missao.pergunta.tipo
-
-  return `
-    <section class="missao-detalhe">
-      <button id="btn-voltar-missoes" class="btn-back">⬅ Voltar à Estação</button>
-      
-      <div class="missao-header">
-        <span class="tag">Investigação de Campo</span>
-        <h2>${missao.titulo}</h2>
-        <p>${missao.descricao}</p>
-      </div>
-
-      <div class="pergunta-box">
-        <h3>${missao.pergunta.texto}</h3>
-
-        <form id="form-resposta">
-          ${tipo === 'foto' ? `
-            <div class="media-container">
-              <input type="file" id="input-camera" accept="image/*" capture="environment" style="display:none;" />
-              <button type="button" id="btn-tirar-foto" class="btn-secondary">📷 Abrir Câmera</button>
-              <div id="preview-foto-container" class="preview-box">
-                ${fotoCapturadaBase64 ? `<img src="${fotoCapturadaBase64}" class="img-preview" />` : '<p>Nenhuma foto capturada</p>'}
-              </div>
-            </div>
-          ` : ''}
-
-          ${tipo === 'audio' ? `
-            <div class="media-container">
-              <button type="button" id="btn-gravador-audio" class="btn-secondary">
-                ${gravandoAudio ? '🔴 Parar Gravação' : '🎙️ Iniciar Gravação de Som'}
-              </button>
-              <div id="preview-audio-container" class="preview-box">
-                ${audioGravadoBase64 ? `<audio controls src="${audioGravadoBase64}"></audio>` : '<p>Nenhum áudio gravado</p>'}
-              </div>
-            </div>
-          ` : ''}
-
-          ${tipo === 'sensor_clima' ? `
-            <div class="sensor-container">
-              <button type="button" id="btn-ler-sensor" class="btn-secondary">🌡️ Ler Dados do Ambiente</button>
-              <div id="dados-sensor" class="sensor-box">
-                <p>Clique acima para aferir a temperatura e luz do ambiente.</p>
-              </div>
-            </div>
-          ` : ''}
-
-          ${tipo === 'multipla_escolha' ? `
-            <div class="opcoes-container">
-              ${missao.pergunta.opcoes?.map((opcao, idx) => `
-                <label class="opcao-label">
-                  <input type="radio" name="resposta" value="${idx}" required />
-                  <span>${opcao}</span>
-                </label>
-              `).join('')}
-            </div>
-          ` : ''}
-
-          ${tipo === 'texto' ? `
-            <div class="form-group">
-              <textarea id="resposta-texto" rows="4" placeholder="Escreva aqui suas observações de campo..." required></textarea>
-            </div>
-          ` : ''}
-
-          <button type="submit" class="btn-primary" style="margin-top: 15px;">Salvar Descoberta</button>
+          <button type="submit" style="background: #2d6a4f; color: white; border: none; padding: 0.8rem; border-radius: 8px; font-weight: bold; font-size: 1rem; margin-top: 0.8rem; cursor: pointer;">
+            ✍️ Assinar Contrato e Iniciar
+          </button>
         </form>
       </div>
-    </section>
+    </main>
   `
 }
 
-// Componente: Caderno de Campo (com exibição de Fotos e Áudios)
-function renderizarRelatorioCientifico(): string {
+function renderizarPainelProfessor(): string {
+  const totalMissoes = recantos.reduce((acc, r) => acc + r.missoes.length, 0)
+  const concluidas = estado.missoesConcluidas.size
+
   return `
-    <section class="relatorio-container">
-      <button id="btn-voltar-relatorio" class="btn-back">⬅ Voltar</button>
-      <h2>📜 Caderno de Campo Virtual</h2>
-      <p><strong>Investigador:</strong> ${estado.cracha?.nome} | <strong>Turma:</strong> ${estado.cracha?.codigoTurma}</p>
-
-      ${estado.respostas.length === 0 ? `
-        <div class="empty-state">
-          <p>Seu caderno está vazio. Explore as estações para registrar fotos, áudios e respostas!</p>
+    <main style="padding: 1rem; max-width: 700px; margin: 0 auto;">
+      <div style="background: white; border: 2px solid #1b4332; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="text-align: center; border-bottom: 2px solid #2d6a4f; padding-bottom: 1rem; margin-bottom: 1rem;">
+          <span style="font-size: 2.5rem;">👨‍🏫</span>
+          <h2 style="color: #1b4332; margin: 0.3rem 0;">Painel de Gestão do Professor / ITS</h2>
+          <p style="font-size: 0.85rem; color: #555; margin: 0;">Censo Ambiental & Consolidação de Dados da Turma</p>
         </div>
-      ` : `
-        <div class="respostas-historico">
-          ${estado.respostas.map(r => {
-            const recanto = recantos.find(rec => rec.id === r.recantoId)
+
+        <div style="background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+          <h3 style="margin: 0 0 0.5rem; color: #1b4332; font-size: 1rem;">📌 Gerar Código para Nova Turma</h3>
+          <p style="font-size: 0.8rem; color: #333; margin-bottom: 0.8rem;">Forneça este código aos alunos ao iniciarem a expedição:</p>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="input-gerar-codigo" value="ITS-${Math.floor(1000 + Math.random() * 9000)}" readonly style="font-weight: bold; font-size: 1.1rem; text-align: center; width: 140px; padding: 0.4rem; border: 1px solid #2d6a4f; border-radius: 6px; background: white;" />
+            <button id="btn-copiar-codigo" style="background: #2d6a4f; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: bold; cursor: pointer;">Copiar Código</button>
+          </div>
+        </div>
+
+        <h3 style="color: #1b4332; font-size: 1.05rem; margin-top: 1.5rem; border-bottom: 1px solid #ddd; padding-bottom: 0.3rem;">
+          📊 Censo Ambiental - Resumo Atual
+        </h3>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-top: 0.8rem;">
+          <div style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 0.8rem; border-radius: 8px; text-align: center;">
+            <span style="font-size: 1.5rem;">👥</span>
+            <div style="font-size: 1.2rem; font-weight: bold; color: #1b4332;">${estado.cracha ? '1 Equipe' : '0 Equipes'}</div>
+            <div style="font-size: 0.75rem; color: #6c757d;">Cadastradas na sessão</div>
+          </div>
+
+          <div style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 0.8rem; border-radius: 8px; text-align: center;">
+            <span style="font-size: 1.5rem;">✅</span>
+            <div style="font-size: 1.2rem; font-weight: bold; color: #2d6a4f;">${concluidas} / ${totalMissoes}</div>
+            <div style="font-size: 0.75rem; color: #6c757d;">Evidências coletadas</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 1.5rem; text-align: center;">
+          <button id="btn-exportar-censo-completo" style="background: #1b4332; color: white; border: none; padding: 0.8rem 1.2rem; border-radius: 8px; font-weight: bold; font-size: 0.9rem; cursor: pointer; width: 100%;">
+            💾 Baixar Dados do Censo da Turma (JSON)
+          </button>
+        </div>
+      </div>
+    </main>
+  `
+}
+
+function renderizarListaRecantos(): string {
+  return `
+    <main style="padding: 1rem; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #2d6a4f; font-size: 1.2rem; margin-bottom: 1rem;">Estações de Investigação</h2>
+      <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+        ${recantos.map(recanto => {
+          const concluida = recanto.missoes.every(m => estado.missoesConcluidas.has(m.id))
+          return `
+            <button 
+              class="btn-recanto" 
+              data-id="${recanto.id}"
+              style="display: flex; align-items: center; gap: 0.8rem; background: ${concluida ? '#d8f3dc' : '#f8f9fa'}; border: 2px solid ${concluida ? '#52b788' : '#e9ecef'}; padding: 1rem; border-radius: 12px; text-align: left; cursor: pointer; width: 100%;"
+            >
+              <span style="font-size: 2rem;">${recanto.icone}</span>
+              <div style="flex: 1;">
+                <h3 style="margin: 0; color: #1b4332; font-size: 1rem;">${recanto.titulo}</h3>
+                <span style="font-size: 0.75rem; background: #b7e4c7; color: #1b4332; padding: 2px 6px; border-radius: 4px; font-weight: bold;">${recanto.eixoAmbiental}</span>
+                <p style="margin: 0.3rem 0 0; font-size: 0.8rem; color: #6c757d;">${recanto.descricao}</p>
+              </div>
+              <span style="font-size: 1.2rem;">${concluida ? '✅' : '➡️'}</span>
+            </button>
+          `
+        }).join('')}
+      </div>
+    </main>
+  `
+}
+
+function renderizarDetalheRecanto(recanto: Recanto): string {
+  return `
+    <main style="padding: 1rem; max-width: 600px; margin: 0 auto;">
+      <button id="btn-voltar" style="background: #2d6a4f; color: white; border: none; padding: 0.6rem 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 1rem; width: 100%;">⬅️ Voltar às Estações</button>
+      
+      <div style="background: #1b4332; color: white; padding: 1.2rem; border-radius: 12px; margin-bottom: 1rem;">
+        <span style="font-size: 2.5rem;">${recanto.icone}</span>
+        <h2 style="margin: 0.5rem 0 0.2rem; font-size: 1.3rem;">${recanto.titulo}</h2>
+        <span style="font-size: 0.8rem; background: #52b788; color: #1b4332; padding: 2px 8px; border-radius: 4px; font-weight: bold;">Eixo: ${recanto.eixoAmbiental}</span>
+      </div>
+
+      <h3 style="color: #2d6a4f; font-size: 1.1rem; margin-bottom: 0.8rem;">Missões Científicas</h3>
+      <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+        ${recanto.missoes.map(missao => {
+          const concluida = estado.missoesConcluidas.has(missao.id)
+          return `
+            <div style="background: white; border: 1px solid #dee2e6; border-left: 5px solid ${concluida ? '#52b788' : '#2d6a4f'}; padding: 1rem; border-radius: 8px;">
+              <h4 style="margin: 0 0 0.4rem; color: #1b4332;">${missao.titulo}</h4>
+              <p style="margin: 0 0 0.8rem; font-size: 0.85rem; color: #495057;">${missao.orientacaoCientifica}</p>${concluida 
+                ? `<span style="color: #2b9348; font-weight: bold; font-size: 0.85rem;">✅ Missão Concluída</span>`
+                : `<button class="btn-iniciar-missao" data-id="${missao.id}" style="background: #2d6a4f; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%;">Iniciar Investigação</button>`
+              }
+            </div>
+          `
+        }).join('')}
+      </div>
+    </main>
+  `
+}
+
+function renderizarMissao(missao: MissaoCientifica): string {
+  const fotoExistente = estado.dadosColetados[missao.id]?.foto
+  const audioExistente = estado.dadosColetados[missao.id]?.audio
+
+  const requerFoto = missao.recursoRequerido === 'camera' || missao.permiteFoto
+  const requerAudio = missao.recursoRequerido === 'audio' || missao.permiteAudio
+  const requerDesenho = missao.recursoRequerido === 'desenho' || missao.permiteDesenho
+
+  if (missao.id === 'saci-01' && !estado.cracha) {
+    return renderizarFormularioCracha()
+  }
+
+  return `
+    <main style="padding: 1rem; max-width: 600px; margin: 0 auto;">
+      <button id="btn-cancelar-missao" style="background: #6c757d; color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 0.8rem; width: 100%;">❌ Cancelar Missão</button>
+      
+      <div style="background: #f8f9fa; border: 2px solid #2d6a4f; padding: 1rem; border-radius: 12px;">
+        <h3 style="margin: 0 0 0.5rem; color: #1b4332;">${missao.titulo}</h3>
+        <p style="font-size: 0.9rem; color: #343a40; margin-bottom: 1rem;">${missao.orientacaoCientifica}</p>
+
+        ${requerFoto || requerDesenho ? `
+          <div style="text-align: center; margin: 1rem 0; background: #e9ecef; padding: 1rem; border-radius: 8px;">
+            <div id="preview-foto-container" style="display: ${fotoExistente ? 'block' : 'none'}; margin-bottom: 1rem;">
+              ${requerDesenho ? `
+                <p style="font-size: 0.8rem; color: #2d6a4f; font-weight: bold; margin-bottom: 0.4rem;">Desenhe a linha do vetor de fluxo sobre a imagem:</p>
+                <div style="width: 100%; overflow: hidden; border-radius: 8px; border: 2px solid #2d6a4f; background: #000;">
+                  <canvas id="canvas-desenho" style="width: 100%; display: block; touch-action: none;"></canvas>
+                </div>
+                <button id="btn-limpar-canvas" type="button" style="background: #6c757d; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.75rem; font-weight: bold; margin-top: 0.4rem; cursor: pointer;">✏️ Refazer Desenho</button>
+              ` : `
+                <img id="img-preview" src="${fotoExistente || ''}" alt="Evidência" style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 8px; border: 2px solid #2d6a4f;" />
+              `}
+            </div>
+            <button id="btn-capturar-foto" type="button" style="background: #2d6a4f; color: white; border: none; padding: 0.8rem 1.2rem; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%;">
+              📸 ${fotoExistente ? 'Tirar Nova Foto' : 'Tirar Foto para Registro'}
+            </button>
+          </div>
+        ` : ''}
+
+        ${requerAudio ? `
+          <div style="text-align: center; margin: 1rem 0; background: #e9ecef; padding: 1rem; border-radius: 8px;">
+            <div id="preview-audio-container" style="display: ${audioExistente ? 'block' : 'none'}; margin-bottom: 1rem;">
+              <audio id="audio-preview" controls src="${audioExistente || ''}" style="width: 100%;"></audio>
+            </div>
+            <button id="btn-gravar-audio" type="button" style="background: #d90429; color: white; border: none; padding: 0.8rem 1.2rem; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%;">
+              🎙️ <span id="lbl-btn-audio">${gravandoAudio ? 'Parar Gravação' : (audioExistente ? 'Gravado (Clique p/ Novo)' : 'Gravar Relato / Som')}</span>
+            </button>
+          </div>
+        ` : ''}
+
+        ${missao.opcoes && missao.opcoes.length > 0 ? `
+          <form id="form-quiz" style="display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem;">
+            ${missao.pergunta ? `<p style="font-weight: bold; color: #1b4332; margin-bottom: 0.5rem;">${missao.pergunta}</p>` : ''}
+            ${missao.opcoes.map((opcao, idx) => `
+              <label style="background: white; border: 1px solid #ced4da; padding: 0.8rem; border-radius: 8px; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="radio" name="opcao" value="${idx}" required>
+                <span>${opcao}</span>
+              </label>
+            `).join('')}
+            <button type="submit" style="background: #52b788; color: #1b4332; border: none; padding: 0.8rem; border-radius: 8px; font-weight: bold; font-size: 1rem; margin-top: 0.5rem; cursor: pointer;">Enviar Resposta</button>
+          </form>
+        ` : `
+          <button id="btn-concluir-generico" style="background: #52b788; color: #1b4332; border: none; padding: 0.8rem; border-radius: 8px; font-weight: bold; font-size: 1rem; width: 100%; cursor: pointer; margin-top: 0.5rem;">Registrar Evidência no Relatório</button>
+        `}
+      </div>
+    </main>
+  `
+}
+
+function renderizarRelatorioCientifico(): string {
+  if (!estado.cracha) return ''
+
+  const totalMissoes = recantos.reduce((acc, r) => acc + r.missoes.length, 0)
+  const concluidas = estado.missoesConcluidas.size
+
+  return `
+    <main style="padding: 1rem; max-width: 700px; margin: 0 auto;">
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+        <button id="btn-fechar-relatorio" style="background: #6c757d; color: white; border: none; padding: 0.6rem 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1;">
+          ⬅️ Voltar
+        </button>
+        <button id="btn-imprimir-pdf" style="background: #1b4332; color: white; border: none; padding: 0.6rem 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1;">
+          🖨️ Imprimir / PDF
+        </button>
+        <button id="btn-exportar-json" style="background: #2d6a4f; color: white; border: none; padding: 0.6rem 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1;">
+          💾 Baixar JSON
+        </button>
+      </div>
+
+      <div style="background: white; border: 2px solid #2d6a4f; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="text-align: center; border-bottom: 2px dashed #b7e4c7; padding-bottom: 1rem; margin-bottom: 1rem;">
+          <span style="font-size: 2.5rem;">📜</span>
+          <h2 style="color: #1b4332; margin: 0.3rem 0;">Relatório Científico de Campo</h2>
+          <p style="font-size: 0.85rem; color: #555; margin: 0;">Trilha da Semente Peregrina • ITS / PUC Goiás</p>
+        </div>
+
+        <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 0.8rem; margin-bottom: 1rem; font-size: 0.85rem;">
+          <p style="margin: 0.2rem 0;"><strong>Código da Turma:</strong> ${estado.codigoTurma || 'N/A'}</p>
+          <p style="margin: 0.2rem 0;"><strong>Mascote:</strong> ${estado.cracha.avatar}</p>
+          <p style="margin: 0.2rem 0;"><strong>Equipe:</strong> ${estado.cracha.nomeEquipe}</p>
+          <p style="margin: 0.2rem 0;"><strong>Integrantes:</strong> ${estado.cracha.membros.join(', ')}</p>
+          <p style="margin: 0.2rem 0;"><strong>Progresso da Expedição:</strong> ${concluidas} de ${totalMissoes} missões (${estado.descobertas} PTS)</p>
+        </div>
+
+        <h3 style="color: #2d6a4f; font-size: 1.1rem; border-bottom: 1px solid #2d6a4f; padding-bottom: 0.3rem; margin-top: 1.5rem;">
+          Evidências Coletadas
+        </h3>
+
+        <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+          ${recantos.map(recanto => {
+            const missoesDoRecanto = recanto.missoes.filter(m => estado.missoesConcluidas.has(m.id))
+            if (missoesDoRecanto.length === 0) return ''
+
             return `
-              <div class="resposta-card">
-                <span class="data-hora">${r.dataHora}</span>
-                <h4>${recanto?.nome || 'Estação'}</h4>
-                <p><strong>Desafio:</strong> ${r.perguntaTexto}</p>
-                <p><strong>Registro:</strong> ${r.respostaDada}</p>
+              <div style="border: 1px solid #d8f3dc; border-radius: 8px; padding: 0.8rem; background: #fafdfb;">
+                <h4 style="margin: 0 0 0.5rem; color: #1b4332; font-size: 0.95rem;">
+                  ${recanto.icone}${recanto.titulo}
+                </h4>
                 
-                ${r.tipoMidia === 'foto' && r.midiaUrl ? `
-                  <div class="media-preview">
-                    <img src="${r.midiaUrl}" alt="Registro Fotográfico" class="img-preview" />
-                  </div>
-                ` : ''}
+                ${missoesDoRecanto.map(m => {
+                  const dados = estado.dadosColetados[m.id]
+                  return `
+                    <div style="background: white; border: 1px solid #e9ecef; border-radius: 6px; padding: 0.6rem; margin-top: 0.5rem; font-size: 0.8rem;">
+                      <strong style="color: #2d6a4f;">📌 ${m.titulo}</strong>
+                      
+                      ${dados?.fotoComDesenho || dados?.foto ? `
+                        <div style="margin-top: 0.5rem;">
+                          <img src="${dados.fotoComDesenho || dados.foto}" alt="Evidência Visual" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 6px; border: 1px solid #ccc;" />
+                        </div>
+                      ` : ''}
 
-                ${r.tipoMidia === 'audio' && r.midiaUrl ? `
-                  <div class="media-preview">
-                    <audio controls src="${r.midiaUrl}"></audio>
-                  </div>
-                ` : ''}
+                      ${dados?.audio ? `
+                        <div style="margin-top: 0.5rem;">
+                          <p style="margin: 0 0 0.2rem; font-weight: bold;">🎙️ Registro Sonoro:</p>
+                          <audio controls src="${dados.audio}" style="width: 100%; height: 32px;"></audio>
+                        </div>
+                      ` : ''}
 
-                <span class="status-tag correta">✅ Registrado</span>
+                      ${dados?.dataHora ? `
+                        <p style="margin: 0.4rem 0 0; font-size: 0.7rem; color: #888;">
+                          Coletado em: ${new Date(dados.dataHora).toLocaleString('pt-BR')}
+                        </p>
+                      ` : ''}
+                    </div>
+                  `
+                }).join('')}
               </div>
             `
           }).join('')}
+
+          ${concluidas === 0 ? `<p style="font-size: 0.85rem; color: #777; text-align: center;">Nenhuma evidência registrada ainda.</p>` : ''}
         </div>
-      `}
-    </section>
-  `
-}
-
-// Modal de Confirmação
-function renderizarModalSucesso(): string {
-  if (!modalSucessoAberto) return ''
-  return `
-    <div class="modal-overlay">
-      <div class="modal-card">
-        <div class="modal-icon">🌿</div>
-        <h3>Sucesso!</h3>
-        <p>${mensagemSucessoModal}</p>
-        <button id="btn-fechar-modal" class="btn-primary">Continuar Expedição</button>
       </div>
-    </div>
+    </main>
   `
 }
 
-// Renderizador da Aplicação
 function renderApp() {
   let conteudo = renderizarHeader()
 
-  if (!estado.cracha) {
-    conteudo += renderizarFormularioCracha()
+  if (estado.modoProfessor) {
+    conteudo += renderizarPainelProfessor()
   } else if (exibindoRelatorio) {
     conteudo += renderizarRelatorioCientifico()
+  } else if (!estado.cracha) {
+    conteudo += renderizarFormularioCracha()
   } else if (estado.missaoAtual) {
     conteudo += renderizarMissao(estado.missaoAtual)
   } else if (estado.recantoAtual) {
@@ -457,227 +451,210 @@ function renderApp() {
     conteudo += renderizarListaRecantos()
   }
 
-  conteudo += renderizarModalSucesso()
   app.innerHTML = conteudo
   vincularEventos()
 }
 
-// Associação de Eventos e Ativação dos Sensores
 function vincularEventos() {
-  document.querySelector('#btn-logo')?.addEventListener('click', () => {
-    estado.recantoAtual = null
-    estado.missaoAtual = null
+  document.querySelector('#form-cracha')?.addEventListener('submit', (e) => {
+    e.preventDefault()
+    const codigoTurma = (document.querySelector('#input-codigo-turma') as HTMLInputElement).value.toUpperCase()
+    const nomeEquipe = (document.querySelector('#input-nome-equipe') as HTMLInputElement).value
+    const membros = (document.querySelector('#input-membros') as HTMLInputElement).value.split(',').map(m => m.trim())
+    const avatar = (document.querySelector('input[name="avatar"]:checked') as HTMLInputElement)?.value || '🦊'
+
+    estado.codigoTurma = codigoTurma
+    estado.cracha = {
+      nomeEquipe,
+      membros,
+      avatar,
+      dataInicio: new Date().toISOString()
+    }
+
+    estado.missoesConcluidas.add('saci-01')
+    estado.descobertas += 10
+    salvarProgresso()
+    renderApp()
+  })
+
+  document.querySelector('#btn-toggle-professor')?.addEventListener('click', () => {
+    estado.modoProfessor = !estado.modoProfessor
+    renderApp()
+  })
+
+  document.querySelector('#btn-copiar-codigo')?.addEventListener('click', () => {
+    const input = document.querySelector('#input-gerar-codigo') as HTMLInputElement
+    if (input) {
+      navigator.clipboard.writeText(input.value)
+      alert('Código da turma copiado: ' + input.value)
+    }
+  })
+
+  document.querySelector('#btn-reset-app')?.addEventListener('click', () => {
+    if (confirm('Deseja resetar o crachá e recomeçar a trilha?')) {
+      resetarEstadoCompleto()
+    }
+  })
+
+  document.querySelector('#btn-abrir-relatorio')?.addEventListener('click', () => {
+    exibindoRelatorio = true
+    renderApp()
+  })
+
+  document.querySelector('#btn-fechar-relatorio')?.addEventListener('click', () => {
     exibindoRelatorio = false
     renderApp()
   })
 
-  // Login
-  const formCracha = document.querySelector('#form-cracha') as HTMLFormElement
-  if (formCracha) {
-    formCracha.addEventListener('submit', (e) => {
-      e.preventDefault()
-      const codigoInput = (document.querySelector('#codigo-turma') as HTMLInputElement).value
-      const nomeInput = (document.querySelector('#nome-aluno') as HTMLInputElement).value
-      if (codigoInput && nomeInput) {
-        estado.cracha = { nome: nomeInput, codigoTurma: codigoInput.toUpperCase() }
-        salvarCracha(estado.cracha)
-        renderApp()
-      }
-    })
-  }
-
-  document.querySelector('#btn-trocar-usuario')?.addEventListener('click', () => {
-    if (confirm('Deseja trocar de usuário?')) {
-      localStorage.removeItem('explore_its_cracha')
-      estado.cracha = null
-      estado.recantoAtual = null
-      estado.missaoAtual = null
-      exibindoRelatorio = false
-      renderApp()
-    }
+  document.querySelector('#btn-imprimir-pdf')?.addEventListener('click', () => {
+    window.print()
   })
 
-  // Navegação
-  document.querySelectorAll('.btn-explorar').forEach(btn => {
+  document.querySelector('#btn-exportar-json')?.addEventListener('click', () => {
+    exportarDadosJSON()
+  })
+
+  document.querySelector('#btn-exportar-censo-completo')?.addEventListener('click', () => {
+    exportarDadosJSON()
+  })
+
+  document.querySelectorAll('.btn-recanto').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      const id = (e.currentTarget as HTMLElement).getAttribute('data-id')
+      const id = (e.currentTarget as HTMLElement).dataset.id
       estado.recantoAtual = recantos.find(r => r.id === id) || null
       renderApp()
     })
   })
 
-  document.querySelector('#btn-voltar-recantos')?.addEventListener('click', () => {
+  document.querySelector('#btn-voltar')?.addEventListener('click', () => {
     estado.recantoAtual = null
+    estado.missaoAtual = null
     renderApp()
   })
 
   document.querySelectorAll('.btn-iniciar-missao').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      const missaoId = (e.currentTarget as HTMLElement).getAttribute('data-missaoid')
-      if (estado.recantoAtual) {
-        fotoCapturadaBase64 = null
-        audioGravadoBase64 = null
-        estado.missaoAtual = estado.recantoAtual.missoes.find(m => m.id === missaoId) || null
-        renderApp()
-      }
-    })
-  })
-
-  document.querySelector('#btn-voltar-missoes')?.addEventListener('click', () => {
-    estado.missaoAtual = null
-    renderApp()
-  })
-
-  // FUNCIONALIDADE 1: CÂMERA
-  const btnTirarFoto = document.querySelector('#btn-tirar-foto')
-  const inputCamera = document.querySelector('#input-camera') as HTMLInputElement
-  if (btnTirarFoto && inputCamera) {
-    btnTirarFoto.addEventListener('click', () => inputCamera.click())
-    inputCamera.addEventListener('change', (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0]
-      if (file) {
-        const reader = new FileReader()
-        reader.onload = (event) => {
-          fotoCapturadaBase64 = event.target?.result as string
-          renderApp()
-        }
-        reader.readAsDataURL(file)
-      }
-    })
-  }
-
-  // FUNCIONALIDADE 2: GRAVADOR DE ÁUDIO
-  const btnGravadorAudio = document.querySelector('#btn-gravador-audio')
-  if (btnGravadorAudio) {
-    btnGravadorAudio.addEventListener('click', async () => {
-      if (!gravandoAudio) {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-          mediaRecorder = new MediaRecorder(stream)
-          audioChunks = []
-
-          mediaRecorder.ondataavailable = (event) => audioChunks.push(event.data)
-          mediaRecorder.onstop = () => {
-            const blobAudio = new Blob(audioChunks, { type: 'audio/webm' })
-            const reader = new FileReader()
-            reader.onload = (e) => {
-              audioGravadoBase64 = e.target?.result as string
-              renderApp()
-            }
-            reader.readAsDataURL(blobAudio)
-          }
-
-          mediaRecorder.start()
-          gravandoAudio = true
-          renderApp()
-        } catch (err) {
-          alert('Permissão de microfone negada ou não suportada.')
-        }
-      } else {
-        if (mediaRecorder) {
-          mediaRecorder.stop()
-          mediaRecorder.stream.getTracks().forEach(track => track.stop())
-        }
-        gravandoAudio = false
-      }
-    })
-  }
-
-  // FUNCIONALIDADE 3: SENSOR CLIMÁTICO / LUZ
-  const btnLerSensor = document.querySelector('#btn-ler-sensor')
-  if (btnLerSensor) {
-    btnLerSensor.addEventListener('click', () => {
-      const box = document.querySelector('#dados-sensor')
-      if (box) {
-        const tempSimulada = (26 + Math.random() * 4).toFixed(1)
-        const umidadeSimulada = (55 + Math.random() * 15).toFixed(0)
-        box.innerHTML = `
-          <p>🌡️ <strong>Temperatura Estimada:</strong> ${tempSimulada} °C</p>
-          <p>💧 <strong>Umidade Relativa:</strong> ${umidadeSimulada}%</p>
-          <p>☀️ <strong>Luminosidade:</strong> Alta (Coleta do Cerrado)</p>
-        `
-      }
-    })
-  }
-
-  // ENVIO DE RESPOSTAS E MÍDIAS
-  const formResposta = document.querySelector('#form-resposta') as HTMLFormElement
-  if (formResposta && estado.missaoAtual && estado.recantoAtual) {
-    formResposta.addEventListener('submit', (e) => {
-      e.preventDefault()
-      const tipo = estado.missaoAtual!.pergunta.tipo
-      let respostaTexto = 'Registro Efetuado'
-      let midiaUrl: string | undefined = undefined
-      let tipoMidia: 'foto' | 'audio' | 'texto' = 'texto'
-
-      if (tipo === 'foto') {
-        if (!fotoCapturadaBase64) return alert('Por favor, tire uma foto antes de salvar.')
-        midiaUrl = fotoCapturadaBase64
-        respostaTexto = 'Fotografia capturada na estação'
-        tipoMidia = 'foto'
-      } else if (tipo === 'audio') {
-        if (!audioGravadoBase64) return alert('Por favor, grave um áudio antes de salvar.')
-        midiaUrl = audioGravadoBase64
-        respostaTexto = 'Áudio gravado na estação'
-        tipoMidia = 'audio'
-      } else if (tipo === 'sensor_clima') {
-        const box = document.querySelector('#dados-sensor')
-        respostaTexto = box?.textContent || 'Aferição de temperatura e clima realizada'
-      } else if (tipo === 'multipla_escolha') {
-        const selecionada = document.querySelector('input[name="resposta"]:checked') as HTMLInputElement
-        if (selecionada) {
-          const idx = parseInt(selecionada.value)
-          respostaTexto = estado.missaoAtual!.pergunta.opcoes ? estado.missaoAtual!.pergunta.opcoes[idx] : ''
-        }
-      } else if (tipo === 'texto') {
-        const areaTexto = document.querySelector('#resposta-texto') as HTMLTextAreaElement
-        respostaTexto = areaTexto.value
-      }
-
-      const novaResposta: RespostaSubmetida = {
-        recantoId: estado.recantoAtual!.id,
-        missaoId: estado.missaoAtual!.id,
-        perguntaTexto: estado.missaoAtual!.pergunta.texto,
-        respostaDada: respostaTexto,
-        midiaUrl,
-        tipoMidia,
-        dataHora: new Date().toLocaleString('pt-BR')
-      }
-
-      const indexExistente = estado.respostas.findIndex(r => r.recantoId === novaResposta.recantoId && r.missaoId === novaResposta.missaoId)
-      if (indexExistente >= 0) {
-        estado.respostas[indexExistente] = novaResposta
-      } else {
-        estado.respostas.push(novaResposta)
-      }
-
-      salvarRespostas(estado.respostas)
-
-      mensagemSucessoModal = 'Sua descoberta e mídias foram salvas no Caderno de Campo com sucesso!'
-      modalSucessoAberto = true
+      const id = (e.currentTarget as HTMLElement).dataset.id
+      estado.missaoAtual = estado.recantoAtual?.missoes.find(m => m.id === id) || null
       renderApp()
     })
-  }
+  })
 
-  // Fechar Modal
-  document.querySelector('#btn-fechar-modal')?.addEventListener('click', () => {
-    modalSucessoAberto = false
+  document.querySelector('#btn-cancelar-missao')?.addEventListener('click', () => {
     estado.missaoAtual = null
-    estado.recantoAtual = null
     renderApp()
   })
 
-  // Ver Caderno
-  document.querySelector('#btn-relatorio')?.addEventListener('click', () => {
-    exibindoRelatorio = true
-    renderApp()
+  document.querySelector('#btn-capturar-foto')?.addEventListener('click', async () => {
+    try {
+      const foto = await capturarFotoCampo()
+      const container = document.querySelector<HTMLDivElement>('#preview-foto-container')
+      const imgPreview = document.querySelector<HTMLImageElement>('#img-preview')
+
+      if (container && estado.missaoAtual) {
+        container.style.display = 'block'
+
+        const canvasEl = document.querySelector<HTMLCanvasElement>('#canvas-desenho')
+        if (canvasEl) {
+          editorCanvas = new EditorCanvas(canvasEl)
+          await editorCanvas.carregarImagem(foto.base64)
+        } else if (imgPreview) {
+          imgPreview.src = foto.base64
+        }
+
+        estado.dadosColetados[estado.missaoAtual.id] = {
+          ...estado.dadosColetados[estado.missaoAtual.id],
+          foto: foto.base64,
+          dataHora: foto.timestamp
+        }
+        salvarProgresso()
+      }
+    } catch (erro) {
+      console.log('Captura cancelada ou falhou:', erro)
+    }
   })
 
-  document.querySelector('#btn-voltar-relatorio')?.addEventListener('click', () => {
-    exibindoRelatorio = false
-    renderApp()
+  document.querySelector('#btn-limpar-canvas')?.addEventListener('click', () => {
+    editorCanvas?.limpar()
+  })
+
+  document.querySelector('#btn-gravar-audio')?.addEventListener('click', async () => {
+    const lblBtn = document.querySelector<HTMLSpanElement>('#lbl-btn-audio')
+
+    if (!gravandoAudio) {
+      try {
+        await iniciarGravacaoAudio()
+        gravandoAudio = true
+        if (lblBtn) lblBtn.innerText = '🔴 Gravando... Clique p/ Parar'
+      } catch (erro) {
+        alert('Não foi possível aceder ao microfone.')
+      }
+    } else {
+      try {
+        const resultado = await pararGravacaoAudio()
+        gravandoAudio = false
+        
+        const container = document.querySelector<HTMLDivElement>('#preview-audio-container')
+        const player = document.querySelector<HTMLAudioElement>('#audio-preview')
+
+        if (container && player && estado.missaoAtual) {
+          player.src = resultado.base64
+          container.style.display = 'block'
+
+          estado.dadosColetados[estado.missaoAtual.id] = {
+            ...estado.dadosColetados[estado.missaoAtual.id],
+            audio: resultado.base64,
+            duracao: resultado.duracaoSegundos,
+            dataHora: resultado.timestamp
+          }
+          salvarProgresso()
+        }
+        if (lblBtn) lblBtn.innerText = '🎙️ Gravado (Clique p/ Novo)'
+      } catch (erro) {
+        gravandoAudio = false
+      }
+    }
+  })
+
+  document.querySelector('#form-quiz')?.addEventListener('submit', (e) => {
+    e.preventDefault()
+    const form = e.target as HTMLFormElement
+    const selecionado = form.querySelector<HTMLInputElement>('input[name="opcao"]:checked')?.value
+
+    if (selecionado !== undefined && estado.missaoAtual) {
+      if (Number(selecionado) === estado.missaoAtual.correta) {
+        if (editorCanvas && estado.missaoAtual) {
+          estado.dadosColetados[estado.missaoAtual.id].fotoComDesenho = editorCanvas.exportarResultado()
+        }
+        alert(estado.missaoAtual.sucesso || 'Evidência registrada com sucesso!')
+        estado.missoesConcluidas.add(estado.missaoAtual.id)
+        estado.descobertas += 10
+        salvarProgresso()
+        estado.missaoAtual = null
+        renderApp()
+      } else {
+        alert(estado.missaoAtual.dica || 'Revise suas observações de campo.')
+      }
+    }
+  })
+
+  document.querySelector('#btn-concluir-generico')?.addEventListener('click', () => {
+    if (estado.missaoAtual) {
+      if (editorCanvas) {
+        estado.dadosColetados[estado.missaoAtual.id] = {
+          ...estado.dadosColetados[estado.missaoAtual.id],
+          fotoComDesenho: editorCanvas.exportarResultado()
+        }
+      }
+      alert('Evidência científica registrada no relatório!')
+      estado.missoesConcluidas.add(estado.missaoAtual.id)
+      estado.descobertas += 10
+      salvarProgresso()
+      estado.missaoAtual = null
+      renderApp()
+    }
   })
 }
 
-// Inicializa o App
+// Inicializar Aplicação
 renderApp()
