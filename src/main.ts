@@ -4,7 +4,6 @@ import { capturarFotoCampo } from './utils/camera'
 import { iniciarGravacaoAudio, pararGravacaoAudio } from './utils/audio'
 import { EditorCanvas } from './utils/canvas'
 
-// Extension do Estado da Aplicação para incluir código de turma e modo professor
 interface EstadoExtendido extends EstadoAplicacao {
   codigoTurma: string | null
   modoProfessor: boolean
@@ -54,11 +53,21 @@ function resetarEstadoCompleto() {
 }
 
 function exportarDadosJSON() {
+  const tempBarauna = estado.dadosColetados['barauna-temp']?.temperatura
+  const tempJatoba = estado.dadosColetados['jatoba-temp']?.temperatura
+  const tempNego = estado.dadosColetados['nego-temp']?.temperatura
+
   const dadosExportacao = {
     codigoTurma: estado.codigoTurma || 'SEM_TURMA',
     equipe: estado.cracha,
     descobertas: estado.descobertas,
     missoesConcluidas: Array.from(estado.missoesConcluidas),
+    censoMicroclimatico: {
+      fazendaBaraunaTemp: tempBarauna !== undefined ? tempBarauna : null,
+      recantoJatobaTemp: tempJatoba !== undefined ? tempJatoba : null,
+      recantoNegoDaguaTemp: tempNego !== undefined ? tempNego : null,
+      variacaoTermicaAbsoluta: (tempBarauna !== undefined && tempNego !== undefined) ? Number(Math.abs(tempBarauna - tempNego).toFixed(1)) : null
+    },
     evidencias: estado.dadosColetados,
     dataExportacao: new Date().toISOString()
   }
@@ -280,13 +289,25 @@ function renderizarDetalheRecanto(recanto: Recanto): string {
 function renderizarMissao(missao: MissaoCientifica): string {
   const fotoExistente = estado.dadosColetados[missao.id]?.foto
   const audioExistente = estado.dadosColetados[missao.id]?.audio
+  const tempExistente = estado.dadosColetados[missao.id]?.temperatura
 
   const requerFoto = missao.recursoRequerido === 'camera' || missao.permiteFoto
   const requerAudio = missao.recursoRequerido === 'audio' || missao.permiteAudio
   const requerDesenho = missao.recursoRequerido === 'desenho' || missao.permiteDesenho
+  const requerTemperatura = missao.recursoRequerido === 'temperatura'
 
   if (missao.id === 'saci-01' && !estado.cracha) {
     return renderizarFormularioCracha()
+  }
+
+  // Se for o quiz de clima final, injetamos a variação real calculada se houver medições
+  let textoPergunta = missao.pergunta
+  const tempBarauna = estado.dadosColetados['barauna-temp']?.temperatura
+  const tempNego = estado.dadosColetados['nego-temp']?.temperatura
+
+  if (missao.id === 'nego-quiz-clima' && tempBarauna !== undefined && tempNego !== undefined) {
+    const diff = Math.abs(Number((tempBarauna - tempNego).toFixed(1)))
+    textoPergunta = `A sua equipe registrou ${tempBarauna} °C na Baraúna e ${tempNego} °C na vereda (uma queda de ${diff} °C!). O que explica essa variação de temperatura?`
   }
 
   return `
@@ -296,6 +317,18 @@ function renderizarMissao(missao: MissaoCientifica): string {
       <div style="background: #f8f9fa; border: 2px solid #2d6a4f; padding: 1rem; border-radius: 12px;">
         <h3 style="margin: 0 0 0.5rem; color: #1b4332;">${missao.titulo}</h3>
         <p style="font-size: 0.9rem; color: #343a40; margin-bottom: 1rem;">${missao.orientacaoCientifica}</p>
+
+        ${requerTemperatura ? `
+          <form id="form-temperatura" style="background: #e8f5e9; border: 1px solid #c8e6c9; padding: 1rem; border-radius: 8px; text-align: center; margin-bottom: 1rem;">
+            <label style="display: block; font-weight: bold; color: #1b4332; margin-bottom: 0.5rem; font-size: 0.9rem;">
+              🌡️ Temperatura Lida no Termômetro (°C):
+            </label>
+            <input type="number" step="0.1" id="input-temperatura" value="${tempExistente || ''}" placeholder="Ex: 27.5" required style="width: 140px; padding: 0.6rem; font-size: 1.2rem; font-weight: bold; text-align: center; border: 2px solid #2d6a4f; border-radius: 8px; margin-bottom: 0.8rem;" />
+            <button type="submit" style="background: #2d6a4f; color: white; border: none; padding: 0.7rem 1.2rem; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%;">
+              Registrar Medição Térmica
+            </button>
+          </form>
+        ` : ''}
 
         ${requerFoto || requerDesenho ? `
           <div style="text-align: center; margin: 1rem 0; background: #e9ecef; padding: 1rem; border-radius: 8px;">
@@ -329,7 +362,7 @@ function renderizarMissao(missao: MissaoCientifica): string {
 
         ${missao.opcoes && missao.opcoes.length > 0 ? `
           <form id="form-quiz" style="display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem;">
-            ${missao.pergunta ? `<p style="font-weight: bold; color: #1b4332; margin-bottom: 0.5rem;">${missao.pergunta}</p>` : ''}
+            ${textoPergunta ? `<p style="font-weight: bold; color: #1b4332; margin-bottom: 0.5rem;">${textoPergunta}</p>` : ''}
             ${missao.opcoes.map((opcao, idx) => `
               <label style="background: white; border: 1px solid #ced4da; padding: 0.8rem; border-radius: 8px; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                 <input type="radio" name="opcao" value="${idx}" required>
@@ -338,9 +371,9 @@ function renderizarMissao(missao: MissaoCientifica): string {
             `).join('')}
             <button type="submit" style="background: #52b788; color: #1b4332; border: none; padding: 0.8rem; border-radius: 8px; font-weight: bold; font-size: 1rem; margin-top: 0.5rem; cursor: pointer;">Enviar Resposta</button>
           </form>
-        ` : `
+        ` : (requerTemperatura ? '' : `
           <button id="btn-concluir-generico" style="background: #52b788; color: #1b4332; border: none; padding: 0.8rem; border-radius: 8px; font-weight: bold; font-size: 1rem; width: 100%; cursor: pointer; margin-top: 0.5rem;">Registrar Evidência no Relatório</button>
-        `}
+        `)}
       </div>
     </main>
   `
@@ -351,6 +384,10 @@ function renderizarRelatorioCientifico(): string {
 
   const totalMissoes = recantos.reduce((acc, r) => acc + r.missoes.length, 0)
   const concluidas = estado.missoesConcluidas.size
+
+  const tempBarauna = estado.dadosColetados['barauna-temp']?.temperatura
+  const tempJatoba = estado.dadosColetados['jatoba-temp']?.temperatura
+  const tempNego = estado.dadosColetados['nego-temp']?.temperatura
 
   return `
     <main style="padding: 1rem; max-width: 700px; margin: 0 auto;">
@@ -381,6 +418,45 @@ function renderizarRelatorioCientifico(): string {
           <p style="margin: 0.2rem 0;"><strong>Progresso da Expedição:</strong> ${concluidas} de ${totalMissoes} missões (${estado.descobertas} PTS)</p>
         </div>
 
+        <!-- Tabela Comparativa de Microclima -->
+        <div style="background: #e8f5e9; border: 2px solid #2d6a4f; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+          <h3 style="margin: 0 0 0.5rem; color: #1b4332; font-size: 1rem; text-align: center;">
+            🌡️ Mapeamento do Microclima
+          </h3>
+          <table style="width: 100%; font-size: 0.8rem; border-collapse: collapse; margin-top: 0.5rem;">
+            <thead>
+              <tr style="background: #2d6a4f; color: white; text-align: left;">
+                <th style="padding: 0.4rem;">Estação</th>
+                <th style="padding: 0.4rem;">Ambiente</th>
+                <th style="padding: 0.4rem; text-align: right;">Temperatura</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid #ccc;">
+                <td style="padding: 0.4rem;">🏡 Fazenda Baraúna</td>
+                <td style="padding: 0.4rem;">Exposta ao Sol</td>
+                <td style="padding: 0.4rem; text-align: right; font-weight: bold;">${tempBarauna !== undefined ? tempBarauna + ' °C' : 'Não medida'}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #ccc;">
+                <td style="padding: 0.4rem;">🌳 Recanto Jatobá</td>
+                <td style="padding: 0.4rem;">Sombra de Copa</td>
+                <td style="padding: 0.4rem; text-align: right; font-weight: bold;">${tempJatoba !== undefined ? tempJatoba + ' °C' : 'Não medida'}</td>
+              </tr>
+              <tr>
+                <td style="padding: 0.4rem;">💧 Recanto Nego D'Água</td>
+                <td style="padding: 0.4rem;">Vereda / Mata Ciliar</td>
+                <td style="padding: 0.4rem; text-align: right; font-weight: bold;">${tempNego !== undefined ? tempNego + ' °C' : 'Não medida'}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          ${tempBarauna !== undefined && tempNego !== undefined ? `
+            <p style="margin: 0.8rem 0 0; font-size: 0.75rem; color: #1b4332; font-weight: bold; text-align: center;">
+              💡 Variação Térmica Total: ${Math.abs(Number((tempBarauna - tempNego).toFixed(1)))} °C de redução da entrada até a vereda!
+            </p>
+          ` : ''}
+        </div>
+
         <h3 style="color: #2d6a4f; font-size: 1.1rem; border-bottom: 1px solid #2d6a4f; padding-bottom: 0.3rem; margin-top: 1.5rem;">
           Evidências Coletadas
         </h3>
@@ -402,6 +478,10 @@ function renderizarRelatorioCientifico(): string {
                     <div style="background: white; border: 1px solid #e9ecef; border-radius: 6px; padding: 0.6rem; margin-top: 0.5rem; font-size: 0.8rem;">
                       <strong style="color: #2d6a4f;">📌 ${m.titulo}</strong>
                       
+                      ${dados?.temperatura !== undefined ? `
+                        <p style="margin: 0.3rem 0; font-size: 0.9rem; font-weight: bold; color: #1b4332;">🌡️ Medição: ${dados.temperatura} °C</p>
+                      ` : ''}
+
                       ${dados?.fotoComDesenho || dados?.foto ? `
                         <div style="margin-top: 0.5rem;">
                           <img src="${dados.fotoComDesenho || dados.foto}" alt="Evidência Visual" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 6px; border: 1px solid #ccc;" />
@@ -475,6 +555,25 @@ function vincularEventos() {
     estado.descobertas += 10
     salvarProgresso()
     renderApp()
+  })
+
+  document.querySelector('#form-temperatura')?.addEventListener('submit', (e) => {
+    e.preventDefault()
+    const valorTemp = parseFloat((document.querySelector('#input-temperatura') as HTMLInputElement).value)
+
+    if (!isNaN(valorTemp) && estado.missaoAtual) {
+      estado.dadosColetados[estado.missaoAtual.id] = {
+        ...estado.dadosColetados[estado.missaoAtual.id],
+        temperatura: valorTemp,
+        dataHora: new Date().toISOString()
+      }
+      alert(estado.missaoAtual.sucesso || 'Temperatura registrada com sucesso!')
+      estado.missoesConcluidas.add(estado.missaoAtual.id)
+      estado.descobertas += 10
+      salvarProgresso()
+      estado.missaoAtual = null
+      renderApp()
+    }
   })
 
   document.querySelector('#btn-toggle-professor')?.addEventListener('click', () => {

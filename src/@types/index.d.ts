@@ -1,10 +1,8 @@
-export type TipoRecurso = 'quiz' | 'camera' | 'audio' | 'desenho' | 'texto'
-
 export interface MissaoCientifica {
   id: string
   titulo: string
   orientacaoCientifica: string
-  recursoRequerido: TipoRecurso
+  recursoRequerido?: 'camera' | 'audio' | 'desenho' | 'temperatura'
   permiteFoto?: boolean
   permiteAudio?: boolean
   permiteDesenho?: boolean
@@ -18,33 +16,33 @@ export interface MissaoCientifica {
 export interface Recanto {
   id: string
   titulo: string
-  eixoAmbiental: string
   icone: string
+  eixoAmbiental: string
   descricao: string
   missoes: MissaoCientifica[]
 }
 
-export interface CrachaInvestigador {
+export interface CrachaDigital {
   nomeEquipe: string
   membros: string[]
   avatar: string
   dataInicio: string
 }
 
-export interface DadoColetadoMissao {
+export interface RegistroEvidencia {
   foto?: string
   fotoComDesenho?: string
   audio?: string
   duracao?: number
-  dataHora?: string
-  respostaQuiz?: number
+  temperatura?: number
+  dataHora: string
 }
 
 export interface EstadoAplicacao {
-  cracha: CrachaInvestigador | null
+  cracha: CrachaDigital | null
   recantoAtual: Recanto | null
   missaoAtual: MissaoCientifica | null
   descobertas: number
   missoesConcluidas: Set<string>
-  dadosColetados: Record<string, DadoColetadoMissao>
+  dadosColetados: Record<string, RegistroEvidencia>
 }
