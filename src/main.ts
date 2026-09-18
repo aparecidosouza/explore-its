@@ -314,8 +314,8 @@ function renderizarHeader(): string {
 function renderizarFormularioCracha(): string {
   return `
     <section class="card-container">
-      <h2>Identificação do Investigador</h2>
-      <p>Informe seus dados para registrar sua jornada na Trilha da Semente Peregrina:</p>
+      <h2>Trilha da Semente Peregrina</h2>
+      <p>Informe seus dados de investigador para iniciar a expedição:</p>
       <form id="form-cracha" class="cracha-form">
         <div class="form-group">
           <label for="nome-aluno">Seu Nome Completo:</label>
@@ -660,14 +660,13 @@ function vincularEventos() {
 
       salvarRespostas(estado.respostas)
 
-      // Regra de Navegação Inteligente: se concluiu a missão, retorna à lista de estações ao fechar o modal
       mensagemSucessoModal = 'Sua observação foi salva no Caderno de Campo com sucesso!'
       modalSucessoAberto = true
       renderApp()
     })
   }
 
-  // Modal Fechar -> Retorna ao Menu Principal de Estações
+  // Modal Fechar
   document.querySelector('#btn-fechar-modal')?.addEventListener('click', () => {
     modalSucessoAberto = false
     estado.missaoAtual = null
