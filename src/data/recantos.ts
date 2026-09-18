@@ -22,13 +22,21 @@ export const recantos: Recanto[] = [
     titulo: 'Recanto do Saci-Pererê',
     icone: '🌀',
     eixoAmbiental: 'Acolhimento & Contrato Ecológico',
-    descricao: 'Ponto de recepção e alinhamento do Contrato do Investigador Ecológico.',
+    descricao: 'Ponto de recepção, assinatura do pacto e registro do primeiro passo na trilha.',
     missoes: [
       {
         id: 'saci-01',
         titulo: 'Pacto de Investigação Ecológica',
         orientacaoCientifica: 'Assinem o compromisso de respeito à fauna, flora e normas da trilha para emitir o crachá da equipe.',
         sucesso: 'Contrato assinado! Acesso liberado à Trilha da Semente Peregrina.'
+      },
+      {
+        id: 'saci-inicio-trilha',
+        titulo: 'O Primeiro Passo na Trilha',
+        orientacaoCientifica: 'Olhem para o início da mata, percebam como a iluminação muda sob o portal das árvores e tirem uma foto da equipe pronta para começar a jornada!',
+        recursoRequerido: 'camera',
+        permiteFoto: true,
+        sucesso: 'Expedição iniciada oficialmente! Sigam em frente até o Recanto do Jatobá.'
       }
     ]
   },
