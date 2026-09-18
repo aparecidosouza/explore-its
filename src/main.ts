@@ -443,7 +443,7 @@ function render() {
     html += `
       <div class="modal-overlay">
         <div class="modal-card">
-          <h3>✅ Registro Salvo!</h3>
+          <h3>✅ Atividade Salva!</h3>
           <p style="margin:10px 0;">${modalMensagem}</p>
           <button id="btn-fechar-modal" class="btn-primary">OK</button>
         </div>
@@ -501,7 +501,7 @@ function bindEvents() {
   document.querySelector('#btn-conquistas')?.addEventListener('click', () => { verConquistas = true; verTabelaTemp = false; verCaderno = false; render() })
   document.querySelector('#btn-ver-conquistas-final')?.addEventListener('click', () => { verConquistas = true; verTabelaTemp = false; verCaderno = false; estacaoAtual = null; render() })
   document.querySelector('#btn-tabela-temp')?.addEventListener('click', () => { verTabelaTemp = true; verCaderno = false; verConquistas = false; render() })
-  document.querySelector('#btn-caderno')?.addEventListener('click', () => { verCaderno = true; verTabelaTemp = false; verConquistas = false; render() })
+  document.querySelector('#btn-caderno')?.addEventListener('click', () => { verCaderno = true; verTabelaTemp = false; verCaderno = false; render() })
   document.querySelector('#btn-voltar-estacoes')?.addEventListener('click', () => { verTabelaTemp = false; verCaderno = false; verConquistas = false; render() })
 
   document.querySelectorAll('.btn-abrir-estacao').forEach(btn => {
@@ -602,12 +602,31 @@ function bindEvents() {
     respostasGerais.push(novaResp)
     localStorage.setItem('exp_respostas', JSON.stringify(respostasGerais))
 
-    modalMensagem = `Atividade salva! Medalha/Progresso atualizado.`
+    // Verificar se todas as missões deste recanto foram concluídas
+    const totalMissoes = estacaoAtual.missoes.length
+    const concluidas = estacaoAtual.missoes.filter(m => respostasGerais.some(r => r.missaoId === m.id)).length
+
+    if (concluidas === totalMissoes) {
+      modalMensagem = `🎉 Parabéns! Você concluiu todas as atividades do ${estacaoAtual.nome}. Retornando à trilha de recantos!`
+    } else {
+      modalMensagem = `Atividade salva com sucesso!`
+    }
+
     render()
   })
 
   document.querySelector('#btn-fechar-modal')?.addEventListener('click', () => {
     modalMensagem = null
+
+    // Se o recanto atual teve todas as missões concluídas, volta para a página inicial de recantos
+    if (estacaoAtual) {
+      const totalMissoes = estacaoAtual.missoes.length
+      const concluidas = estacaoAtual.missoes.filter(m => respostasGerais.some(r => r.missaoId === m.id)).length
+      if (concluidas === totalMissoes) {
+        estacaoAtual = null
+      }
+    }
+
     missaoAtual = null
     render()
   })
