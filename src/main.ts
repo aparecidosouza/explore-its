@@ -25,6 +25,9 @@ let editorCanvas: EditorCanvas | null = null
 let exibindoRelatorio = false
 let mensagemSucessoModal: string | null = null
 
+// Flag para evitar loop infinito entre o popstate do navegador e o renderApp
+let navegandoViaHistorico = false
+
 const app = document.querySelector<HTMLDivElement>('#app')!
 
 function salvarProgresso() {
@@ -575,7 +578,44 @@ function renderApp() {
 
   app.innerHTML = conteudo
   vincularEventos()
+
+  // Sincroniza o Histórico do Navegador para interceptar o botão voltar do celular
+  if (!navegandoViaHistorico) {
+    const estadoHistorico = {
+      recantoId: estado.recantoAtual?.id || null,
+      missaoId: estado.missaoAtual?.id || null,
+      exibindoRelatorio,
+      modoProfessor: estado.modoProfessor
+    }
+    history.pushState(estadoHistorico, '')
+  }
+  navegandoViaHistorico = false
 }
+
+// Intercepta o botão "Voltar" nativo do celular
+window.addEventListener('popstate', (e) => {
+  navegandoViaHistorico = true
+
+  if (e.state) {
+    estado.modoProfessor = e.state.modoProfessor || false
+    exibindoRelatorio = e.state.exibindoRelatorio || false
+    estado.recantoAtual = recantos.find(r => r.id === e.state.recantoId) || null
+    
+    if (estado.recantoAtual && e.state.missaoId) {
+      estado.missaoAtual = estado.recantoAtual.missoes.find(m => m.id === e.state.missaoId) || null
+    } else {
+      estado.missaoAtual = null
+    }
+  } else {
+    // Caso volte até a raiz do histórico
+    estado.recantoAtual = null
+    estado.missaoAtual = null
+    exibindoRelatorio = false
+    estado.modoProfessor = false
+  }
+
+  renderApp()
+})
 
 function vincularEventos() {
   document.querySelector('#form-cracha')?.addEventListener('submit', (e) => {
