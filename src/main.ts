@@ -4,9 +4,16 @@ import { capturarFotoCampo } from './utils/camera'
 import { iniciarGravacaoAudio, pararGravacaoAudio } from './utils/audio'
 import { EditorCanvas } from './utils/canvas'
 
-// Estado Global da Aplicação
-const estado: EstadoAplicacao = {
+// Extension do Estado da Aplicação para incluir código de turma e modo professor
+interface EstadoExtendido extends EstadoAplicacao {
+  codigoTurma: string | null
+  modoProfessor: boolean
+}
+
+const estado: EstadoExtendido = {
   cracha: JSON.parse(localStorage.getItem('explore_its_cracha') || 'null'),
+  codigoTurma: localStorage.getItem('explore_its_turma') || null,
+  modoProfessor: false,
   recantoAtual: null,
   missaoAtual: null,
   descobertas: Number(localStorage.getItem('explore_its_descobertas')) || 0,
@@ -23,28 +30,32 @@ const app = document.querySelector<HTMLDivElement>('#app')!
 function salvarProgresso() {
   try {
     localStorage.setItem('explore_its_cracha', JSON.stringify(estado.cracha))
+    localStorage.setItem('explore_its_turma', estado.codigoTurma || '')
     localStorage.setItem('explore_its_descobertas', estado.descobertas.toString())
     localStorage.setItem('explore_its_concluidas', JSON.stringify(Array.from(estado.missoesConcluidas)))
     localStorage.setItem('explore_its_dados', JSON.stringify(estado.dadosColetados))
   } catch (e) {
-    console.warn('Limite do localStorage atingido:', e)
+    console.warn('Limite de armazenamento atingido:', e)
   }
 }
 
 function resetarEstadoCompleto() {
   localStorage.clear()
   estado.cracha = null
+  estado.codigoTurma = null
   estado.recantoAtual = null
   estado.missaoAtual = null
   estado.descobertas = 0
   estado.missoesConcluidas.clear()
   estado.dadosColetados = {}
   exibindoRelatorio = false
+  estado.modoProfessor = false
   renderApp()
 }
 
 function exportarDadosJSON() {
   const dadosExportacao = {
+    codigoTurma: estado.codigoTurma || 'SEM_TURMA',
     equipe: estado.cracha,
     descobertas: estado.descobertas,
     missoesConcluidas: Array.from(estado.missoesConcluidas),
@@ -56,24 +67,32 @@ function exportarDadosJSON() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `relatorio_explore_its_${estado.cracha?.nomeEquipe.toLowerCase().replace(/\s+/g, '_') || 'equipe'}.json`
+  a.download = `censo_its_${estado.codigoTurma || 'equipe'}_${estado.cracha?.nomeEquipe.toLowerCase().replace(/\s+/g, '_') || 'equipe'}.json`
   a.click()
   URL.revokeObjectURL(url)
 }
 
 function renderizarHeader(): string {
+  const turmaTexto = estado.codigoTurma ? estado.codigoTurma : 'N/A'
+  const membrosTexto = estado.cracha ? estado.cracha.membros.join(', ') : ''
+
   return `
     <header style="background: #1b4332; color: white; padding: 1rem; text-align: center; border-bottom: 4px solid #2d6a4f; position: relative;">
-      <h1 style="margin: 0; font-size: 1.4rem;">🌱 Explore ITS</h1>
-      <p style="margin: 0.2rem 0 0; font-size: 0.85rem; opacity: 0.9;">Trilha da Semente Peregrina • EF II</p>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+        <h1 style="margin: 0; font-size: 1.3rem;">🌱 Explore ITS</h1>
+        <button id="btn-toggle-professor" style="background: ${estado.modoProfessor ? '#e9c46a' : '#2d6a4f'}; color: ${estado.modoProfessor ? '#1b4332' : 'white'}; border: none; padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.7rem; font-weight: bold; cursor: pointer;">
+          ${estado.modoProfessor ? '📱 Modo Aluno' : '👨‍🏫 Modo Professor'}
+        </button>
+      </div>
+      <p style="margin: 0; font-size: 0.8rem; opacity: 0.9;">Trilha da Semente Peregrina • ITS / PUC Goiás</p>
       
-      ${estado.cracha ? `
+      ${estado.cracha && !estado.modoProfessor ? `
         <div style="background: #2d6a4f; margin-top: 0.6rem; padding: 0.5rem; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem;">
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <span style="font-size: 1.5rem;">${estado.cracha.avatar}</span>
             <div style="text-align: left;">
               <strong>Equipe: ${estado.cracha.nomeEquipe}</strong>
-              <div style="font-size: 0.7rem; opacity: 0.85;">${estado.cracha.membros.join(', ')}</div>
+              <div style="font-size: 0.7rem; opacity: 0.85;">Turma: ${turmaTexto} •${membrosTexto}</div>
             </div>
           </div>
           <div style="background: #52b788; color: #1b4332; padding: 0.2rem 0.6rem; border-radius: 12px; font-weight: bold;">
@@ -83,7 +102,7 @@ function renderizarHeader(): string {
       ` : ''}
 
       <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
-        ${estado.cracha ? `
+        ${estado.cracha && !estado.modoProfessor ? `
           <button id="btn-abrir-relatorio" style="background: #52b788; color: #1b4332; border: none; padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer;">
             📜 Ver Relatório
           </button>
@@ -104,12 +123,17 @@ function renderizarFormularioCracha(): string {
         <span style="font-size: 3rem;">🪪</span>
         <h2 style="color: #1b4332; margin: 0.5rem 0;">Crachá Digital de Investigador</h2>
         <p style="font-size: 0.85rem; color: #495057; margin-bottom: 1rem;">
-          Pactuem o Contrato de Investigação Ecológica e criem a identidade da equipe para liberar as estações da trilha.
+          Pactuem o Contrato de Investigação Ecológica e digitem o código fornecido pelo professor para liberar a trilha.
         </p>
 
         <form id="form-cracha" style="display: flex; flex-direction: column; gap: 0.8rem; text-align: left;">
           <div>
-            <label style="font-size: 0.8rem; font-weight: bold; color: #1b4332;">Nome da Equipe ou Investigador:</label>
+            <label style="font-size: 0.8rem; font-weight: bold; color: #1b4332;">Código da Turma (fornecido pelo professor):</label>
+            <input type="text" id="input-codigo-turma" placeholder="Ex: ITS-7421" required style="width: 100%; padding: 0.6rem; border: 1px solid #ced4da; border-radius: 6px; margin-top: 0.2rem; box-sizing: border-box; text-transform: uppercase;" />
+          </div>
+
+          <div>
+            <label style="font-size: 0.8rem; font-weight: bold; color: #1b4332;">Nome da Equipe:</label>
             <input type="text" id="input-nome-equipe" placeholder="Ex: Guardiões do Cerrado" required style="width: 100%; padding: 0.6rem; border: 1px solid #ced4da; border-radius: 6px; margin-top: 0.2rem; box-sizing: border-box;" />
           </div>
 
@@ -119,7 +143,7 @@ function renderizarFormularioCracha(): string {
           </div>
 
           <div>
-            <label style="font-size: 0.8rem; font-weight: bold; color: #1b4332;">Escolham o Mascote da Expedição:</label>
+            <label style="font-size: 0.8rem; font-weight: bold; color: #1b4332;">Mascote da Expedição:</label>
             <div style="display: flex; gap: 0.5rem; margin-top: 0.4rem; justify-content: space-around;">
               <label style="cursor: pointer; font-size: 1.8rem; padding: 0.4rem; border: 2px solid #ced4da; border-radius: 8px;">
                 <input type="radio" name="avatar" value="🦊" checked style="display:none;"> 🦊
@@ -137,9 +161,59 @@ function renderizarFormularioCracha(): string {
           </div>
 
           <button type="submit" style="background: #2d6a4f; color: white; border: none; padding: 0.8rem; border-radius: 8px; font-weight: bold; font-size: 1rem; margin-top: 0.8rem; cursor: pointer;">
-            ✍️ Assinar Contrato e Emitir Crachá
+            ✍️ Assinar Contrato e Iniciar
           </button>
         </form>
+      </div>
+    </main>
+  `
+}
+
+function renderizarPainelProfessor(): string {
+  const totalMissoes = recantos.reduce((acc, r) => acc + r.missoes.length, 0)
+  const concluidas = estado.missoesConcluidas.size
+
+  return `
+    <main style="padding: 1rem; max-width: 700px; margin: 0 auto;">
+      <div style="background: white; border: 2px solid #1b4332; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="text-align: center; border-bottom: 2px solid #2d6a4f; padding-bottom: 1rem; margin-bottom: 1rem;">
+          <span style="font-size: 2.5rem;">👨‍🏫</span>
+          <h2 style="color: #1b4332; margin: 0.3rem 0;">Painel de Gestão do Professor / ITS</h2>
+          <p style="font-size: 0.85rem; color: #555; margin: 0;">Censo Ambiental & Consolidação de Dados da Turma</p>
+        </div>
+
+        <div style="background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+          <h3 style="margin: 0 0 0.5rem; color: #1b4332; font-size: 1rem;">📌 Gerar Código para Nova Turma</h3>
+          <p style="font-size: 0.8rem; color: #333; margin-bottom: 0.8rem;">Forneça este código aos alunos ao iniciarem a expedição:</p>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="input-gerar-codigo" value="ITS-${Math.floor(1000 + Math.random() * 9000)}" readonly style="font-weight: bold; font-size: 1.1rem; text-align: center; width: 140px; padding: 0.4rem; border: 1px solid #2d6a4f; border-radius: 6px; background: white;" />
+            <button id="btn-copiar-codigo" style="background: #2d6a4f; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: bold; cursor: pointer;">Copiar Código</button>
+          </div>
+        </div>
+
+        <h3 style="color: #1b4332; font-size: 1.05rem; margin-top: 1.5rem; border-bottom: 1px solid #ddd; padding-bottom: 0.3rem;">
+          📊 Censo Ambiental - Resumo Atual
+        </h3>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-top: 0.8rem;">
+          <div style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 0.8rem; border-radius: 8px; text-align: center;">
+            <span style="font-size: 1.5rem;">👥</span>
+            <div style="font-size: 1.2rem; font-weight: bold; color: #1b4332;">${estado.cracha ? '1 Equipe' : '0 Equipes'}</div>
+            <div style="font-size: 0.75rem; color: #6c757d;">Cadastradas na sessão</div>
+          </div>
+
+          <div style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 0.8rem; border-radius: 8px; text-align: center;">
+            <span style="font-size: 1.5rem;">✅</span>
+            <div style="font-size: 1.2rem; font-weight: bold; color: #2d6a4f;">${concluidas} / ${totalMissoes}</div>
+            <div style="font-size: 0.75rem; color: #6c757d;">Evidências coletadas</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 1.5rem; text-align: center;">
+          <button id="btn-exportar-censo-completo" style="background: #1b4332; color: white; border: none; padding: 0.8rem 1.2rem; border-radius: 8px; font-weight: bold; font-size: 0.9rem; cursor: pointer; width: 100%;">
+            💾 Baixar Dados do Censo da Turma (JSON)
+          </button>
+        </div>
       </div>
     </main>
   `
@@ -280,7 +354,7 @@ function renderizarRelatorioCientifico(): string {
 
   return `
     <main style="padding: 1rem; max-width: 700px; margin: 0 auto;">
-      <div class="no-print" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
         <button id="btn-fechar-relatorio" style="background: #6c757d; color: white; border: none; padding: 0.6rem 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1;">
           ⬅️ Voltar
         </button>
@@ -293,15 +367,14 @@ function renderizarRelatorioCientifico(): string {
       </div>
 
       <div style="background: white; border: 2px solid #2d6a4f; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <!-- Cabeçalho do Relatório -->
         <div style="text-align: center; border-bottom: 2px dashed #b7e4c7; padding-bottom: 1rem; margin-bottom: 1rem;">
           <span style="font-size: 2.5rem;">📜</span>
           <h2 style="color: #1b4332; margin: 0.3rem 0;">Relatório Científico de Campo</h2>
           <p style="font-size: 0.85rem; color: #555; margin: 0;">Trilha da Semente Peregrina • ITS / PUC Goiás</p>
         </div>
 
-        <!-- Dados da Equipe -->
         <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 0.8rem; margin-bottom: 1rem; font-size: 0.85rem;">
+          <p style="margin: 0.2rem 0;"><strong>Código da Turma:</strong> ${estado.codigoTurma || 'N/A'}</p>
           <p style="margin: 0.2rem 0;"><strong>Mascote:</strong> ${estado.cracha.avatar}</p>
           <p style="margin: 0.2rem 0;"><strong>Equipe:</strong> ${estado.cracha.nomeEquipe}</p>
           <p style="margin: 0.2rem 0;"><strong>Integrantes:</strong> ${estado.cracha.membros.join(', ')}</p>
@@ -312,7 +385,6 @@ function renderizarRelatorioCientifico(): string {
           Evidências Coletadas
         </h3>
 
-        <!-- Lista de Evidências Coletadas por Recanto -->
         <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
           ${recantos.map(recanto => {
             const missoesDoRecanto = recanto.missoes.filter(m => estado.missoesConcluidas.has(m.id))
@@ -365,7 +437,9 @@ function renderizarRelatorioCientifico(): string {
 function renderApp() {
   let conteudo = renderizarHeader()
 
-  if (exibindoRelatorio) {
+  if (estado.modoProfessor) {
+    conteudo += renderizarPainelProfessor()
+  } else if (exibindoRelatorio) {
     conteudo += renderizarRelatorioCientifico()
   } else if (!estado.cracha) {
     conteudo += renderizarFormularioCracha()
@@ -384,10 +458,12 @@ function renderApp() {
 function vincularEventos() {
   document.querySelector('#form-cracha')?.addEventListener('submit', (e) => {
     e.preventDefault()
+    const codigoTurma = (document.querySelector('#input-codigo-turma') as HTMLInputElement).value.toUpperCase()
     const nomeEquipe = (document.querySelector('#input-nome-equipe') as HTMLInputElement).value
     const membros = (document.querySelector('#input-membros') as HTMLInputElement).value.split(',').map(m => m.trim())
     const avatar = (document.querySelector('input[name="avatar"]:checked') as HTMLInputElement)?.value || '🦊'
 
+    estado.codigoTurma = codigoTurma
     estado.cracha = {
       nomeEquipe,
       membros,
@@ -399,6 +475,19 @@ function vincularEventos() {
     estado.descobertas += 10
     salvarProgresso()
     renderApp()
+  })
+
+  document.querySelector('#btn-toggle-professor')?.addEventListener('click', () => {
+    estado.modoProfessor = !estado.modoProfessor
+    renderApp()
+  })
+
+  document.querySelector('#btn-copiar-codigo')?.addEventListener('click', () => {
+    const input = document.querySelector('#input-gerar-codigo') as HTMLInputElement
+    if (input) {
+      navigator.clipboard.writeText(input.value)
+      alert('Código da turma copiado: ' + input.value)
+    }
   })
 
   document.querySelector('#btn-reset-app')?.addEventListener('click', () => {
@@ -422,6 +511,10 @@ function vincularEventos() {
   })
 
   document.querySelector('#btn-exportar-json')?.addEventListener('click', () => {
+    exportarDadosJSON()
+  })
+
+  document.querySelector('#btn-exportar-censo-completo')?.addEventListener('click', () => {
     exportarDadosJSON()
   })
 
