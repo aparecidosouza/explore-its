@@ -113,6 +113,7 @@ let fotoTemp: string | null = null
 let audioTemp: string | null = null
 let verTabelaTemp = false
 let verCaderno = false
+let verConquistas = false
 let modalMensagem: string | null = null
 
 const app = document.querySelector<HTMLDivElement>('#app')!
@@ -122,7 +123,44 @@ function obterHoraAtual(): string {
   return agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
+function calcularTotalMissoes(): number {
+  return estacoes.reduce((acc, est) => acc + est.missoes.length, 0)
+}
+
+function obterCategoriaCientifica(): { titulo: string, descricao: string, icone: string } {
+  const total = calcularTotalMissoes()
+  const concluidas = respostasGerais.length
+
+  if (concluidas >= total) {
+    return {
+      titulo: 'Cientista Investigador do Cerrado 🌟',
+      descricao: 'Incrível! O grupo concluiu 100% das investigações com precisão científica e coleta rigorosa de dados.',
+      icone: '🏆'
+    }
+  } else if (concluidas >= Math.ceil(total * 0.6)) {
+    return {
+      titulo: 'Explorador Científico da Trilha 🍃',
+      descricao: 'Ótimo trabalho! O grupo completou grande parte das medições e registros no campo.',
+      icone: '🥉'
+    }
+  } else if (concluidas > 0) {
+    return {
+      titulo: 'Detetive da Natureza em Ação 🔍',
+      descricao: 'A jornada começou! Continue realizando as medições e fotos para alcançar o topo.',
+      icone: '🌱'
+    }
+  } else {
+    return {
+      titulo: 'Aprendiz de Expedição 🎒',
+      descricao: 'Inicie as missões nas estações para desbloquear sua categoria científica!',
+      icone: '📍'
+    }
+  }
+}
+
 function render() {
+  const categoria = obterCategoriaCientifica()
+
   let html = `
     <header class="app-header">
       <div class="header-content">
@@ -130,6 +168,7 @@ function render() {
         ${crachaSalvo ? `
           <div class="user-badge">
             <small><strong>${crachaSalvo.mascote.emoji}${crachaSalvo.nome}</strong></small>
+            <button id="btn-conquistas" class="btn-secondary">🎖️ Conquistas</button>
             <button id="btn-tabela-temp" class="btn-secondary">📊 Temperaturas</button>
             <button id="btn-caderno" class="btn-secondary">📜 Caderno</button>
             <button id="btn-sair" class="btn-danger">Sair</button>
@@ -145,8 +184,8 @@ function render() {
         <h2>🎒 Identificação de Campo</h2>
         <form id="form-cadastro" style="margin-top:12px;">
           <div class="form-group">
-            <label>Nome do Estudante:</label>
-            <input type="text" id="inp-nome" required placeholder="Ex: Maria Silva" />
+            <label>Nome do Estudante / Grupo:</label>
+            <input type="text" id="inp-nome" required placeholder="Ex: Grupo Alpha ou Maria Silva" />
           </div>
           <div class="form-group">
             <label>Turma / Escola:</label>
@@ -165,6 +204,52 @@ function render() {
           </div>
           <button type="submit" class="btn-primary" style="margin-top:10px;">Iniciar Expedição</button>
         </form>
+      </div>
+    `
+  } else if (verConquistas) {
+    const total = calcularTotalMissoes()
+    const concluidas = respostasGerais.length
+    const progressoPct = Math.round((concluidas / total) * 100)
+
+    html += `
+      <div class="card-container">
+        <button id="btn-voltar-estacoes" class="btn-back">⬅ Voltar às Estações</button>
+        <h2>🎖️ Nível do Grupo & Conquistas</h2>
+
+        <div style="background:#f0fdf4; border:2px solid var(--primary); padding:16px; border-radius:12px; margin:15px 0; text-align:center;">
+          <div style="font-size:3rem; margin-bottom:6px;">${categoria.icone}</div>
+          <h3 style="color:var(--primary-dark); font-size:1.2rem;">${categoria.titulo}</h3>
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-top:6px;">${categoria.descricao}</p>
+        </div>
+
+        <h4>Progresso da Trilha (${concluidas}/${total} atividades)</h4>
+        <div style="background:#e2e8f0; border-radius:10px; height:16px; width:100%; margin:8px 0 15px 0; overflow:hidden;">
+          <div style="background:var(--primary); height:100%; width:${progressoPct}%; transition:width 0.3s;"></div>
+        </div>
+
+        <h4>Medalhas Desbloqueadas:</h4>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+          <div class="missao-card" style="opacity: ${medicoesTemperatura.length > 0 ? '1' : '0.4'}; text-align:center;">
+            <div style="font-size:2rem;">🌡️</div>
+            <strong>Termômetro de Ouro</strong>
+            <p style="font-size:0.75rem; color:var(--text-muted);">${medicoesTemperatura.length > 0 ? 'Medições registradas!' : 'Ainda não aferido'}</p>
+          </div>
+          <div class="missao-card" style="opacity: ${respostasGerais.some(r => r.midiaUrl) ? '1' : '0.4'}; text-align:center;">
+            <div style="font-size:2rem;">📷</div>
+            <strong>Fotógrafo Científico</strong>
+            <p style="font-size:0.75rem; color:var(--text-muted);">${respostasGerais.some(r => r.midiaUrl) ? 'Foto capturada!' : 'Tire uma foto'}</p>
+          </div>
+          <div class="missao-card" style="opacity: ${respostasGerais.some(r => r.titulo.includes('Sons')) ? '1' : '0.4'}; text-align:center;">
+            <div style="font-size:2rem;">🎙️</div>
+            <strong>Investigador Sonoro</strong>
+            <p style="font-size:0.75rem; color:var(--text-muted);">${respostasGerais.some(r => r.titulo.includes('Sons')) ? 'Áudio gravado!' : 'Grave os sons'}</p>
+          </div>
+          <div class="missao-card" style="opacity: ${concluidas >= total ? '1' : '0.4'}; text-align:center;">
+            <div style="font-size:2rem;">🏆</div>
+            <strong>Trilha 100%</strong>
+            <p style="font-size:0.75rem; color:var(--text-muted);">${concluidas >= total ? 'Todas concluídas!' : 'Pendente'}</p>
+          </div>
+        </div>
       </div>
     `
   } else if (verTabelaTemp) {
@@ -212,7 +297,7 @@ function render() {
       <div class="card-container">
         <button id="btn-voltar-estacoes" class="btn-back">⬅ Voltar às Estações</button>
         <h2>📜 Caderno de Campo</h2>
-        <p><small>Estudante: ${crachaSalvo.nome} | Turma: ${crachaSalvo.turma}</small></p>
+        <p><small>Estudante/Grupo: ${crachaSalvo.nome} | Turma: ${crachaSalvo.turma}</small></p>
         <hr style="margin:10px 0; border:0; border-top:1px solid var(--border);" />
 
         ${respostasGerais.length === 0 ? '<p>Nenhum registro gravado ainda.</p>' : ''}
@@ -273,13 +358,37 @@ function render() {
       </div>
     `
   } else if (estacaoAtual) {
+    const totalMissoesEstacao = estacaoAtual.missoes.length
+    const concluidasEstacao = estacaoAtual.missoes.filter(m => respostasGerais.some(r => r.missaoId === m.id)).length
+    const estacaoConclvida = concluidasEstacao === totalMissoesEstacao
+
+    // Descobrir a próxima estação
+    const idxAtual = estacoes.findIndex(e => e.id === estacaoAtual!.id)
+    const proximaEstacao = idxAtual < estacoes.length - 1 ? estacoes[idxAtual + 1] : null
+
     html += `
       <div class="card-container">
         <button id="btn-voltar-home" class="btn-back">⬅ Voltar às Estações</button>
         <h2>${estacaoAtual.icone} ${estacaoAtual.nome}</h2>
         <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:15px;">${estacaoAtual.descricao}</p>
 
-        <h3>Atividades desta Estação:</h3>
+        ${estacaoConclvida ? `
+          <div style="background:#f0fdf4; border:2px solid var(--primary); padding:14px; border-radius:10px; margin-bottom:15px; text-align:center;">
+            <h4 style="color:var(--primary-dark);">🎉 Recanto Concluído com Sucesso!</h4>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin:4px 0 10px 0;">Todas as atividades deste ponto foram entregues.</p>
+            ${proximaEstacao ? `
+              <button class="btn-primary btn-proximo-recanto" data-id="${proximaEstacao.id}">
+                Ir para o Próximo Recanto (${proximaEstacao.nome}) ➔
+              </button>
+            ` : `
+              <button id="btn-ver-conquistas-final" class="btn-primary">
+                🏆 Ver Resultado Final da Expedição
+              </button>
+            `}
+          </div>
+        ` : ''}
+
+        <h3>Atividades deste Recanto:</h3>
         <div style="margin-top:10px; display:flex; flex-direction:column; gap:10px;">
           ${estacaoAtual.missoes.map(m => {
             const feita = respostasGerais.some(r => r.missaoId === m.id)
@@ -299,17 +408,33 @@ function render() {
   } else {
     html += `
       <div>
-        <h3 style="margin-bottom:10px;">Estações da Trilha</h3>
-        ${estacoes.map(e => `
-          <div class="recanto-card">
-            <h3>${e.icone}${e.nome}</h3>
-            <p style="font-size:0.85rem; color:var(--text-muted); margin:4px 0 10px 0;">${e.descricao}</p>
-            <small style="color:var(--primary); font-weight:600; display:block; margin-bottom:8px;">
-              📋 ${e.missoes.length} atividade(s)
-            </small>
-            <button class="btn-primary btn-abrir-estacao" data-id="${e.id}">Entrar na Estação</button>
+        <div style="background:white; padding:12px 16px; border-radius:12px; border:1px solid var(--border); margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
+          <div>
+            <small style="color:var(--text-muted);">Status do Grupo:</small>
+            <div style="font-weight:bold; color:var(--primary-dark); font-size:0.95rem;">${categoria.titulo}</div>
           </div>
-        `).join('')}
+          <div style="font-size:1.8rem;">${categoria.icone}</div>
+        </div>
+
+        <h3 style="margin-bottom:10px;">Estações da Trilha</h3>
+        ${estacoes.map(e => {
+          const totalM = e.missoes.length
+          const concM = e.missoes.filter(m => respostasGerais.some(r => r.missaoId === m.id)).length
+          const concluida = concM === totalM && totalM > 0
+
+          return `
+            <div class="recanto-card" style="${concluida ? 'border-left:5px solid var(--primary);' : ''}">
+              <h3>${e.icone} ${e.nome}${concluida ? '✅' : ''}</h3>
+              <p style="font-size:0.85rem; color:var(--text-muted); margin:4px 0 8px 0;">${e.descricao}</p>
+              <small style="color:var(--primary); font-weight:600; display:block; margin-bottom:10px;">
+                📋 ${concM}/${totalM} atividade(s) concluída(s)
+              </small>
+              <button class="btn-primary btn-abrir-estacao" data-id="${e.id}">
+                ${concluida ? 'Revisar Recanto' : 'Entrar no Recanto'}
+              </button>
+            </div>
+          `
+        }).join('')}
       </div>
     `
   }
@@ -336,6 +461,7 @@ function bindEvents() {
     missaoAtual = null
     verTabelaTemp = false
     verCaderno = false
+    verConquistas = false
     render()
   })
 
@@ -367,18 +493,30 @@ function bindEvents() {
       missaoAtual = null
       verTabelaTemp = false
       verCaderno = false
+      verConquistas = false
       render()
     }
   })
 
-  document.querySelector('#btn-tabela-temp')?.addEventListener('click', () => { verTabelaTemp = true; verCaderno = false; render() })
-  document.querySelector('#btn-caderno')?.addEventListener('click', () => { verCaderno = true; verTabelaTemp = false; render() })
-  document.querySelector('#btn-voltar-estacoes')?.addEventListener('click', () => { verTabelaTemp = false; verCaderno = false; render() })
+  document.querySelector('#btn-conquistas')?.addEventListener('click', () => { verConquistas = true; verTabelaTemp = false; verCaderno = false; render() })
+  document.querySelector('#btn-ver-conquistas-final')?.addEventListener('click', () => { verConquistas = true; verTabelaTemp = false; verCaderno = false; estacaoAtual = null; render() })
+  document.querySelector('#btn-tabela-temp')?.addEventListener('click', () => { verTabelaTemp = true; verCaderno = false; verConquistas = false; render() })
+  document.querySelector('#btn-caderno')?.addEventListener('click', () => { verCaderno = true; verTabelaTemp = false; verConquistas = false; render() })
+  document.querySelector('#btn-voltar-estacoes')?.addEventListener('click', () => { verTabelaTemp = false; verCaderno = false; verConquistas = false; render() })
 
   document.querySelectorAll('.btn-abrir-estacao').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.getAttribute('data-id')
       estacaoAtual = estacoes.find(e => e.id === id) || null
+      render()
+    })
+  })
+
+  document.querySelectorAll('.btn-proximo-recanto').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id')
+      estacaoAtual = estacoes.find(e => e.id === id) || null
+      missaoAtual = null
       render()
     })
   })
@@ -464,7 +602,7 @@ function bindEvents() {
     respostasGerais.push(novaResp)
     localStorage.setItem('exp_respostas', JSON.stringify(respostasGerais))
 
-    modalMensagem = `Atividade salva com sucesso!`
+    modalMensagem = `Atividade salva! Medalha/Progresso atualizado.`
     render()
   })
 
