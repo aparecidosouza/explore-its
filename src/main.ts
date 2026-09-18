@@ -90,6 +90,7 @@ function concluirMissaoComSucesso(mensagem: string) {
     salvarProgresso()
     mensagemSucessoModal = mensagem
     estado.missaoAtual = null
+    estado.recantoAtual = null // Redireciona o aluno de volta para o menu inicial de recantos
     renderApp()
   }
 }
