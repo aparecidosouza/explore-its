@@ -2,6 +2,7 @@ import { recantos } from './data/recantos'
 import { EstadoAplicacao, Recanto, MissaoCientifica } from './@types'
 import { capturarFotoCampo } from './utils/camera'
 import { iniciarGravacaoAudio, pararGravacaoAudio } from './utils/audio'
+import { EditorCanvas } from './utils/canvas'
 
 // Estado Global da Aplicação
 const estado: EstadoAplicacao = {
@@ -12,10 +13,9 @@ const estado: EstadoAplicacao = {
   dadosColetados: JSON.parse(localStorage.getItem('explore_its_dados') || '{}')
 }
 
-// Variável auxiliar para o estado de gravação de áudio
 let gravandoAudio = false
+let editorCanvas: EditorCanvas | null = null
 
-// Elementos da DOM
 const app = document.querySelector<HTMLDivElement>('#app')!
 
 function salvarProgresso() {
@@ -120,6 +120,7 @@ function renderizarMissao(missao: MissaoCientifica): string {
 
   const requerFoto = missao.recursoRequerido === 'camera' || missao.permiteFoto
   const requerAudio = missao.recursoRequerido === 'audio' || missao.permiteAudio
+  const requerDesenho = missao.recursoRequerido === 'desenho' || missao.permiteDesenho
 
   return `
     <main style="padding: 1rem; max-width: 600px; margin: 0 auto;">
@@ -129,19 +130,27 @@ function renderizarMissao(missao: MissaoCientifica): string {
         <h3 style="margin: 0 0 0.5rem; color: #1b4332;">${missao.titulo}</h3>
         <p style="font-size: 0.9rem; color: #343a40; margin-bottom: 1rem;">${missao.orientacaoCientifica}</p>
 
-        <!-- Módulo de Captura de Foto -->
-        ${requerFoto ? `
+        <!-- Módulo de Foto / Canvas de Desenho -->
+        ${requerFoto || requerDesenho ? `
           <div style="text-align: center; margin: 1rem 0; background: #e9ecef; padding: 1rem; border-radius: 8px;">
             <div id="preview-foto-container" style="display: ${fotoExistente ? 'block' : 'none'}; margin-bottom: 1rem;">
-              <img id="img-preview" src="${fotoExistente || ''}" alt="Evidência" style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 8px; border: 2px solid #2d6a4f;" />
+              ${requerDesenho ? `
+                <p style="font-size: 0.8rem; color: #2d6a4f; font-weight: bold; margin-bottom: 0.4rem;">Desenhe a linha do vetor de fluxo sobre a imagem:</p>
+                <div style="width: 100%; overflow: hidden; border-radius: 8px; border: 2px solid #2d6a4f; background: #000;">
+                  <canvas id="canvas-desenho" style="width: 100%; display: block; touch-action: none;"></canvas>
+                </div>
+                <button id="btn-limpar-canvas" type="button" style="background: #6c757d; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.75rem; font-weight: bold; margin-top: 0.4rem; cursor: pointer;">✏️ Refazer Desenho</button>
+              ` : `
+                <img id="img-preview" src="${fotoExistente || ''}" alt="Evidência" style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 8px; border: 2px solid #2d6a4f;" />
+              `}
             </div>
             <button id="btn-capturar-foto" type="button" style="background: #2d6a4f; color: white; border: none; padding: 0.8rem 1.2rem; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%;">
-              📸 ${fotoExistente ? 'Tirar Nova Foto' : 'Tirar Foto da Evidência'}
+              📸 ${fotoExistente ? 'Tirar Nova Foto' : 'Tirar Foto para Registro'}
             </button>
           </div>
         ` : ''}
 
-        <!-- Módulo de Gravação de Áudio / Bioacústica -->
+        <!-- Módulo de Gravação de Áudio -->
         ${requerAudio ? `
           <div style="text-align: center; margin: 1rem 0; background: #e9ecef; padding: 1rem; border-radius: 8px;">
             <div id="preview-audio-container" style="display: ${audioExistente ? 'block' : 'none'}; margin-bottom: 1rem;">
@@ -153,7 +162,7 @@ function renderizarMissao(missao: MissaoCientifica): string {
           </div>
         ` : ''}
 
-        <!-- Formulário Quiz (Pergunta de múltipla escolha) -->
+        <!-- Formulário Quiz -->
         ${missao.opcoes && missao.opcoes.length > 0 ? `
           <form id="form-quiz" style="display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem;">
             ${missao.pergunta ? `<p style="font-weight: bold; color: #1b4332; margin-bottom: 0.5rem;">${missao.pergunta}</p>` : ''}
@@ -189,14 +198,12 @@ function renderApp() {
 }
 
 function vincularEventos() {
-  // Reset de emergência
   document.querySelector('#btn-reset-app')?.addEventListener('click', () => {
     if (confirm('Deseja voltar para a tela inicial e resetar as missões?')) {
       resetarEstadoCompleto()
     }
   })
 
-  // Selecionar Recanto
   document.querySelectorAll('.btn-recanto').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const id = (e.currentTarget as HTMLElement).dataset.id
@@ -205,14 +212,12 @@ function vincularEventos() {
     })
   })
 
-  // Voltar para a lista principal
   document.querySelector('#btn-voltar')?.addEventListener('click', () => {
     estado.recantoAtual = null
     estado.missaoAtual = null
     renderApp()
   })
 
-  // Iniciar Missão
   document.querySelectorAll('.btn-iniciar-missao').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const id = (e.currentTarget as HTMLElement).dataset.id
@@ -221,23 +226,30 @@ function vincularEventos() {
     })
   })
 
-  // Cancelar Missão
   document.querySelector('#btn-cancelar-missao')?.addEventListener('click', () => {
     estado.missaoAtual = null
     renderApp()
   })
 
-  // Capturar Foto
+  // Capturar Foto e Inicializar Canvas com Retardo Técnico para Ajuste no DOM
   document.querySelector('#btn-capturar-foto')?.addEventListener('click', async () => {
     try {
       const foto = await capturarFotoCampo()
       const container = document.querySelector<HTMLDivElement>('#preview-foto-container')
-      const img = document.querySelector<HTMLImageElement>('#img-preview')
-      
-      if (container && img && estado.missaoAtual) {
-        img.src = foto.base64
+      const imgPreview = document.querySelector<HTMLImageElement>('#img-preview')
+
+      if (container && estado.missaoAtual) {
         container.style.display = 'block'
-        
+
+        const canvasEl = document.querySelector<HTMLCanvasElement>('#canvas-desenho')
+        if (canvasEl) {
+          // Garante a criação do objeto Canvas e o carregamento imediato da foto
+          editorCanvas = new EditorCanvas(canvasEl)
+          await editorCanvas.carregarImagem(foto.base64)
+        } else if (imgPreview) {
+          imgPreview.src = foto.base64
+        }
+
         estado.dadosColetados[estado.missaoAtual.id] = {
           ...estado.dadosColetados[estado.missaoAtual.id],
           foto: foto.base64,
@@ -248,6 +260,11 @@ function vincularEventos() {
     } catch (erro) {
       console.log('Captura cancelada ou falhou:', erro)
     }
+  })
+
+  // Limpar Canvas
+  document.querySelector('#btn-limpar-canvas')?.addEventListener('click', () => {
+    editorCanvas?.limpar()
   })
 
   // Gravar / Parar Áudio
@@ -298,6 +315,9 @@ function vincularEventos() {
 
     if (selecionado !== undefined && estado.missaoAtual) {
       if (Number(selecionado) === estado.missaoAtual.correta) {
+        if (editorCanvas && estado.missaoAtual) {
+          estado.dadosColetados[estado.missaoAtual.id].fotoComDesenho = editorCanvas.exportarResultado()
+        }
         alert(estado.missaoAtual.sucesso || 'Evidência registrada com sucesso!')
         estado.missoesConcluidas.add(estado.missaoAtual.id)
         estado.descobertas += 10
@@ -313,6 +333,12 @@ function vincularEventos() {
   // Concluir Missão Genérica
   document.querySelector('#btn-concluir-generico')?.addEventListener('click', () => {
     if (estado.missaoAtual) {
+      if (editorCanvas) {
+        estado.dadosColetados[estado.missaoAtual.id] = {
+          ...estado.dadosColetados[estado.missaoAtual.id],
+          fotoComDesenho: editorCanvas.exportarResultado()
+        }
+      }
       alert('Evidência científica registrada no banco de dados local!')
       estado.missoesConcluidas.add(estado.missaoAtual.id)
       estado.descobertas += 10
