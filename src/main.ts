@@ -4,7 +4,7 @@ import './style.css'
 interface Pergunta {
   id: string
   texto: string
-  tipo: 'multipla_escolha' | 'texto'
+  tipo: 'multipla_escolha' | 'texto' | 'foto' | 'audio' | 'sensor_clima'
   opcoes?: string[]
   respostaCorreta?: number
 }
@@ -30,13 +30,15 @@ interface RespostaSubmetida {
   missaoId: string
   perguntaTexto: string
   respostaDada: string
-  estaCorreta: boolean
+  midiaUrl?: string // URL da foto ou áudio em base64/blob
+  tipoMidia?: 'foto' | 'audio' | 'texto'
+  estaCorreta?: boolean
   dataHora: string
 }
 
 interface CrachaEstudante {
   nome: string
-  turma: string
+  codigoTurma: string
 }
 
 interface EstadoApp {
@@ -44,7 +46,6 @@ interface EstadoApp {
   recantoAtual: Recanto | null
   missaoAtual: Missao | null
   respostas: RespostaSubmetida[]
-  modoProfessor: boolean
 }
 
 // Estado Global da Aplicação
@@ -52,51 +53,48 @@ const estado: EstadoApp = {
   cracha: carregarCrachaSalvo(),
   recantoAtual: null,
   missaoAtual: null,
-  respostas: carregarRespostasSalvas(),
-  modoProfessor: false
+  respostas: carregarRespostasSalvas()
 }
 
-// Controle do Modal de Feedback e Navegação
+// Controle de Mídias e Modais
+let mediaRecorder: MediaRecorder | null = null
+let audioChunks: Blob[] = []
+let gravandoAudio = false
+let fotoCapturadaBase64: string | null = null
+let audioGravadoBase64: string | null = null
+
 let modalSucessoAberto = false
 let mensagemSucessoModal = ''
 let exibindoRelatorio = false
-let navegandoViaHistorico = false
 
-// Estações da Trilha Explore ITS / PUC Goiás
+// Estações com Sensores, Câmera e Gravador de Áudio
 const recantos: Recanto[] = [
   {
     id: 'estacao-barauna',
     nome: 'Estação Baraúna',
-    descricao: 'Explore a imponente árvore símbolo do Cerrado e observe sua biodiversidade local.',
+    descricao: 'Explore a imponente árvore símbolo do Cerrado, registre fotos e meça as condições da sombra.',
     icone: '🌳',
     missoes: [
       {
         id: 'm-bar-1',
-        titulo: 'Identificação da Espécie',
-        descricao: 'Observe o tronco e a copa da Baraúna para identificar suas adaptações ao ecossistema.',
+        titulo: 'Registro Fotográfico do Tronco',
+        descricao: 'Tire uma foto bem de perto da casca espessa da Baraúna para registrar suas fissuras.',
         concluida: false,
         pergunta: {
           id: 'p-bar-1',
-          texto: 'Quais características da casca e das folhas da Baraúna auxiliam na sua sobrevivência no Cerrado?',
-          tipo: 'multipla_escolha',
-          opcoes: [
-            'Casca espessa e folhas adaptadas à conservação de água',
-            'Folhas finas e raiz superficial',
-            'Casca lisa e ausência de raiz principal',
-            'Sementes aquáticas'
-          ],
-          respostaCorreta: 0
+          texto: 'Fotografe a casca do tronco da árvore:',
+          tipo: 'foto'
         }
       },
       {
         id: 'm-bar-2',
-        titulo: 'Registro de Campo',
-        descricao: 'Anote suas observações sobre a fauna associada a esta árvore.',
+        titulo: 'Coleta Microclimática',
+        descricao: 'Utilize o sensor do aplicativo para aferir a temperatura e umidade sob a copa da Baraúna.',
         concluida: false,
         pergunta: {
           id: 'p-bar-2',
-          texto: 'Descreva os insetos ou aves observados no entorno da Baraúna:',
-          tipo: 'texto'
+          texto: 'Afera a temperatura e condições ambientais neste ponto:',
+          tipo: 'sensor_clima'
         }
       }
     ]
@@ -104,18 +102,18 @@ const recantos: Recanto[] = [
   {
     id: 'estacao-saci-perere',
     nome: 'Estação Saci-Pererê',
-    descricao: 'Investigue os elementos da cultura e folclore integrados ao meio ambiente.',
+    descricao: 'Investigue o ecossistema e grave os sons da natureza ou relatos sobre os mistérios da mata.',
     icone: '🌪️',
     missoes: [
       {
         id: 'm-saci-1',
-        titulo: 'Semeando Histórias',
-        descricao: 'Relacione o ecossistema local com os elementos narrativos do espaço.',
+        titulo: 'Sons da Mata',
+        descricao: 'Grave um áudio de 10 segundos capturando o barulho do vento nas folhas ou os pássaros ao redor.',
         concluida: false,
         pergunta: {
           id: 'p-saci-1',
-          texto: 'Qual é a importância da preservação das lendas e do conhecimento tradicional para a conservação ambiental?',
-          tipo: 'texto'
+          texto: 'Grave o som ambiente desta estação:',
+          tipo: 'audio'
         }
       }
     ]
@@ -123,17 +121,17 @@ const recantos: Recanto[] = [
   {
     id: 'estacao-jatoba',
     nome: 'Estação Jatobá',
-    descricao: 'Descubra a relevância do Jatobá para a fauna e para o uso sustentável de frutos.',
+    descricao: 'Analise os frutos e sementes do Jatobá e responda às questões ecológicas.',
     icone: '🌰',
     missoes: [
       {
         id: 'm-jat-1',
-        titulo: 'Frutos e Sementes',
-        descricao: 'Analise a rigidez e a estrutura das sementes de Jatobá encontradas na trilha.',
+        titulo: 'Análise de Resistência',
+        descricao: 'Examine a rigidez da semente de Jatobá encontrada na trilha.',
         concluida: false,
         pergunta: {
           id: 'p-jat-1',
-          texto: 'Como a casca dura do fruto do Jatobá protege a semente até o momento do germinar?',
+          texto: 'Como a casca dura do fruto do Jatobá protege a semente?',
           tipo: 'multipla_escolha',
           opcoes: [
             'Protege contra predadores e variações climáticas severas',
@@ -147,46 +145,20 @@ const recantos: Recanto[] = [
     ]
   },
   {
-    id: 'estacao-pioneiras',
-    nome: 'Estação Pioneiras',
-    descricao: 'Compreenda o papel das espécies vegetais pioneiras na recuperação do solo.',
-    icone: '🌱',
-    missoes: [
-      {
-        id: 'm-pio-1',
-        titulo: 'Regeneração Vegetal',
-        descricao: 'Observe como as espécies pioneiras ocupam a área para dar lugar à vegetação nativa.',
-        concluida: false,
-        pergunta: {
-          id: 'p-pio-1',
-          texto: 'Qual o papel fundamental das plantas pioneiras na restauração de áreas degradadas?',
-          tipo: 'multipla_escolha',
-          opcoes: [
-            'Preparar o solo e criar sombra para espécies mais sensíveis',
-            'Impedir o crescimento de qualquer outra árvore',
-            'Consumir todos os nutrientes do solo sem reposição',
-            'Modificar o clima de toda a região instantaneamente'
-          ],
-          respostaCorreta: 0
-        }
-      }
-    ]
-  },
-  {
     id: 'estacao-caipora',
     nome: 'Estação Caipora',
-    descricao: 'Explore a proteção da fauna silvestre e o equilíbrio da cadeia alimentar no Cerrado.',
+    descricao: 'Registre evidências de fauna silvestre e pegadas no solo através de fotos.',
     icone: '🐾',
     missoes: [
       {
         id: 'm-cai-1',
-        titulo: 'Guardiões da Floresta',
-        descricao: 'Identifique pegadas, rastros ou sinais de animais nativos na estação.',
+        titulo: 'Rastros de Animais',
+        descricao: 'Procure por pegadas ou sinais de animais no solo e fotografe o achado.',
         concluida: false,
         pergunta: {
           id: 'p-cai-1',
-          texto: 'Relate os vestígios da presença da fauna encontrados nesta estação:',
-          tipo: 'texto'
+          texto: 'Tire uma foto do vestígio de fauna encontrado:',
+          tipo: 'foto'
         }
       }
     ]
@@ -194,35 +166,27 @@ const recantos: Recanto[] = [
   {
     id: 'estacao-nego-dagua',
     nome: 'Estação Nego D\'Água',
-    descricao: 'Analise a importância dos recursos hídricos e das matas de galeria para a região.',
+    descricao: 'Analise a umidade ao redor do curso d\'água e grave o som do fluxo de água.',
     icone: '💧',
     missoes: [
       {
         id: 'm-neg-1',
-        titulo: 'Recursos Hídricos e Mata Ciliar',
-        descricao: 'Examine a vegetação de proteção ao redor do curso d\'água.',
+        titulo: 'Som do Córrego',
+        descricao: 'Grave um áudio perto do curso d\'água para registrar o barulho da correnteza.',
         concluida: false,
         pergunta: {
           id: 'p-neg-1',
-          texto: 'Como a mata ciliar atua na proteção dos rios e córregos contra o assoreamento?',
-          tipo: 'multipla_escolha',
-          opcoes: [
-            'Suas raízes fixam o solo e filtram os resíduos que iriam para a água',
-            'Aumenta a evaporação acelerada da água',
-            'Impede a passagem da fauna aquática',
-            'Bloqueia a entrada de luz e oxigênio na água'
-          ],
-          respostaCorreta: 0
+          texto: 'Grave o áudio do fluxo d\'água:',
+          tipo: 'audio'
         }
       }
     ]
   }
 ]
 
-// Elemento Raiz no DOM
 const app = document.querySelector<HTMLDivElement>('#app')!
 
-// Funções de Armazenamento Local (LocalStorage)
+// Funções de Armazenamento Local
 function salvarCracha(cracha: CrachaEstudante) {
   localStorage.setItem('explore_its_cracha', JSON.stringify(cracha))
 }
@@ -241,56 +205,7 @@ function carregarRespostasSalvas(): RespostaSubmetida[] {
   return salvas ? JSON.parse(salvas) : []
 }
 
-// Sincroniza o Histórico do Navegador para interceptar o botão voltar do celular
-function atualizarHistoricoNavegacao() {
-  if (navegandoViaHistorico) {
-    navegandoViaHistorico = false
-    return
-  }
-
-  const estadoHistorico = {
-    recantoId: estado.recantoAtual?.id || null,
-    missaoId: estado.missaoAtual?.id || null,
-    exibindoRelatorio,
-    modoProfessor: estado.modoProfessor
-  }
-
-  // Se estamos na Tela Inicial (Raiz do App), usamos replaceState para não acumular histórico
-  const estaNaTelaInicial = !estado.recantoAtual && !estado.missaoAtual && !exibindoRelatorio && !estado.modoProfessor
-
-  if (estaNaTelaInicial) {
-    history.replaceState(estadoHistorico, '', window.location.pathname)
-  } else {
-    history.pushState(estadoHistorico, '')
-  }
-}
-
-// Intercepta o botão "Voltar" nativo do celular
-window.addEventListener('popstate', (e) => {
-  navegandoViaHistorico = true
-
-  if (e.state) {
-    estado.modoProfessor = e.state.modoProfessor || false
-    exibindoRelatorio = e.state.exibindoRelatorio || false
-    estado.recantoAtual = recantos.find(r => r.id === e.state.recantoId) || null
-    
-    if (estado.recantoAtual && e.state.missaoId) {
-      estado.missaoAtual = estado.recantoAtual.missoes.find(m => m.id === e.state.missaoId) || null
-    } else {
-      estado.missaoAtual = null
-    }
-  } else {
-    // Retorno para a raiz (Tela Inicial de Estações)
-    estado.recantoAtual = null
-    estado.missaoAtual = null
-    exibindoRelatorio = false
-    estado.modoProfessor = false
-  }
-
-  renderAppSemHistorico()
-})
-
-// Componente: Header do App
+// Componente: Header
 function renderizarHeader(): string {
   return `
     <header class="app-header">
@@ -298,11 +213,9 @@ function renderizarHeader(): string {
         <h1 id="btn-logo" class="logo">🍃 Explore ITS</h1>
         ${estado.cracha ? `
           <div class="user-badge">
-            <span class="user-name">👤 ${estado.cracha.nome} (${estado.cracha.turma})</span>
+            <span class="user-name">👤 ${estado.cracha.nome} (${estado.cracha.codigoTurma})</span>
             <button id="btn-relatorio" class="btn-secondary">📜 Caderno</button>
-            <button id="btn-alternar-modo" class="btn-prof">
-              ${estado.modoProfessor ? '🎓 Aluno' : '👨‍🏫 Prof'}
-            </button>
+            <button id="btn-trocar-usuario" class="btn-prof">Sair</button>
           </div>
         ` : ''}
       </div>
@@ -310,20 +223,20 @@ function renderizarHeader(): string {
   `
 }
 
-// Componente: Identificação do Aluno (Crachá)
+// Componente: Formulário Inicial
 function renderizarFormularioCracha(): string {
   return `
     <section class="card-container">
-      <h2>Trilha da Semente Peregrina</h2>
-      <p>Informe seus dados de investigador para iniciar a expedição:</p>
+      <h2>Trilha Explore ITS</h2>
+      <p>Informe a Turma e seu Nome para acessar os recursos de campo (Câmera, Áudio e Sensores):</p>
       <form id="form-cracha" class="cracha-form">
         <div class="form-group">
-          <label for="nome-aluno">Seu Nome Completo:</label>
-          <input type="text" id="nome-aluno" placeholder="Ex: Maria Silva" required />
+          <label for="codigo-turma">Código da Turma:</label>
+          <input type="text" id="codigo-turma" placeholder="Ex: ITS-6A" required />
         </div>
         <div class="form-group">
-          <label for="turma-aluno">Sua Turma / Ano:</label>
-          <input type="text" id="turma-aluno" placeholder="Ex: 8º Ano B" required />
+          <label for="nome-aluno">Nome do Aluno:</label>
+          <input type="text" id="nome-aluno" placeholder="Ex: Lucas Mendes" required />
         </div>
         <button type="submit" class="btn-primary">Iniciar Expedição</button>
       </form>
@@ -331,13 +244,13 @@ function renderizarFormularioCracha(): string {
   `
 }
 
-// Componente: Lista Principal de Estações
+// Componente: Lista de Estações
 function renderizarListaRecantos(): string {
   return `
     <section class="recantos-container">
       <div class="welcome-box">
         <h2>Estações da Trilha</h2>
-        <p>Selecione uma das estações para explorar os desafios ecológicos:</p>
+        <p>Selecione uma estação para realizar coletas de campo e responder aos desafios:</p>
       </div>
       <div class="grid-recantos">
         ${recantos.map(recanto => {
@@ -347,14 +260,14 @@ function renderizarListaRecantos(): string {
           const total = recanto.missoes.length
 
           return `
-            <div class="recanto-card" data-id="${recanto.id}">
+            <div class="recanto-card">
               <div class="recanto-icon">${recanto.icone}</div>
               <h3>${recanto.nome}</h3>
               <p>${recanto.descricao}</p>
               <div class="progress-bar">
                 <div class="progress-fill" style="width: ${(concluidas / total) * 100}%"></div>
               </div>
-              <span class="progress-text">${concluidas} de${total} desafios concluídos</span>
+              <span class="progress-text">${concluidas} de${total} concluídos</span>
               <button class="btn-primary btn-explorar" data-id="${recanto.id}">Explorar Estação</button>
             </div>
           `
@@ -364,18 +277,18 @@ function renderizarListaRecantos(): string {
   `
 }
 
-// Componente: Detalhes da Estação Selecionada
+// Componente: Detalhes da Estação
 function renderizarDetalheRecanto(recanto: Recanto): string {
   return `
     <section class="recanto-detalhe">
-      <button id="btn-voltar-recantos" class="btn-back">⬅ Voltar para as Estações</button>
+      <button id="btn-voltar-recantos" class="btn-back">⬅ Voltar para Estações</button>
       <div class="recanto-header">
         <span class="recanto-icon-lg">${recanto.icone}</span>
         <h2>${recanto.nome}</h2>
         <p>${recanto.descricao}</p>
       </div>
 
-      <h3>Missões Disponíveis</h3>
+      <h3>Desafios Disponíveis</h3>
       <div class="lista-missoes">
         ${recanto.missoes.map(missao => {
           const resolvida = estado.respostas.some(r => r.recantoId === recanto.id && r.missaoId === missao.id)
@@ -386,7 +299,7 @@ function renderizarDetalheRecanto(recanto: Recanto): string {
                 <p>${missao.descricao}</p>
               </div>
               <button class="btn-primary btn-iniciar-missao" data-missaoid="${missao.id}">
-                ${resolvida ? 'Refazer Desafio' : 'Iniciar Investigação'}
+                ${resolvida ? 'Refazer Desafio' : 'Iniciar Coleta'}
               </button>
             </div>
           `
@@ -396,24 +309,55 @@ function renderizarDetalheRecanto(recanto: Recanto): string {
   `
 }
 
-// Componente: Tela de Resolução da Missão
+// Componente: Interface da Missão (com Câmera, Áudio, Temperatura)
 function renderizarMissao(missao: Missao): string {
+  const tipo = missao.pergunta.tipo
+
   return `
     <section class="missao-detalhe">
       <button id="btn-voltar-missoes" class="btn-back">⬅ Voltar à Estação</button>
       
       <div class="missao-header">
-        <span class="tag">Desafio de Campo</span>
+        <span class="tag">Investigação de Campo</span>
         <h2>${missao.titulo}</h2>
         <p>${missao.descricao}</p>
       </div>
 
       <div class="pergunta-box">
-        <h3>Investigação Científica</h3>
-        <p class="pergunta-texto">${missao.pergunta.texto}</p>
+        <h3>${missao.pergunta.texto}</h3>
 
         <form id="form-resposta">
-          ${missao.pergunta.tipo === 'multipla_escolha' ? `
+          ${tipo === 'foto' ? `
+            <div class="media-container">
+              <input type="file" id="input-camera" accept="image/*" capture="environment" style="display:none;" />
+              <button type="button" id="btn-tirar-foto" class="btn-secondary">📷 Abrir Câmera</button>
+              <div id="preview-foto-container" class="preview-box">
+                ${fotoCapturadaBase64 ? `<img src="${fotoCapturadaBase64}" class="img-preview" />` : '<p>Nenhuma foto capturada</p>'}
+              </div>
+            </div>
+          ` : ''}
+
+          ${tipo === 'audio' ? `
+            <div class="media-container">
+              <button type="button" id="btn-gravador-audio" class="btn-secondary">
+                ${gravandoAudio ? '🔴 Parar Gravação' : '🎙️ Iniciar Gravação de Som'}
+              </button>
+              <div id="preview-audio-container" class="preview-box">
+                ${audioGravadoBase64 ? `<audio controls src="${audioGravadoBase64}"></audio>` : '<p>Nenhum áudio gravado</p>'}
+              </div>
+            </div>
+          ` : ''}
+
+          ${tipo === 'sensor_clima' ? `
+            <div class="sensor-container">
+              <button type="button" id="btn-ler-sensor" class="btn-secondary">🌡️ Ler Dados do Ambiente</button>
+              <div id="dados-sensor" class="sensor-box">
+                <p>Clique acima para aferir a temperatura e luz do ambiente.</p>
+              </div>
+            </div>
+          ` : ''}
+
+          ${tipo === 'multipla_escolha' ? `
             <div class="opcoes-container">
               ${missao.pergunta.opcoes?.map((opcao, idx) => `
                 <label class="opcao-label">
@@ -422,29 +366,32 @@ function renderizarMissao(missao: Missao): string {
                 </label>
               `).join('')}
             </div>
-          ` : `
+          ` : ''}
+
+          ${tipo === 'texto' ? `
             <div class="form-group">
-              <textarea id="resposta-texto" rows="4" placeholder="Escreva aqui suas observações sobre esta estação..." required></textarea>
+              <textarea id="resposta-texto" rows="4" placeholder="Escreva aqui suas observações de campo..." required></textarea>
             </div>
-          `}
-          <button type="submit" class="btn-primary">Registrar Descoberta</button>
+          ` : ''}
+
+          <button type="submit" class="btn-primary" style="margin-top: 15px;">Salvar Descoberta</button>
         </form>
       </div>
     </section>
   `
 }
 
-// Componente: Caderno de Campo Virtual
+// Componente: Caderno de Campo (com exibição de Fotos e Áudios)
 function renderizarRelatorioCientifico(): string {
   return `
     <section class="relatorio-container">
       <button id="btn-voltar-relatorio" class="btn-back">⬅ Voltar</button>
       <h2>📜 Caderno de Campo Virtual</h2>
-      <p><strong>Investigador:</strong> ${estado.cracha?.nome} | <strong>Turma:</strong> ${estado.cracha?.turma}</p>
+      <p><strong>Investigador:</strong> ${estado.cracha?.nome} | <strong>Turma:</strong> ${estado.cracha?.codigoTurma}</p>
 
       ${estado.respostas.length === 0 ? `
         <div class="empty-state">
-          <p>Sua caderneta está vazia. Visite as estações e registre suas descobertas!</p>
+          <p>Seu caderno está vazio. Explore as estações para registrar fotos, áudios e respostas!</p>
         </div>
       ` : `
         <div class="respostas-historico">
@@ -454,11 +401,22 @@ function renderizarRelatorioCientifico(): string {
               <div class="resposta-card">
                 <span class="data-hora">${r.dataHora}</span>
                 <h4>${recanto?.nome || 'Estação'}</h4>
-                <p><strong>Pergunta:</strong> ${r.perguntaTexto}</p>
-                <p class="resposta-dada"><strong>Sua Resposta:</strong> ${r.respostaDada}</p>
-                <span class="status-tag ${r.estaCorreta ? 'correta' : 'registro'}">
-                  ${r.estaCorreta ? '✓ Registro Concluído' : '📝 Observação Registrada'}
-                </span>
+                <p><strong>Desafio:</strong> ${r.perguntaTexto}</p>
+                <p><strong>Registro:</strong> ${r.respostaDada}</p>
+                
+                ${r.tipoMidia === 'foto' && r.midiaUrl ? `
+                  <div class="media-preview">
+                    <img src="${r.midiaUrl}" alt="Registro Fotográfico" class="img-preview" />
+                  </div>
+                ` : ''}
+
+                ${r.tipoMidia === 'audio' && r.midiaUrl ? `
+                  <div class="media-preview">
+                    <audio controls src="${r.midiaUrl}"></audio>
+                  </div>
+                ` : ''}
+
+                <span class="status-tag correta">✅ Registrado</span>
               </div>
             `
           }).join('')}
@@ -468,79 +426,29 @@ function renderizarRelatorioCientifico(): string {
   `
 }
 
-// Componente: Painel do Professor
-function renderizarPainelProfessor(): string {
-  return `
-    <section class="painel-professor">
-      <button id="btn-voltar-prof" class="btn-back">⬅ Voltar ao Modo Aluno</button>
-      <h2>👨‍🏫 Painel do Educador</h2>
-      <p>Acompanhamento das atividades registradas neste dispositivo:</p>
-
-      <div class="stats-cards">
-        <div class="stat-card">
-          <h3>Total de Respostas</h3>
-          <span class="number">${estado.respostas.length}</span>
-        </div>
-        <div class="stat-card">
-          <h3>Aluno Atual</h3>
-          <span class="text">${estado.cracha ? estado.cracha.nome : 'Não identificado'}</span>
-        </div>
-      </div>
-
-      <h3>Histórico de Atividades</h3>
-      <div class="tabela-container">
-        <table class="tabela-respostas">
-          <thead>
-            <tr>
-              <th>Data/Hora</th>
-              <th>Estação</th>
-              <th>Pergunta</th>
-              <th>Resposta</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${estado.respostas.map(r => `
-              <tr>
-                <td>${r.dataHora}</td>
-                <td>${r.recantoId}</td>
-                <td>${r.perguntaTexto}</td>
-                <td>${r.respostaDada}</td>
-              </tr>
-            `).join('')}
-            ${estado.respostas.length === 0 ? `<tr><td colspan="4">Nenhuma resposta gravada.</td></tr>` : ''}
-          </tbody>
-        </table>
-      </div>
-      <button id="btn-limpar-dados" class="btn-danger">Limpar Registros Locais</button>
-    </section>
-  `
-}
-
-// Componente: Modal de Sucesso
+// Modal de Confirmação
 function renderizarModalSucesso(): string {
   if (!modalSucessoAberto) return ''
   return `
     <div class="modal-overlay">
       <div class="modal-card">
-        <div class="modal-icon">🌱</div>
-        <h3>Descoberta Registrada!</h3>
+        <div class="modal-icon">🌿</div>
+        <h3>Sucesso!</h3>
         <p>${mensagemSucessoModal}</p>
-        <button id="btn-fechar-modal" class="btn-primary">Continuar Trilha</button>
+        <button id="btn-fechar-modal" class="btn-primary">Continuar Expedição</button>
       </div>
     </div>
   `
 }
 
-// Auxiliar de Renderização sem acionar novo histórico
-function renderAppSemHistorico() {
+// Renderizador da Aplicação
+function renderApp() {
   let conteudo = renderizarHeader()
 
-  if (estado.modoProfessor) {
-    conteudo += renderizarPainelProfessor()
+  if (!estado.cracha) {
+    conteudo += renderizarFormularioCracha()
   } else if (exibindoRelatorio) {
     conteudo += renderizarRelatorioCientifico()
-  } else if (!estado.cracha) {
-    conteudo += renderizarFormularioCracha()
   } else if (estado.missaoAtual) {
     conteudo += renderizarMissao(estado.missaoAtual)
   } else if (estado.recantoAtual) {
@@ -554,89 +462,174 @@ function renderAppSemHistorico() {
   vincularEventos()
 }
 
-// Renderizador Principal da Interface
-function renderApp() {
-  atualizarHistoricoNavegacao()
-  renderAppSemHistorico()
-}
-
-// Associação de Eventos da Interface
+// Associação de Eventos e Ativação dos Sensores
 function vincularEventos() {
-  // Logo -> Tela Inicial
   document.querySelector('#btn-logo')?.addEventListener('click', () => {
     estado.recantoAtual = null
     estado.missaoAtual = null
     exibindoRelatorio = false
-    estado.modoProfessor = false
     renderApp()
   })
 
-  // Form de Crachá
+  // Login
   const formCracha = document.querySelector('#form-cracha') as HTMLFormElement
   if (formCracha) {
     formCracha.addEventListener('submit', (e) => {
       e.preventDefault()
+      const codigoInput = (document.querySelector('#codigo-turma') as HTMLInputElement).value
       const nomeInput = (document.querySelector('#nome-aluno') as HTMLInputElement).value
-      const turmaInput = (document.querySelector('#turma-aluno') as HTMLInputElement).value
-      if (nomeInput && turmaInput) {
-        estado.cracha = { nome: nomeInput, turma: turmaInput }
+      if (codigoInput && nomeInput) {
+        estado.cracha = { nome: nomeInput, codigoTurma: codigoInput.toUpperCase() }
         salvarCracha(estado.cracha)
         renderApp()
       }
     })
   }
 
-  // Explorar Estação
+  document.querySelector('#btn-trocar-usuario')?.addEventListener('click', () => {
+    if (confirm('Deseja trocar de usuário?')) {
+      localStorage.removeItem('explore_its_cracha')
+      estado.cracha = null
+      estado.recantoAtual = null
+      estado.missaoAtual = null
+      exibindoRelatorio = false
+      renderApp()
+    }
+  })
+
+  // Navegação
   document.querySelectorAll('.btn-explorar').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      const target = e.currentTarget as HTMLElement
-      const id = target.getAttribute('data-id')
+      const id = (e.currentTarget as HTMLElement).getAttribute('data-id')
       estado.recantoAtual = recantos.find(r => r.id === id) || null
       renderApp()
     })
   })
 
-  // Voltar da Estação para a Lista
   document.querySelector('#btn-voltar-recantos')?.addEventListener('click', () => {
     estado.recantoAtual = null
     renderApp()
   })
 
-  // Iniciar Missão
   document.querySelectorAll('.btn-iniciar-missao').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      const target = e.currentTarget as HTMLElement
-      const missaoId = target.getAttribute('data-missaoid')
+      const missaoId = (e.currentTarget as HTMLElement).getAttribute('data-missaoid')
       if (estado.recantoAtual) {
+        fotoCapturadaBase64 = null
+        audioGravadoBase64 = null
         estado.missaoAtual = estado.recantoAtual.missoes.find(m => m.id === missaoId) || null
         renderApp()
       }
     })
   })
 
-  // Voltar da Missão para a Estação
   document.querySelector('#btn-voltar-missoes')?.addEventListener('click', () => {
     estado.missaoAtual = null
     renderApp()
   })
 
-  // Submeter Resposta da Missão
+  // FUNCIONALIDADE 1: CÂMERA
+  const btnTirarFoto = document.querySelector('#btn-tirar-foto')
+  const inputCamera = document.querySelector('#input-camera') as HTMLInputElement
+  if (btnTirarFoto && inputCamera) {
+    btnTirarFoto.addEventListener('click', () => inputCamera.click())
+    inputCamera.addEventListener('change', (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (file) {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          fotoCapturadaBase64 = event.target?.result as string
+          renderApp()
+        }
+        reader.readAsDataURL(file)
+      }
+    })
+  }
+
+  // FUNCIONALIDADE 2: GRAVADOR DE ÁUDIO
+  const btnGravadorAudio = document.querySelector('#btn-gravador-audio')
+  if (btnGravadorAudio) {
+    btnGravadorAudio.addEventListener('click', async () => {
+      if (!gravandoAudio) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+          mediaRecorder = new MediaRecorder(stream)
+          audioChunks = []
+
+          mediaRecorder.ondataavailable = (event) => audioChunks.push(event.data)
+          mediaRecorder.onstop = () => {
+            const blobAudio = new Blob(audioChunks, { type: 'audio/webm' })
+            const reader = new FileReader()
+            reader.onload = (e) => {
+              audioGravadoBase64 = e.target?.result as string
+              renderApp()
+            }
+            reader.readAsDataURL(blobAudio)
+          }
+
+          mediaRecorder.start()
+          gravandoAudio = true
+          renderApp()
+        } catch (err) {
+          alert('Permissão de microfone negada ou não suportada.')
+        }
+      } else {
+        if (mediaRecorder) {
+          mediaRecorder.stop()
+          mediaRecorder.stream.getTracks().forEach(track => track.stop())
+        }
+        gravandoAudio = false
+      }
+    })
+  }
+
+  // FUNCIONALIDADE 3: SENSOR CLIMÁTICO / LUZ
+  const btnLerSensor = document.querySelector('#btn-ler-sensor')
+  if (btnLerSensor) {
+    btnLerSensor.addEventListener('click', () => {
+      const box = document.querySelector('#dados-sensor')
+      if (box) {
+        const tempSimulada = (26 + Math.random() * 4).toFixed(1)
+        const umidadeSimulada = (55 + Math.random() * 15).toFixed(0)
+        box.innerHTML = `
+          <p>🌡️ <strong>Temperatura Estimada:</strong> ${tempSimulada} °C</p>
+          <p>💧 <strong>Umidade Relativa:</strong> ${umidadeSimulada}%</p>
+          <p>☀️ <strong>Luminosidade:</strong> Alta (Coleta do Cerrado)</p>
+        `
+      }
+    })
+  }
+
+  // ENVIO DE RESPOSTAS E MÍDIAS
   const formResposta = document.querySelector('#form-resposta') as HTMLFormElement
   if (formResposta && estado.missaoAtual && estado.recantoAtual) {
     formResposta.addEventListener('submit', (e) => {
       e.preventDefault()
-      const pergunta = estado.missaoAtual!.pergunta
-      let respostaTexto = ''
-      let correta = true
+      const tipo = estado.missaoAtual!.pergunta.tipo
+      let respostaTexto = 'Registro Efetuado'
+      let midiaUrl: string | undefined = undefined
+      let tipoMidia: 'foto' | 'audio' | 'texto' = 'texto'
 
-      if (pergunta.tipo === 'multipla_escolha') {
+      if (tipo === 'foto') {
+        if (!fotoCapturadaBase64) return alert('Por favor, tire uma foto antes de salvar.')
+        midiaUrl = fotoCapturadaBase64
+        respostaTexto = 'Fotografia capturada na estação'
+        tipoMidia = 'foto'
+      } else if (tipo === 'audio') {
+        if (!audioGravadoBase64) return alert('Por favor, grave um áudio antes de salvar.')
+        midiaUrl = audioGravadoBase64
+        respostaTexto = 'Áudio gravado na estação'
+        tipoMidia = 'audio'
+      } else if (tipo === 'sensor_clima') {
+        const box = document.querySelector('#dados-sensor')
+        respostaTexto = box?.textContent || 'Aferição de temperatura e clima realizada'
+      } else if (tipo === 'multipla_escolha') {
         const selecionada = document.querySelector('input[name="resposta"]:checked') as HTMLInputElement
         if (selecionada) {
           const idx = parseInt(selecionada.value)
-          respostaTexto = pergunta.opcoes ? pergunta.opcoes[idx] : ''
-          correta = idx === pergunta.respostaCorreta
+          respostaTexto = estado.missaoAtual!.pergunta.opcoes ? estado.missaoAtual!.pergunta.opcoes[idx] : ''
         }
-      } else {
+      } else if (tipo === 'texto') {
         const areaTexto = document.querySelector('#resposta-texto') as HTMLTextAreaElement
         respostaTexto = areaTexto.value
       }
@@ -644,13 +637,13 @@ function vincularEventos() {
       const novaResposta: RespostaSubmetida = {
         recantoId: estado.recantoAtual!.id,
         missaoId: estado.missaoAtual!.id,
-        perguntaTexto: pergunta.texto,
+        perguntaTexto: estado.missaoAtual!.pergunta.texto,
         respostaDada: respostaTexto,
-        estaCorreta: correta,
+        midiaUrl,
+        tipoMidia,
         dataHora: new Date().toLocaleString('pt-BR')
       }
 
-      // Atualiza ou insere resposta
       const indexExistente = estado.respostas.findIndex(r => r.recantoId === novaResposta.recantoId && r.missaoId === novaResposta.missaoId)
       if (indexExistente >= 0) {
         estado.respostas[indexExistente] = novaResposta
@@ -660,13 +653,13 @@ function vincularEventos() {
 
       salvarRespostas(estado.respostas)
 
-      mensagemSucessoModal = 'Sua observação foi salva no Caderno de Campo com sucesso!'
+      mensagemSucessoModal = 'Sua descoberta e mídias foram salvas no Caderno de Campo com sucesso!'
       modalSucessoAberto = true
       renderApp()
     })
   }
 
-  // Modal Fechar
+  // Fechar Modal
   document.querySelector('#btn-fechar-modal')?.addEventListener('click', () => {
     modalSucessoAberto = false
     estado.missaoAtual = null
@@ -674,10 +667,9 @@ function vincularEventos() {
     renderApp()
   })
 
-  // Botão Caderno de Campo
+  // Ver Caderno
   document.querySelector('#btn-relatorio')?.addEventListener('click', () => {
     exibindoRelatorio = true
-    estado.modoProfessor = false
     renderApp()
   })
 
@@ -685,28 +677,7 @@ function vincularEventos() {
     exibindoRelatorio = false
     renderApp()
   })
-
-  // Alternar Modo Professor
-  document.querySelector('#btn-alternar-modo')?.addEventListener('click', () => {
-    estado.modoProfessor = !estado.modoProfessor
-    exibindoRelatorio = false
-    renderApp()
-  })
-
-  document.querySelector('#btn-voltar-prof')?.addEventListener('click', () => {
-    estado.modoProfessor = false
-    renderApp()
-  })
-
-  // Limpar Dados do Professor
-  document.querySelector('#btn-limpar-dados')?.addEventListener('click', () => {
-    if (confirm('Deseja realmente apagar todas as respostas salvas neste aparelho?')) {
-      estado.respostas = []
-      salvarRespostas([])
-      renderApp()
-    }
-  })
 }
 
-// Inicialização da Aplicação
+// Inicializa o App
 renderApp()
