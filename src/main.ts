@@ -16,6 +16,7 @@ const estado: EstadoAplicacao = {
 
 let gravandoAudio = false
 let editorCanvas: EditorCanvas | null = null
+let exibindoRelatorio = false
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
@@ -38,6 +39,7 @@ function resetarEstadoCompleto() {
   estado.descobertas = 0
   estado.missoesConcluidas.clear()
   estado.dadosColetados = {}
+  exibindoRelatorio = false
   renderApp()
 }
 
@@ -62,7 +64,13 @@ function renderizarHeader(): string {
         </div>
       ` : ''}
 
-      <div style="display: flex; justify-content: flex-end; margin-top: 0.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
+        ${estado.cracha ? `
+          <button id="btn-abrir-relatorio" style="background: #52b788; color: #1b4332; border: none; padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: bold; cursor: pointer;">
+            📜 Ver Relatório
+          </button>
+        ` : '<div></div>'}
+        
         <button id="btn-reset-app" style="background: #d90429; color: white; border: none; padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.7rem; font-weight: bold; cursor: pointer;">
           🔄 Resetar
         </button>
@@ -246,10 +254,94 @@ function renderizarMissao(missao: MissaoCientifica): string {
   `
 }
 
+function renderizarRelatorioCientifico(): string {
+  if (!estado.cracha) return ''
+
+  const totalMissoes = recantos.reduce((acc, r) => acc + r.missoes.length, 0)
+  const concluidas = estado.missoesConcluidas.size
+
+  return `
+    <main style="padding: 1rem; max-width: 700px; margin: 0 auto;">
+      <button id="btn-fechar-relatorio" style="background: #6c757d; color: white; border: none; padding: 0.6rem 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 1rem; width: 100%;">
+        ⬅️ Voltar à Trilha
+      </button>
+
+      <div style="background: white; border: 2px solid #2d6a4f; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <!-- Cabeçalho do Relatório -->
+        <div style="text-align: center; border-bottom: 2px dashed #b7e4c7; padding-bottom: 1rem; margin-bottom: 1rem;">
+          <span style="font-size: 2.5rem;">📜</span>
+          <h2 style="color: #1b4332; margin: 0.3rem 0;">Relatório Científico de Campo</h2>
+          <p style="font-size: 0.85rem; color: #555; margin: 0;">Trilha da Semente Peregrina • ITS / PUC Goiás</p>
+        </div>
+
+        <!-- Dados da Equipe -->
+        <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 0.8rem; margin-bottom: 1rem; font-size: 0.85rem;">
+          <p style="margin: 0.2rem 0;"><strong>Mascote:</strong> ${estado.cracha.avatar}</p>
+          <p style="margin: 0.2rem 0;"><strong>Equipe:</strong> ${estado.cracha.nomeEquipe}</p>
+          <p style="margin: 0.2rem 0;"><strong>Integrantes:</strong> ${estado.cracha.membros.join(', ')}</p>
+          <p style="margin: 0.2rem 0;"><strong>Progresso da Expedição:</strong> ${concluidas} de ${totalMissoes} missões (${estado.descobertas} PTS)</p>
+        </div>
+
+        <h3 style="color: #2d6a4f; font-size: 1.1rem; border-bottom: 1px solid #2d6a4f; padding-bottom: 0.3rem; margin-top: 1.5rem;">
+          Evidências Coletadas
+        </h3>
+
+        <!-- Lista de Evidências Coletadas por Recanto -->
+        <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+          ${recantos.map(recanto => {
+            const missoesDoRecanto = recanto.missoes.filter(m => estado.missoesConcluidas.has(m.id))
+            if (missoesDoRecanto.length === 0) return ''
+
+            return `
+              <div style="border: 1px solid #d8f3dc; border-radius: 8px; padding: 0.8rem; background: #fafdfb;">
+                <h4 style="margin: 0 0 0.5rem; color: #1b4332; font-size: 0.95rem;">
+                  ${recanto.icone}${recanto.titulo}
+                </h4>
+                
+                ${missoesDoRecanto.map(m => {
+                  const dados = estado.dadosColetados[m.id]
+                  return `
+                    <div style="background: white; border: 1px solid #e9ecef; border-radius: 6px; padding: 0.6rem; margin-top: 0.5rem; font-size: 0.8rem;">
+                      <strong style="color: #2d6a4f;">📌 ${m.titulo}</strong>
+                      
+                      ${dados?.fotoComDesenho || dados?.foto ? `
+                        <div style="margin-top: 0.5rem;">
+                          <img src="${dados.fotoComDesenho || dados.foto}" alt="Evidência Visual" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 6px; border: 1px solid #ccc;" />
+                        </div>
+                      ` : ''}
+
+                      ${dados?.audio ? `
+                        <div style="margin-top: 0.5rem;">
+                          <p style="margin: 0 0 0.2rem; font-weight: bold;">🎙️ Registro Sonoro:</p>
+                          <audio controls src="${dados.audio}" style="width: 100%; height: 32px;"></audio>
+                        </div>
+                      ` : ''}
+
+                      ${dados?.dataHora ? `
+                        <p style="margin: 0.4rem 0 0; font-size: 0.7rem; color: #888;">
+                          Coletado em: ${new Date(dados.dataHora).toLocaleString('pt-BR')}
+                        </p>
+                      ` : ''}
+                    </div>
+                  `
+                }).join('')}
+              </div>
+            `
+          }).join('')}
+
+          ${concluidas === 0 ? `<p style="font-size: 0.85rem; color: #777; text-align: center;">Nenhuma evidência registrada ainda.</p>` : ''}
+        </div>
+      </div>
+    </main>
+  `
+}
+
 function renderApp() {
   let conteudo = renderizarHeader()
 
-  if (!estado.cracha) {
+  if (exibindoRelatorio) {
+    conteudo += renderizarRelatorioCientifico()
+  } else if (!estado.cracha) {
     conteudo += renderizarFormularioCracha()
   } else if (estado.missaoAtual) {
     conteudo += renderizarMissao(estado.missaoAtual)
@@ -287,6 +379,16 @@ function vincularEventos() {
     if (confirm('Deseja resetar o crachá e recomeçar a trilha?')) {
       resetarEstadoCompleto()
     }
+  })
+
+  document.querySelector('#btn-abrir-relatorio')?.addEventListener('click', () => {
+    exibindoRelatorio = true
+    renderApp()
+  })
+
+  document.querySelector('#btn-fechar-relatorio')?.addEventListener('click', () => {
+    exibindoRelatorio = false
+    renderApp()
   })
 
   document.querySelectorAll('.btn-recanto').forEach(btn => {
