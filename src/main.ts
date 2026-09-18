@@ -20,17 +20,33 @@ function salvarProgresso() {
     localStorage.setItem('explore_its_concluidas', JSON.stringify(Array.from(estado.missoesConcluidas)))
     localStorage.setItem('explore_its_dados', JSON.stringify(estado.dadosColetados))
   } catch (e) {
-    console.warn('Limite do localStorage atingido ao guardar fotos:', e)
+    console.warn('Limite do localStorage atingido:', e)
   }
+}
+
+function resetarEstadoCompleto() {
+  localStorage.clear()
+  estado.recantoAtual = null
+  estado.missaoAtual = null
+  estado.descobertas = 0
+  estado.missoesConcluidas.clear()
+  estado.dadosColetados = {}
+  renderApp()
 }
 
 function renderizarHeader(): string {
   return `
-    <header style="background: #1b4332; color: white; padding: 1rem; text-align: center; border-bottom: 4px solid #2d6a4f;">
+    <header style="background: #1b4332; color: white; padding: 1rem; text-align: center; border-bottom: 4px solid #2d6a4f; position: relative;">
       <h1 style="margin: 0; font-size: 1.4rem;">🌱 Explore ITS</h1>
       <p style="margin: 0.3rem 0 0; font-size: 0.85rem; opacity: 0.9;">Trilha da Semente Peregrina • EF II</p>
-      <div style="margin-top: 0.5rem; background: #2d6a4f; padding: 0.3rem 0.8rem; border-radius: 20px; display: inline-block; font-size: 0.85rem; font-weight: bold;">
-        🔍 Descobertas: <span>${estado.descobertas}</span>
+      
+      <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 0.5rem;">
+        <div style="background: #2d6a4f; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: bold;">
+          🔍 Descobertas: <span>${estado.descobertas}</span>
+        </div>
+        <button id="btn-reset-app" style="background: #d90429; color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold; cursor: pointer;">
+          🔄 Inicio
+        </button>
       </div>
     </header>
   `
@@ -67,7 +83,7 @@ function renderizarListaRecantos(): string {
 function renderizarDetalheRecanto(recanto: Recanto): string {
   return `
     <main style="padding: 1rem; max-width: 600px; margin: 0 auto;">
-      <button id="btn-voltar" style="background: none; border: none; color: #2d6a4f; font-weight: bold; cursor: pointer; padding: 0.5rem 0; margin-bottom: 0.5rem;">⬅️ Voltar às Estações</button>
+      <button id="btn-voltar" style="background: #2d6a4f; color: white; border: none; padding: 0.6rem 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 1rem; width: 100%;">⬅️ Voltar às Estações</button>
       
       <div style="background: #1b4332; color: white; padding: 1.2rem; border-radius: 12px; margin-bottom: 1rem;">
         <span style="font-size: 2.5rem;">${recanto.icone}</span>
@@ -99,9 +115,9 @@ function renderizarMissao(missao: MissaoCientifica): string {
 
   return `
     <main style="padding: 1rem; max-width: 600px; margin: 0 auto;">
-      <button id="btn-cancelar-missao" style="background: none; border: none; color: #6c757d; font-weight: bold; cursor: pointer; padding: 0.5rem 0;">❌ Cancelar</button>
+      <button id="btn-cancelar-missao" style="background: #6c757d; color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 0.8rem; width: 100%;">❌ Cancelar Missão</button>
       
-      <div style="background: #f8f9fa; border: 2px solid #2d6a4f; padding: 1rem; border-radius: 12px; margin-top: 0.5rem;">
+      <div style="background: #f8f9fa; border: 2px solid #2d6a4f; padding: 1rem; border-radius: 12px;">
         <h3 style="margin: 0 0 0.5rem; color: #1b4332;">${missao.titulo}</h3>
         <p style="font-size: 0.9rem; color: #343a40; margin-bottom: 1rem;">${missao.orientacaoCientifica}</p>
 
@@ -152,6 +168,13 @@ function renderApp() {
 }
 
 function vincularEventos() {
+  // Reset de emergência
+  document.querySelector('#btn-reset-app')?.addEventListener('click', () => {
+    if (confirm('Deseja voltar para a tela inicial e resetar as missões?')) {
+      resetarEstadoCompleto()
+    }
+  })
+
   // Selecionar Recanto
   document.querySelectorAll('.btn-recanto').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -161,9 +184,10 @@ function vincularEventos() {
     })
   })
 
-  // Voltar para a lista
+  // Voltar para a lista principal
   document.querySelector('#btn-voltar')?.addEventListener('click', () => {
     estado.recantoAtual = null
+    estado.missaoAtual = null
     renderApp()
   })
 
