@@ -1,27 +1,22 @@
-import { recantos } from './data/recantos'
-import { EstadoAplicacao, Recanto, MissaoCientifica } from './@types'
-import { capturarFotoCampo } from './utils/camera'
-
+import { recantos } from './data/recantos';
+import { capturarFotoCampo } from './utils/camera';
 // Estado Global da Aplicação
-const estado: EstadoAplicacao = {
-  recantoAtual: null,
-  missaoAtual: null,
-  descobertas: Number(localStorage.getItem('explore_its_descobertas')) || 0,
-  missoesConcluidas: new Set(JSON.parse(localStorage.getItem('explore_its_concluidas') || '[]')),
-  dadosColetados: JSON.parse(localStorage.getItem('explore_its_dados') || '{}')
-}
-
+const estado = {
+    recantoAtual: null,
+    missaoAtual: null,
+    descobertas: Number(localStorage.getItem('explore_its_descobertas')) || 0,
+    missoesConcluidas: new Set(JSON.parse(localStorage.getItem('explore_its_concluidas') || '[]')),
+    dadosColetados: JSON.parse(localStorage.getItem('explore_its_dados') || '{}')
+};
 // Elementos da DOM
-const app = document.querySelector<HTMLDivElement>('#app')!
-
+const app = document.querySelector('#app');
 function salvarProgresso() {
-  localStorage.setItem('explore_its_descobertas', estado.descobertas.toString())
-  localStorage.setItem('explore_its_concluidas', JSON.stringify(Array.from(estado.missoesConcluidas)))
-  localStorage.setItem('explore_its_dados', JSON.stringify(estado.dadosColetados))
+    localStorage.setItem('explore_its_descobertas', estado.descobertas.toString());
+    localStorage.setItem('explore_its_concluidas', JSON.stringify(Array.from(estado.missoesConcluidas)));
+    localStorage.setItem('explore_its_dados', JSON.stringify(estado.dadosColetados));
 }
-
-function renderizarHeader(): string {
-  return `
+function renderizarHeader() {
+    return `
     <header style="background: #1b4332; color: white; padding: 1rem; text-align: center; border-bottom: 4px solid #2d6a4f;">
       <h1 style="margin: 0; font-size: 1.4rem;">🌱 Explore ITS</h1>
       <p style="margin: 0.3rem 0 0; font-size: 0.85rem; opacity: 0.9;">Trilha da Semente Peregrina • EF II</p>
@@ -29,17 +24,16 @@ function renderizarHeader(): string {
         🔍 Descobertas: <span>${estado.descobertas}</span>
       </div>
     </header>
-  `
+  `;
 }
-
-function renderizarListaRecantos(): string {
-  return `
+function renderizarListaRecantos() {
+    return `
     <main style="padding: 1rem; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #2d6a4f; font-size: 1.2rem; margin-bottom: 1rem;">Estações de Investigação</h2>
       <div style="display: flex; flex-direction: column; gap: 0.8rem;">
         ${recantos.map(recanto => {
-          const concluida = recanto.missoes.every(m => estado.missoesConcluidas.has(m.id))
-          return `
+        const concluida = recanto.missoes.every(m => estado.missoesConcluidas.has(m.id));
+        return `
             <button 
               class="btn-recanto" 
               data-id="${recanto.id}"
@@ -53,15 +47,14 @@ function renderizarListaRecantos(): string {
               </div>
               <span style="font-size: 1.2rem;">${concluida ? '✅' : '➡️'}</span>
             </button>
-          `
-        }).join('')}
+          `;
+    }).join('')}
       </div>
     </main>
-  `
+  `;
 }
-
-function renderizarDetalheRecanto(recanto: Recanto): string {
-  return `
+function renderizarDetalheRecanto(recanto) {
+    return `
     <main style="padding: 1rem; max-width: 600px; margin: 0 auto;">
       <button id="btn-voltar" style="background: none; border: none; color: #2d6a4f; font-weight: bold; cursor: pointer; padding: 0.5rem 0; margin-bottom: 0.5rem;">⬅️ Voltar às Estações</button>
       
@@ -74,26 +67,23 @@ function renderizarDetalheRecanto(recanto: Recanto): string {
       <h3 style="color: #2d6a4f; font-size: 1.1rem; margin-bottom: 0.8rem;">Missões Científicas</h3>
       <div style="display: flex; flex-direction: column; gap: 0.8rem;">
         ${recanto.missoes.map(missao => {
-          const concluida = estado.missoesConcluidas.has(missao.id)
-          return `
+        const concluida = estado.missoesConcluidas.has(missao.id);
+        return `
             <div style="background: white; border: 1px solid #dee2e6; border-left: 5px solid ${concluida ? '#52b788' : '#2d6a4f'}; padding: 1rem; border-radius: 8px;">
               <h4 style="margin: 0 0 0.4rem; color: #1b4332;">${missao.titulo}</h4>
-              <p style="margin: 0 0 0.8rem; font-size: 0.85rem; color: #495057;">${missao.orientacaoCientifica}</p>${concluida 
-                ? `<span style="color: #2b9348; font-weight: bold; font-size: 0.85rem;">✅ Missão Concluída</span>`
-                : `<button class="btn-iniciar-missao" data-id="${missao.id}" style="background: #2d6a4f; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%;">Iniciar Investigação</button>`
-              }
+              <p style="margin: 0 0 0.8rem; font-size: 0.85rem; color: #495057;">${missao.orientacaoCientifica}</p>${concluida
+            ? `<span style="color: #2b9348; font-weight: bold; font-size: 0.85rem;">✅ Missão Concluída</span>`
+            : `<button class="btn-iniciar-missao" data-id="${missao.id}" style="background: #2d6a4f; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%;">Iniciar Investigação</button>`}
             </div>
-          `
-        }).join('')}
+          `;
+    }).join('')}
       </div>
     </main>
-  `
+  `;
 }
-
-function renderizarMissao(missao: MissaoCientifica): string {
-  const fotoExistente = estado.dadosColetados[missao.id]?.foto
-
-  return `
+function renderizarMissao(missao) {
+    const fotoExistente = estado.dadosColetados[missao.id]?.foto;
+    return `
     <main style="padding: 1rem; max-width: 600px; margin: 0 auto;">
       <button id="btn-cancelar-missao" style="background: none; border: none; color: #6c757d; font-weight: bold; cursor: pointer; padding: 0.5rem 0;">❌ Cancelar</button>
       
@@ -129,111 +119,101 @@ function renderizarMissao(missao: MissaoCientifica): string {
         `}
       </div>
     </main>
-  `
+  `;
 }
-
 function renderApp() {
-  let conteudo = renderizarHeader()
-
-  if (estado.missaoAtual) {
-    conteudo += renderizarMissao(estado.missaoAtual)
-  } else if (estado.recantoAtual) {
-    conteudo += renderizarDetalheRecanto(estado.recantoAtual)
-  } else {
-    conteudo += renderizarListaRecantos()
-  }
-
-  app.innerHTML = conteudo
-  vincularEventos()
-}
-
-function vincularEventos() {
-  // Selecionar Recanto
-  document.querySelectorAll('.btn-recanto').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const id = (e.currentTarget as HTMLElement).dataset.id
-      estado.recantoAtual = recantos.find(r => r.id === id) || null
-      renderApp()
-    })
-  })
-
-  // Voltar para a lista
-  document.querySelector('#btn-voltar')?.addEventListener('click', () => {
-    estado.recantoAtual = null
-    renderApp()
-  })
-
-  // Iniciar Missão
-  document.querySelectorAll('.btn-iniciar-missao').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const id = (e.currentTarget as HTMLElement).dataset.id
-      estado.missaoAtual = estado.recantoAtual?.missoes.find(m => m.id === id) || null
-      renderApp()
-    })
-  })
-
-  // Cancelar Missão
-  document.querySelector('#btn-cancelar-missao')?.addEventListener('click', () => {
-    estado.missaoAtual = null
-    renderApp()
-  })
-
-  // Ouvinte para captura de foto
-  document.querySelector('#btn-capturar-foto')?.addEventListener('click', async () => {
-    try {
-      const foto = await capturarFotoCampo()
-      const container = document.querySelector<HTMLDivElement>('#preview-foto-container')
-      const img = document.querySelector<HTMLImageElement>('#img-preview')
-      
-      if (container && img && estado.missaoAtual) {
-        img.src = foto.base64
-        container.style.display = 'block'
-        
-        // Salva a foto no estado da missão
-        estado.dadosColetados[estado.missaoAtual.id] = {
-          ...estado.dadosColetados[estado.missaoAtual.id],
-          foto: foto.base64,
-          dataHora: foto.timestamp
-        }
-        salvarProgresso()
-      }
-    } catch (erro) {
-      console.log('Captura cancelada ou falhou:', erro)
-    }
-  })
-
-  // Submeter Quiz
-  document.querySelector('#form-quiz')?.addEventListener('submit', (e) => {
-    e.preventDefault()
-    const form = e.target as HTMLFormElement
-    const selecionado = form.querySelector<HTMLInputElement>('input[name="opcao"]:checked')?.value
-
-    if (selecionado !== undefined && estado.missaoAtual) {
-      if (Number(selecionado) === estado.missaoAtual.correta) {
-        alert(estado.missaoAtual.sucesso || 'Evidência registrada com sucesso!')
-        estado.missoesConcluidas.add(estado.missaoAtual.id)
-        estado.descobertas += 10
-        salvarProgresso()
-        estado.missaoAtual = null
-        renderApp()
-      } else {
-        alert(estado.missaoAtual.dica || 'Revise suas observações de campo e tente novamente.')
-      }
-    }
-  })
-
-  // Concluir Missão Genérica
-  document.querySelector('#btn-concluir-generico')?.addEventListener('click', () => {
+    let conteudo = renderizarHeader();
     if (estado.missaoAtual) {
-      alert('Evidência científica registrada no banco de dados local!')
-      estado.missoesConcluidas.add(estado.missaoAtual.id)
-      estado.descobertas += 10
-      salvarProgresso()
-      estado.missaoAtual = null
-      renderApp()
+        conteudo += renderizarMissao(estado.missaoAtual);
     }
-  })
+    else if (estado.recantoAtual) {
+        conteudo += renderizarDetalheRecanto(estado.recantoAtual);
+    }
+    else {
+        conteudo += renderizarListaRecantos();
+    }
+    app.innerHTML = conteudo;
+    vincularEventos();
 }
-
+function vincularEventos() {
+    // Selecionar Recanto
+    document.querySelectorAll('.btn-recanto').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = e.currentTarget.dataset.id;
+            estado.recantoAtual = recantos.find(r => r.id === id) || null;
+            renderApp();
+        });
+    });
+    // Voltar para a lista
+    document.querySelector('#btn-voltar')?.addEventListener('click', () => {
+        estado.recantoAtual = null;
+        renderApp();
+    });
+    // Iniciar Missão
+    document.querySelectorAll('.btn-iniciar-missao').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = e.currentTarget.dataset.id;
+            estado.missaoAtual = estado.recantoAtual?.missoes.find(m => m.id === id) || null;
+            renderApp();
+        });
+    });
+    // Cancelar Missão
+    document.querySelector('#btn-cancelar-missao')?.addEventListener('click', () => {
+        estado.missaoAtual = null;
+        renderApp();
+    });
+    // Ouvinte para captura de foto
+    document.querySelector('#btn-capturar-foto')?.addEventListener('click', async () => {
+        try {
+            const foto = await capturarFotoCampo();
+            const container = document.querySelector('#preview-foto-container');
+            const img = document.querySelector('#img-preview');
+            if (container && img && estado.missaoAtual) {
+                img.src = foto.base64;
+                container.style.display = 'block';
+                // Salva a foto no estado da missão
+                estado.dadosColetados[estado.missaoAtual.id] = {
+                    ...estado.dadosColetados[estado.missaoAtual.id],
+                    foto: foto.base64,
+                    dataHora: foto.timestamp
+                };
+                salvarProgresso();
+            }
+        }
+        catch (erro) {
+            console.log('Captura cancelada ou falhou:', erro);
+        }
+    });
+    // Submeter Quiz
+    document.querySelector('#form-quiz')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const selecionado = form.querySelector('input[name="opcao"]:checked')?.value;
+        if (selecionado !== undefined && estado.missaoAtual) {
+            if (Number(selecionado) === estado.missaoAtual.correta) {
+                alert(estado.missaoAtual.sucesso || 'Evidência registrada com sucesso!');
+                estado.missoesConcluidas.add(estado.missaoAtual.id);
+                estado.descobertas += 10;
+                salvarProgresso();
+                estado.missaoAtual = null;
+                renderApp();
+            }
+            else {
+                alert(estado.missaoAtual.dica || 'Revise suas observações de campo e tente novamente.');
+            }
+        }
+    });
+    // Concluir Missão Genérica
+    document.querySelector('#btn-concluir-generico')?.addEventListener('click', () => {
+        if (estado.missaoAtual) {
+            alert('Evidência científica registrada no banco de dados local!');
+            estado.missoesConcluidas.add(estado.missaoAtual.id);
+            estado.descobertas += 10;
+            salvarProgresso();
+            estado.missaoAtual = null;
+            renderApp();
+        }
+    });
+}
 // Inicializar Aplicação
-renderApp()
+renderApp();
