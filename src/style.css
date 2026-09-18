@@ -1,388 +1,198 @@
 :root {
-  --primary-color: #2e7d32;
-  --primary-hover: #1b5e20;
-  --secondary-color: #4eb052;
-  --bg-color: #f4f7f4;
-  --card-bg: #ffffff;
-  --text-color: #1f2937;
-  --border-radius: 16px;
-  --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --primary: #2e7d32;
+  --primary-dark: #1b5e20;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --radius: 14px;
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 body {
-  background-color: var(--bg-color);
-  color: var(--text-color);
+  background-color: var(--bg);
+  color: var(--text);
+  padding: 12px;
   display: flex;
   justify-content: center;
-  min-height: 100vh;
-  padding: 12px;
 }
 
 #app {
   width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
+  max-width: 500px;
 }
 
 /* Header */
 .app-header {
-  background: var(--card-bg);
-  padding: 16px;
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow);
-  margin-bottom: 20px;
+  background: var(--card);
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin-bottom: 16px;
 }
 
 .header-content {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .logo {
-  font-size: 1.5rem;
-  color: var(--primary-color);
+  font-size: 1.2rem;
+  color: var(--primary);
+  font-weight: 700;
   cursor: pointer;
-  text-align: center;
 }
 
 .user-badge {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  background: #e8f5e9;
-  padding: 8px 14px;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #1b5e20;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
-/* Botões */
-.btn-primary, .btn-secondary, .btn-prof, .btn-back {
-  border: none;
-  border-radius: 12px;
-  padding: 10px 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.95rem;
-}
-
-.btn-primary {
-  background-color: var(--primary-color);
-  color: white;
-  width: 100%;
-}
-
-.btn-primary:hover {
-  background-color: var(--primary-hover);
-}
-
-.btn-secondary {
-  background-color: #e2e8f0;
-  color: #334155;
-}
-
-.btn-prof {
-  background-color: #fee2e2;
-  color: #991b1b;
-}
-
-.btn-back {
-  background: none;
-  color: var(--primary-color);
-  padding: 0;
+/* Forms & Cards */
+.card-container, .recanto-card, .missao-card, .resposta-card {
+  background: var(--card);
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
   margin-bottom: 12px;
-  font-size: 1rem;
 }
 
-/* Cards & Containers */
-.card-container, .recantos-container, .recanto-detalhe, .missao-detalhe, .relatorio-container {
-  background: var(--card-bg);
-  padding: 20px;
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow);
-  margin-bottom: 20px;
-}
-
-/* Form / Crachá */
 .form-group {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
 .form-group label {
+  font-size: 0.85rem;
   font-weight: 600;
-  font-size: 0.9rem;
 }
 
 .form-group input, .form-group textarea {
-  padding: 12px;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 10px;
-  font-size: 1rem;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.95rem;
 }
 
-/* Mascotes Grid */
+/* Mascotes */
 .mascotes-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin-top: 8px;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 6px;
 }
 
 .mascote-card {
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 12px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
   background: #fafafa;
 }
 
 .mascote-card.selecionado {
-  border-color: var(--primary-color);
-  background-color: #f0fdf4;
-  box-shadow: 0 0 0 2px var(--primary-color);
+  border-color: var(--primary);
+  background: #f0fdf4;
 }
 
 .mascote-emoji {
-  font-size: 2rem;
+  font-size: 1.8rem;
+  display: block;
 }
 
-.mascote-card small {
-  font-size: 0.75rem;
-  color: #64748b;
-  line-height: 1.1;
-}
-
-/* Estações / Cards da Trilha */
-.welcome-box {
-  margin-bottom: 16px;
-}
-
-.grid-recantos {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.recanto-card {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.recanto-icon {
-  font-size: 2rem;
-}
-
-.progress-bar {
-  height: 8px;
-  background: #e2e8f0;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: var(--primary-color);
-  transition: width 0.3s;
-}
-
-.progress-text {
-  font-size: 0.8rem;
-  color: #64748b;
-}
-
-/* Desafios e Missões */
-.lista-missoes {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 14px;
-}
-
-.missao-card {
-  background: #f8fafc;
-  border-left: 4px solid var(--primary-color);
-  padding: 14px;
+/* Botões */
+.btn-primary, .btn-secondary, .btn-danger, .btn-back {
+  padding: 10px 14px;
   border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-size: 0.9rem;
 }
 
-.missao-card.resolvida {
-  border-left-color: #10b981;
-  background: #f0fdf4;
-}
-
-/* Ajuste das Mídias (Câmera / Foto Não Ficar Enorme) */
-.media-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 15px 0;
-}
-
-.preview-box {
+.btn-primary {
+  background: var(--primary);
+  color: white;
   width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #f1f5f9;
-  border-radius: 12px;
-  overflow: hidden;
-  padding: 8px;
 }
 
-/* CORREÇÃO DO TAMANHO DA FOTO NO CELULAR */
+.btn-secondary {
+  background: #edf2f7;
+  color: #2d3748;
+}
+
+.btn-danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.btn-back {
+  background: transparent;
+  color: var(--primary);
+  padding: 0 0 12px 0;
+  display: inline-block;
+}
+
+/* Mídia e Foto */
+.preview-box {
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 8px;
+  text-align: center;
+  margin-top: 10px;
+}
+
 .img-preview {
   max-width: 100%;
-  max-height: 280px;
+  max-height: 220px;
   object-fit: contain;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-radius: 6px;
 }
 
-/* Termômetro Microclimático */
-.termometro-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 15px 0;
-}
-
-.termometro-display {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+/* Termômetro */
+.termometro-box {
   background: #f0fdf4;
-  border: 2px dashed #16a34a;
-  padding: 16px;
-  border-radius: 12px;
-}
-
-.termometro-display.ativo {
-  border-style: solid;
-  background: #dcfce7;
-}
-
-.termometro-icone {
-  font-size: 2.5rem;
+  border: 1px solid #bbf7d0;
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 10px;
 }
 
 .temp-valor {
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-weight: bold;
-  color: #15803d;
+  color: var(--primary-dark);
 }
 
-.temp-subtext {
-  font-size: 0.9rem;
-  color: #374151;
-}
-
-/* Múltipla Escolha */
-.opcoes-container {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin: 15px 0;
-}
-
-.opcao-label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px;
-  background: #f8fafc;
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-/* Relatório / Caderno de Campo */
-.respostas-historico {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-top: 15px;
-}
-
-.resposta-card {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  padding: 14px;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  position: relative;
-}
-
-.data-hora {
-  font-size: 0.75rem;
-  color: #94a3b8;
-}
-
-.status-tag {
-  align-self: flex-start;
-  font-size: 0.8rem;
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: #dcfce7;
-  color: #166534;
-  margin-top: 4px;
-}
-
-/* Modal de Sucesso */
+/* Modal */
 .modal-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(0,0,0,0.4);
   display: flex;
-  justify-content: center;
   align-items: center;
-  padding: 20px;
-  z-index: 100;
+  justify-content: center;
+  padding: 16px;
+  z-index: 99;
 }
 
 .modal-card {
   background: white;
-  padding: 24px;
-  border-radius: 20px;
-  text-align: center;
-  max-width: 380px;
+  padding: 20px;
+  border-radius:var(--radius);
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-.modal-icon {
-  font-size: 3rem;
+  max-width: 320px;
+  text-align: center;
 }
