@@ -11,9 +11,14 @@ const estado = {
 // Elementos da DOM
 const app = document.querySelector('#app');
 function salvarProgresso() {
-    localStorage.setItem('explore_its_descobertas', estado.descobertas.toString());
-    localStorage.setItem('explore_its_concluidas', JSON.stringify(Array.from(estado.missoesConcluidas)));
-    localStorage.setItem('explore_its_dados', JSON.stringify(estado.dadosColetados));
+    try {
+        localStorage.setItem('explore_its_descobertas', estado.descobertas.toString());
+        localStorage.setItem('explore_its_concluidas', JSON.stringify(Array.from(estado.missoesConcluidas)));
+        localStorage.setItem('explore_its_dados', JSON.stringify(estado.dadosColetados));
+    }
+    catch (e) {
+        console.warn('Limite do localStorage atingido ao guardar fotos:', e);
+    }
 }
 function renderizarHeader() {
     return `
@@ -103,7 +108,7 @@ function renderizarMissao(missao) {
           </div>
         ` : ''}
 
-        <!-- Formulário Quiz -->
+        <!-- Formulario Quiz -->
         ${missao.recursoRequerido === 'quiz' && missao.opcoes ? `
           <form id="form-quiz" style="display: flex; flex-direction: column; gap: 0.6rem;">
             ${missao.opcoes.map((opcao, idx) => `
@@ -149,7 +154,7 @@ function vincularEventos() {
         estado.recantoAtual = null;
         renderApp();
     });
-    // Iniciar Missão
+    // Iniciar Missao
     document.querySelectorAll('.btn-iniciar-missao').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const id = e.currentTarget.dataset.id;
@@ -157,12 +162,12 @@ function vincularEventos() {
             renderApp();
         });
     });
-    // Cancelar Missão
+    // Cancelar Missao
     document.querySelector('#btn-cancelar-missao')?.addEventListener('click', () => {
         estado.missaoAtual = null;
         renderApp();
     });
-    // Ouvinte para captura de foto
+    // Capturar Foto
     document.querySelector('#btn-capturar-foto')?.addEventListener('click', async () => {
         try {
             const foto = await capturarFotoCampo();
@@ -171,7 +176,6 @@ function vincularEventos() {
             if (container && img && estado.missaoAtual) {
                 img.src = foto.base64;
                 container.style.display = 'block';
-                // Salva a foto no estado da missão
                 estado.dadosColetados[estado.missaoAtual.id] = {
                     ...estado.dadosColetados[estado.missaoAtual.id],
                     foto: foto.base64,
@@ -203,7 +207,7 @@ function vincularEventos() {
             }
         }
     });
-    // Concluir Missão Genérica
+    // Concluir Missao Generica
     document.querySelector('#btn-concluir-generico')?.addEventListener('click', () => {
         if (estado.missaoAtual) {
             alert('Evidência científica registrada no banco de dados local!');

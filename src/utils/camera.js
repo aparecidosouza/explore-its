@@ -1,16 +1,12 @@
 /**
  * Utilitário para captura e otimização de fotos de campo no PWA
  */
-/**
- * Abre a câmara do telemóvel e retorna a foto comprimida em Base64
- */
 export function capturarFotoCampo() {
     return new Promise((resolve, reject) => {
-        // Cria um input de ficheiro temporário configurado para a câmara traseira
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
-        input.capture = 'environment'; // Força o uso da câmara traseira no telemóvel
+        input.capture = 'environment';
         input.onchange = async (event) => {
             const target = event.target;
             const ficheiro = target.files?.[0];
@@ -29,14 +25,11 @@ export function capturarFotoCampo() {
                 reject(erro);
             }
         };
-        // Dispara o clique para abrir a câmara do dispositivo
+        input.onerror = (erro) => reject(erro);
         input.click();
     });
 }
-/**
- * Comprime a imagem para não sobrecarregar o localStorage do telemóvel
- */
-function redimensionarEComprimir(ficheiro, larguraMaxima = 800) {
+function redimensionarEComprimir(ficheiro, larguraMaxima = 400) {
     return new Promise((resolve, reject) => {
         const leitor = new FileReader();
         leitor.readAsDataURL(ficheiro);
@@ -59,8 +52,8 @@ function redimensionarEComprimir(ficheiro, larguraMaxima = 800) {
                     return;
                 }
                 ctx.drawImage(img, 0, 0, largura, altura);
-                // Converte para JPEG com 70% de qualidade para economizar memória
-                const base64 = canvas.toDataURL('image/jpeg', 0.7);
+                // Reduz para 50% de qualidade para ser extremamente leve
+                const base64 = canvas.toDataURL('image/jpeg', 0.5);
                 resolve(base64);
             };
             img.onerror = (erro) => reject(erro);

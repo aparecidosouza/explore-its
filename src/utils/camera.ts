@@ -7,16 +7,12 @@ export interface ResultadoFoto {
   timestamp: string
 }
 
-/**
- * Abre a câmara do telemóvel e retorna a foto comprimida em Base64
- */
 export function capturarFotoCampo(): Promise<ResultadoFoto> {
   return new Promise((resolve, reject) => {
-    // Cria um input de ficheiro temporário configurado para a câmara traseira
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = 'image/*'
-    input.capture = 'environment' // Força o uso da câmara traseira no telemóvel
+    input.capture = 'environment'
 
     input.onchange = async (event: Event) => {
       const target = event.target as HTMLInputElement
@@ -38,15 +34,12 @@ export function capturarFotoCampo(): Promise<ResultadoFoto> {
       }
     }
 
-    // Dispara o clique para abrir a câmara do dispositivo
+    input.onerror = (erro) => reject(erro)
     input.click()
   })
 }
 
-/**
- * Comprime a imagem para não sobrecarregar o localStorage do telemóvel
- */
-function redimensionarEComprimir(ficheiro: File, larguraMaxima = 800): Promise<string> {
+function redimensionarEComprimir(ficheiro: File, larguraMaxima = 400): Promise<string> {
   return new Promise((resolve, reject) => {
     const leitor = new FileReader()
     leitor.readAsDataURL(ficheiro)
@@ -75,8 +68,8 @@ function redimensionarEComprimir(ficheiro: File, larguraMaxima = 800): Promise<s
         }
 
         ctx.drawImage(img, 0, 0, largura, altura)
-        // Converte para JPEG com 70% de qualidade para economizar memória
-        const base64 = canvas.toDataURL('image/jpeg', 0.7)
+        // Reduz para 50% de qualidade para ser extremamente leve
+        const base64 = canvas.toDataURL('image/jpeg', 0.5)
         resolve(base64)
       }
 
