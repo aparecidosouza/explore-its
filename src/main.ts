@@ -23,6 +23,7 @@ const estado: EstadoExtendido = {
 let gravandoAudio = false
 let editorCanvas: EditorCanvas | null = null
 let exibindoRelatorio = false
+let mensagemSucessoModal: string | null = null
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
@@ -49,6 +50,7 @@ function resetarEstadoCompleto() {
   estado.dadosColetados = {}
   exibindoRelatorio = false
   estado.modoProfessor = false
+  mensagemSucessoModal = null
   renderApp()
 }
 
@@ -79,6 +81,17 @@ function exportarDadosJSON() {
   a.download = `censo_its_${estado.codigoTurma || 'equipe'}_${estado.cracha?.nomeEquipe.toLowerCase().replace(/\s+/g, '_') || 'equipe'}.json`
   a.click()
   URL.revokeObjectURL(url)
+}
+
+function concluirMissaoComSucesso(mensagem: string) {
+  if (estado.missaoAtual) {
+    estado.missoesConcluidas.add(estado.missaoAtual.id)
+    estado.descobertas += 10
+    salvarProgresso()
+    mensagemSucessoModal = mensagem
+    estado.missaoAtual = null
+    renderApp()
+  }
 }
 
 function renderizarHeader(): string {
@@ -122,6 +135,25 @@ function renderizarHeader(): string {
         </button>
       </div>
     </header>
+  `
+}
+
+function renderizarModalSucesso(): string {
+  if (!mensagemSucessoModal) return ''
+  return `
+    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem;">
+      <div style="background: white; border-radius: 16px; border: 4px solid #52b788; padding: 1.5rem; text-align: center; max-width: 400px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.3); animation: popIn 0.3s ease;">
+        <span style="font-size: 3.5rem;">🎉</span>
+        <h2 style="color: #1b4332; margin: 0.5rem 0;">Missão Concluída!</h2>
+        <p style="font-size: 0.95rem; color: #333; margin-bottom: 1.2rem; line-height: 1.4;">${mensagemSucessoModal}</p>
+        <div style="background: #d8f3dc; color: #1b4332; padding: 0.6rem; border-radius: 8px; font-weight: bold; margin-bottom: 1.2rem; font-size: 0.9rem;">
+          ⭐ +10 Pontos de Descoberta!
+        </div>
+        <button id="btn-fechar-modal-sucesso" style="background: #2d6a4f; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; width: 100%;">
+          Continuar Expedição ➡️
+        </button>
+      </div>
+    </div>
   `
 }
 
@@ -300,7 +332,6 @@ function renderizarMissao(missao: MissaoCientifica): string {
     return renderizarFormularioCracha()
   }
 
-  // Se for o quiz de clima final, injetamos a variação real calculada se houver medições
   let textoPergunta = missao.pergunta
   const tempBarauna = estado.dadosColetados['barauna-temp']?.temperatura
   const tempNego = estado.dadosColetados['nego-temp']?.temperatura
@@ -418,7 +449,6 @@ function renderizarRelatorioCientifico(): string {
           <p style="margin: 0.2rem 0;"><strong>Progresso da Expedição:</strong> ${concluidas} de ${totalMissoes} missões (${estado.descobertas} PTS)</p>
         </div>
 
-        <!-- Tabela Comparativa de Microclima -->
         <div style="background: #e8f5e9; border: 2px solid #2d6a4f; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
           <h3 style="margin: 0 0 0.5rem; color: #1b4332; font-size: 1rem; text-align: center;">
             🌡️ Mapeamento do Microclima
@@ -531,6 +561,8 @@ function renderApp() {
     conteudo += renderizarListaRecantos()
   }
 
+  conteudo += renderizarModalSucesso()
+
   app.innerHTML = conteudo
   vincularEventos()
 }
@@ -557,6 +589,11 @@ function vincularEventos() {
     renderApp()
   })
 
+  document.querySelector('#btn-fechar-modal-sucesso')?.addEventListener('click', () => {
+    mensagemSucessoModal = null
+    renderApp()
+  })
+
   document.querySelector('#form-temperatura')?.addEventListener('submit', (e) => {
     e.preventDefault()
     const valorTemp = parseFloat((document.querySelector('#input-temperatura') as HTMLInputElement).value)
@@ -567,12 +604,7 @@ function vincularEventos() {
         temperatura: valorTemp,
         dataHora: new Date().toISOString()
       }
-      alert(estado.missaoAtual.sucesso || 'Temperatura registrada com sucesso!')
-      estado.missoesConcluidas.add(estado.missaoAtual.id)
-      estado.descobertas += 10
-      salvarProgresso()
-      estado.missaoAtual = null
-      renderApp()
+      concluirMissaoComSucesso(estado.missaoAtual.sucesso || 'Temperatura registrada com sucesso!')
     }
   })
 
@@ -725,12 +757,7 @@ function vincularEventos() {
         if (editorCanvas && estado.missaoAtual) {
           estado.dadosColetados[estado.missaoAtual.id].fotoComDesenho = editorCanvas.exportarResultado()
         }
-        alert(estado.missaoAtual.sucesso || 'Evidência registrada com sucesso!')
-        estado.missoesConcluidas.add(estado.missaoAtual.id)
-        estado.descobertas += 10
-        salvarProgresso()
-        estado.missaoAtual = null
-        renderApp()
+        concluirMissaoComSucesso(estado.missaoAtual.sucesso || 'Evidência registrada com sucesso!')
       } else {
         alert(estado.missaoAtual.dica || 'Revise suas observações de campo.')
       }
@@ -745,12 +772,7 @@ function vincularEventos() {
           fotoComDesenho: editorCanvas.exportarResultado()
         }
       }
-      alert('Evidência científica registrada no relatório!')
-      estado.missoesConcluidas.add(estado.missaoAtual.id)
-      estado.descobertas += 10
-      salvarProgresso()
-      estado.missaoAtual = null
-      renderApp()
+      concluirMissaoComSucesso('Evidência científica registrada no relatório!')
     }
   })
 }
