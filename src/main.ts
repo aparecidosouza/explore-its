@@ -43,6 +43,24 @@ function resetarEstadoCompleto() {
   renderApp()
 }
 
+function exportarDadosJSON() {
+  const dadosExportacao = {
+    equipe: estado.cracha,
+    descobertas: estado.descobertas,
+    missoesConcluidas: Array.from(estado.missoesConcluidas),
+    evidencias: estado.dadosColetados,
+    dataExportacao: new Date().toISOString()
+  }
+
+  const blob = new Blob([JSON.stringify(dadosExportacao, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `relatorio_explore_its_${estado.cracha?.nomeEquipe.toLowerCase().replace(/\s+/g, '_') || 'equipe'}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 function renderizarHeader(): string {
   return `
     <header style="background: #1b4332; color: white; padding: 1rem; text-align: center; border-bottom: 4px solid #2d6a4f; position: relative;">
@@ -262,9 +280,17 @@ function renderizarRelatorioCientifico(): string {
 
   return `
     <main style="padding: 1rem; max-width: 700px; margin: 0 auto;">
-      <button id="btn-fechar-relatorio" style="background: #6c757d; color: white; border: none; padding: 0.6rem 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 1rem; width: 100%;">
-        ⬅️ Voltar à Trilha
-      </button>
+      <div class="no-print" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+        <button id="btn-fechar-relatorio" style="background: #6c757d; color: white; border: none; padding: 0.6rem 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1;">
+          ⬅️ Voltar
+        </button>
+        <button id="btn-imprimir-pdf" style="background: #1b4332; color: white; border: none; padding: 0.6rem 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1;">
+          🖨️ Imprimir / PDF
+        </button>
+        <button id="btn-exportar-json" style="background: #2d6a4f; color: white; border: none; padding: 0.6rem 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1;">
+          💾 Baixar JSON
+        </button>
+      </div>
 
       <div style="background: white; border: 2px solid #2d6a4f; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
         <!-- Cabeçalho do Relatório -->
@@ -389,6 +415,14 @@ function vincularEventos() {
   document.querySelector('#btn-fechar-relatorio')?.addEventListener('click', () => {
     exibindoRelatorio = false
     renderApp()
+  })
+
+  document.querySelector('#btn-imprimir-pdf')?.addEventListener('click', () => {
+    window.print()
+  })
+
+  document.querySelector('#btn-exportar-json')?.addEventListener('click', () => {
+    exportarDadosJSON()
   })
 
   document.querySelectorAll('.btn-recanto').forEach(btn => {
