@@ -1,0 +1,31 @@
+* [33m604402d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m feat: reativa camera, audio e sensores no aplicativo
+* [33m579b855[m fix: restaura versao funcional com foto, audio e sensores
+* [33m9b8f80d[m feat: ajusta fluxo do aluno com codigo da turma preparando para plataforma futura
+* [33mb6cb8f6[m fix: atualiza marca do app para Explore ITS no header e formulario
+* [33m603611d[m fix: restaura dados das estacoes originais do Explore ITS
+* [33m0873451[m feat: ajusta fluxo de navegacao backstack e configuracoes pwa
+* [33mf1c7127[m Suporta a navegacao via botao voltar nativo do celular utilizando History API
+* [33m9192a48[m Redireciona para o menu principal apenas ao concluir todas as missoes da estacao
+* [33m220e3f5[m Redireciona para menu inicial de recantos apos concluir missao
+* [33m3ce0eef[m Adiciona modal gamificado de conquista e retorno automatico ao recanto
+* [33m82be667[m Adiciona atividade O Primeiro Passo na Trilha ao Recanto do Saci
+* [33m665ce1a[m Implementa censo microclimatico e quiz adaptativo de variacao termica
+* [33m82202c1[m Conclui integracao do Modo Professor, Censo Ambiental e Codigo de Turma
+* [33mef359ef[m Adiciona PWA na pasta public e atualiza index.html
+* [33m3b26c72[m Adiciona exportacao em JSON e impressao em PDF do relatorio
+* [33m3be1887[m Adiciona tela do Relatorio Cientifico de Campo
+* [33m2f48b7a[m Limpa e recria src/main.ts sem erros de sintaxe
+* [33m3670f48[m Ajusta dimensões dinâmicas do canvas e previne scroll no touch
+* [33mb70c29c[m Ajusta container do Canvas e habilita suporte a toques no telemovel
+* [33m981a60e[m Implementa modulo de desenho em canvas sobre foto
+* [33md725b58[m Corrige exibição do botao de gravacao de audio nas missoes
+* [33m3460abb[m Implementa modulo de gravação de audio para bioacustica
+* [33made3d3b[m Adiciona botao de reset no header e garante acao do botao voltar
+* [33ma3e0aa4[m Ajusta tamanho de foto e adiciona tratamento no localStorage
+* [33md69e6a3[m Adiciona modulo de captura de foto e integra ao main.ts
+* [33m359a846[m Remocao de arquivos JavaScript legados
+* [33m51e0dd8[m Implementa matriz investigativa para EF II e persistencia local
+* [33m8a12214[m Ajuste na base do Vite para deploy no celular
+* [33m8642efd[m Migracao do projeto para TypeScript concluida
+* [33me9a6e81[m Configura GitHub Pages
+* [33mad2c0a9[m Primeira versão do Explore ITS
