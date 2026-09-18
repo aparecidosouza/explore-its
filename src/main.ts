@@ -10,6 +10,7 @@ interface Missao {
   id: string
   titulo: string
   descricao: string
+  instrucoesHtml?: string
   tipo: 'foto' | 'temperatura' | 'audio' | 'texto'
   requerHorario?: boolean
 }
@@ -84,11 +85,34 @@ const estacoes: Estacao[] = [
   {
     id: 'recanto-pioneiras',
     nome: '4. Recanto das Pioneiras',
-    descricao: 'Investigação sobre a regeneração do solo, plantas pioneiras e insetos dispersores.',
+    descricao: 'Investigação sobre a regeneração do solo, plantas pioneiras e organismos regeneradores.',
     icone: '🌱',
     missoes: [
-      { id: 'm-pio-sem-ins', titulo: 'Pesquisa de Sementes e Insetos', descricao: 'Observe o solo em busca de sementes pioneiras e de insetos (como formigas). Descreva como eles ajudam a regenerar a área.', tipo: 'texto' },
-      { id: 'm-pio-foto', titulo: 'Foto das Espécies Colonizadoras', descricao: 'Fotografe uma planta pioneira ou pequenos insetos em atividade no solo.', tipo: 'foto' }
+      {
+        id: 'm-pio-busca-insetos',
+        titulo: '🔎 Quem ajuda a floresta a voltar?',
+        descricao: 'Procure no ambiente organismos que ajudam a regenerar a mata e registre as interações ecológicas.',
+        instrucoesHtml: `
+          <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:8px; font-size:0.88rem; margin-bottom:12px; color:#166534;">
+            <p style="margin-bottom:8px;"><strong>As plantas pioneiras não trabalham sozinhas!</strong> Procure ao seu redor:</p>
+            <ul style="padding-left:18px; margin:6px 0; line-height:1.4;">
+              <li>🐜 Insetos carregando sementes</li>
+              <li>🐦 Aves comendo frutos ou transportando sementes</li>
+              <li>🐝 Insetos visitando flores (polinizadores)</li>
+              <li>🪱 Organismos transformando matéria orgânica</li>
+              <li>🍄 Fungos atuando sobre folhas e restos de plantas</li>
+            </ul>
+            <p style="margin-top:8px;"><strong>🎯 Desafio:</strong> Fotografe o registro e descreva abaixo o que estava acontecendo e como esse organismo ajuda a planta a ocupar um novo lugar!</p>
+          </div>
+        `,
+        tipo: 'foto'
+      },
+      {
+        id: 'm-pio-relato',
+        titulo: '📝 Análise das Interações Ecológicas',
+        descricao: 'Descreva detalhadamente o que o grupo observou nas interações ecológicas do Recanto das Pioneiras.',
+        tipo: 'texto'
+      }
     ]
   },
   {
@@ -330,6 +354,8 @@ function render() {
         <h3>${missaoAtual.titulo}</h3>
         <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:12px;">${missaoAtual.descricao}</p>
 
+        ${missaoAtual.instrucoesHtml ? missaoAtual.instrucoesHtml : ''}
+
         <form id="form-missao">
           ${missaoAtual.tipo === 'temperatura' ? `
             <div class="form-group">
@@ -343,8 +369,12 @@ function render() {
           ` : ''}
 
           ${missaoAtual.tipo === 'foto' ? `
+            <div class="form-group">
+              <label>Explicação da Interação Ecológica (O que o grupo encontrou?):</label>
+              <textarea id="inp-texto-foto" rows="3" placeholder="Ex: Encontramos formigas carregando sementes perto do tronco da árvore..."></textarea>
+            </div>
             <input type="file" id="input-foto" accept="image/*" capture="environment" style="display:none" />
-            <button type="button" id="btn-foto" class="btn-secondary">📷 Capturar Foto</button>
+            <button type="button" id="btn-foto" class="btn-secondary">📷 Capturar Foto do Organismo / Interação</button>
             <div class="preview-box">
               ${fotoTemp ? `<img src="${fotoTemp}" class="img-preview"/>` : '<small>Nenhuma foto tirada</small>'}
             </div>
@@ -352,7 +382,7 @@ function render() {
 
           ${missaoAtual.tipo === 'texto' ? `
             <div class="form-group">
-              <textarea id="inp-texto" rows="3" required placeholder="Digite suas observações investigativas..."></textarea>
+              <textarea id="inp-texto" rows="4" required placeholder="Digite os detalhes das observações ecológicas do grupo..."></textarea>
             </div>
           ` : ''}
 
@@ -589,7 +619,8 @@ function bindEvents() {
       conteudo = `Temperatura: ${tempVal} °C às ${horaVal}`
     } else if (missaoAtual.tipo === 'foto') {
       if (!fotoTemp) return alert('Por favor, tire uma foto!')
-      conteudo = 'Foto registrada no local'
+      const descr = (document.querySelector('#inp-texto-foto') as HTMLTextAreaElement)?.value || 'Foto registrada'
+      conteudo = `Registro: ${descr}`
       midiaUrl = fotoTemp
     } else if (missaoAtual.tipo === 'texto') {
       conteudo = (document.querySelector('#inp-texto') as HTMLTextAreaElement).value
