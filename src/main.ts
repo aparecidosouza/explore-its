@@ -82,8 +82,18 @@ const estacoes: Estacao[] = [
     ]
   },
   {
+    id: 'recanto-pioneiras',
+    nome: '4. Recanto das Pioneiras',
+    descricao: 'Investigação sobre a regeneração do solo, plantas pioneiras e insetos dispersores.',
+    icone: '🌱',
+    missoes: [
+      { id: 'm-pio-sem-ins', titulo: 'Pesquisa de Sementes e Insetos', descricao: 'Observe o solo em busca de sementes pioneiras e de insetos (como formigas). Descreva como eles ajudam a regenerar a área.', tipo: 'texto' },
+      { id: 'm-pio-foto', titulo: 'Foto das Espécies Colonizadoras', descricao: 'Fotografe uma planta pioneira ou pequenos insetos em atividade no solo.', tipo: 'foto' }
+    ]
+  },
+  {
     id: 'caipora',
-    nome: '4. Estação Caipora',
+    nome: '5. Estação Caipora',
     descricao: 'Rastros e vestígios da fauna local.',
     icone: '🐾',
     missoes: [
@@ -92,7 +102,7 @@ const estacoes: Estacao[] = [
   },
   {
     id: 'recanto-nego-dagua',
-    nome: '5. Recanto do Nego d\'Água',
+    nome: '6. Recanto do Nego d\'Água',
     descricao: 'Área próxima ao curso d\'água.',
     icone: '💧',
     missoes: [
@@ -258,7 +268,7 @@ function render() {
         <button id="btn-voltar-estacoes" class="btn-back">⬅ Voltar às Estações</button>
         <h2>📊 Tabela de Temperaturas da Trilha</h2>
         <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:15px;">
-          Medições de temperatura (°C) e horários coletados nos 3 recantos:
+          Medições de temperatura (°C) e horários coletados nos recantos:
         </p>
 
         <table style="width:100%; border-collapse: collapse; text-align:left; font-size:0.9rem;">
@@ -273,7 +283,7 @@ function render() {
             ${[
               { id: 'fazenda-barauna', nome: '1. Fazenda Baraúna' },
               { id: 'recanto-jatoba', nome: '3. Recanto do Jatobá' },
-              { id: 'recanto-nego-dagua', nome: '5. Recanto do Nego d\'Água' }
+              { id: 'recanto-nego-dagua', nome: '6. Recanto do Nego d\'Água' }
             ].map(ponto => {
               const med = medicoesTemperatura.find(m => m.estacaoId === ponto.id)
               return `
@@ -342,7 +352,7 @@ function render() {
 
           ${missaoAtual.tipo === 'texto' ? `
             <div class="form-group">
-              <textarea id="inp-texto" rows="3" required placeholder="Digite sua resposta ou observação..."></textarea>
+              <textarea id="inp-texto" rows="3" required placeholder="Digite suas observações investigativas..."></textarea>
             </div>
           ` : ''}
 
@@ -362,7 +372,6 @@ function render() {
     const concluidasEstacao = estacaoAtual.missoes.filter(m => respostasGerais.some(r => r.missaoId === m.id)).length
     const estacaoConclvida = concluidasEstacao === totalMissoesEstacao
 
-    // Descobrir a próxima estação
     const idxAtual = estacoes.findIndex(e => e.id === estacaoAtual!.id)
     const proximaEstacao = idxAtual < estacoes.length - 1 ? estacoes[idxAtual + 1] : null
 
@@ -602,7 +611,6 @@ function bindEvents() {
     respostasGerais.push(novaResp)
     localStorage.setItem('exp_respostas', JSON.stringify(respostasGerais))
 
-    // Verificar se todas as missões deste recanto foram concluídas
     const totalMissoes = estacaoAtual.missoes.length
     const concluidas = estacaoAtual.missoes.filter(m => respostasGerais.some(r => r.missaoId === m.id)).length
 
@@ -618,7 +626,6 @@ function bindEvents() {
   document.querySelector('#btn-fechar-modal')?.addEventListener('click', () => {
     modalMensagem = null
 
-    // Se o recanto atual teve todas as missões concluídas, volta para a página inicial de recantos
     if (estacaoAtual) {
       const totalMissoes = estacaoAtual.missoes.length
       const concluidas = estacaoAtual.missoes.filter(m => respostasGerais.some(r => r.missaoId === m.id)).length
