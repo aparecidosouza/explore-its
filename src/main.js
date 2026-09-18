@@ -1,5 +1,6 @@
 import { recantos } from './data/recantos';
 import { capturarFotoCampo } from './utils/camera';
+import { iniciarGravacaoAudio, pararGravacaoAudio } from './utils/audio';
 // Estado Global da Aplicação
 const estado = {
     recantoAtual: null,
@@ -8,6 +9,8 @@ const estado = {
     missoesConcluidas: new Set(JSON.parse(localStorage.getItem('explore_its_concluidas') || '[]')),
     dadosColetados: JSON.parse(localStorage.getItem('explore_its_dados') || '{}')
 };
+// Variável auxiliar para o estado de gravação de áudio
+let gravandoAudio = false;
 // Elementos da DOM
 const app = document.querySelector('#app');
 function salvarProgresso() {
@@ -103,6 +106,9 @@ function renderizarDetalheRecanto(recanto) {
 }
 function renderizarMissao(missao) {
     const fotoExistente = estado.dadosColetados[missao.id]?.foto;
+    const audioExistente = estado.dadosColetados[missao.id]?.audio;
+    const requerFoto = missao.recursoRequerido === 'camera' || missao.permiteFoto;
+    const requerAudio = missao.recursoRequerido === 'audio' || missao.permiteAudio;
     return `
     <main style="padding: 1rem; max-width: 600px; margin: 0 auto;">
       <button id="btn-cancelar-missao" style="background: #6c757d; color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 0.8rem; width: 100%;">❌ Cancelar Missão</button>
@@ -112,7 +118,7 @@ function renderizarMissao(missao) {
         <p style="font-size: 0.9rem; color: #343a40; margin-bottom: 1rem;">${missao.orientacaoCientifica}</p>
 
         <!-- Módulo de Captura de Foto -->
-        ${(missao.recursoRequerido === 'camera' || missao.permiteFoto) ? `
+        ${requerFoto ? `
           <div style="text-align: center; margin: 1rem 0; background: #e9ecef; padding: 1rem; border-radius: 8px;">
             <div id="preview-foto-container" style="display: ${fotoExistente ? 'block' : 'none'}; margin-bottom: 1rem;">
               <img id="img-preview" src="${fotoExistente || ''}" alt="Evidência" style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 8px; border: 2px solid #2d6a4f;" />
@@ -123,9 +129,22 @@ function renderizarMissao(missao) {
           </div>
         ` : ''}
 
-        <!-- Formulario Quiz -->
-        ${missao.recursoRequerido === 'quiz' && missao.opcoes ? `
-          <form id="form-quiz" style="display: flex; flex-direction: column; gap: 0.6rem;">
+        <!-- Módulo de Gravação de Áudio / Bioacústica -->
+        ${requerAudio ? `
+          <div style="text-align: center; margin: 1rem 0; background: #e9ecef; padding: 1rem; border-radius: 8px;">
+            <div id="preview-audio-container" style="display: ${audioExistente ? 'block' : 'none'}; margin-bottom: 1rem;">
+              <audio id="audio-preview" controls src="${audioExistente || ''}" style="width: 100%;"></audio>
+            </div>
+            <button id="btn-gravar-audio" type="button" style="background: #d90429; color: white; border: none; padding: 0.8rem 1.2rem; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%;">
+              🎙️ <span id="lbl-btn-audio">${gravandoAudio ? 'Parar Gravação' : (audioExistente ? 'Gravado (Clique p/ Novo)' : 'Gravar Relato / Som')}</span>
+            </button>
+          </div>
+        ` : ''}
+
+        <!-- Formulário Quiz (Pergunta de múltipla escolha) -->
+        ${missao.opcoes && missao.opcoes.length > 0 ? `
+          <form id="form-quiz" style="display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem;">
+            ${missao.pergunta ? `<p style="font-weight: bold; color: #1b4332; margin-bottom: 0.5rem;">${missao.pergunta}</p>` : ''}
             ${missao.opcoes.map((opcao, idx) => `
               <label style="background: white; border: 1px solid #ced4da; padding: 0.8rem; border-radius: 8px; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                 <input type="radio" name="opcao" value="${idx}" required>
@@ -176,7 +195,7 @@ function vincularEventos() {
         estado.missaoAtual = null;
         renderApp();
     });
-    // Iniciar Missao
+    // Iniciar Missão
     document.querySelectorAll('.btn-iniciar-missao').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const id = e.currentTarget.dataset.id;
@@ -184,7 +203,7 @@ function vincularEventos() {
             renderApp();
         });
     });
-    // Cancelar Missao
+    // Cancelar Missão
     document.querySelector('#btn-cancelar-missao')?.addEventListener('click', () => {
         estado.missaoAtual = null;
         renderApp();
@@ -210,6 +229,46 @@ function vincularEventos() {
             console.log('Captura cancelada ou falhou:', erro);
         }
     });
+    // Gravar / Parar Áudio
+    document.querySelector('#btn-gravar-audio')?.addEventListener('click', async () => {
+        const lblBtn = document.querySelector('#lbl-btn-audio');
+        if (!gravandoAudio) {
+            try {
+                await iniciarGravacaoAudio();
+                gravandoAudio = true;
+                if (lblBtn)
+                    lblBtn.innerText = '🔴 Gravando... Clique p/ Parar';
+            }
+            catch (erro) {
+                alert('Não foi possível aceder ao microfone. Verifique as permissões.');
+            }
+        }
+        else {
+            try {
+                const resultado = await pararGravacaoAudio();
+                gravandoAudio = false;
+                const container = document.querySelector('#preview-audio-container');
+                const player = document.querySelector('#audio-preview');
+                if (container && player && estado.missaoAtual) {
+                    player.src = resultado.base64;
+                    container.style.display = 'block';
+                    estado.dadosColetados[estado.missaoAtual.id] = {
+                        ...estado.dadosColetados[estado.missaoAtual.id],
+                        audio: resultado.base64,
+                        duracao: resultado.duracaoSegundos,
+                        dataHora: resultado.timestamp
+                    };
+                    salvarProgresso();
+                }
+                if (lblBtn)
+                    lblBtn.innerText = '🎙️ Gravado (Clique p/ Novo)';
+            }
+            catch (erro) {
+                console.error('Erro ao encerrar gravação:', erro);
+                gravandoAudio = false;
+            }
+        }
+    });
     // Submeter Quiz
     document.querySelector('#form-quiz')?.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -229,7 +288,7 @@ function vincularEventos() {
             }
         }
     });
-    // Concluir Missao Generica
+    // Concluir Missão Genérica
     document.querySelector('#btn-concluir-generico')?.addEventListener('click', () => {
         if (estado.missaoAtual) {
             alert('Evidência científica registrada no banco de dados local!');
