@@ -6,35 +6,19 @@ interface Mascote {
   emoji: string
 }
 
-interface Missao {
-  id: string
-  titulo: string
-  descricao: string
-  tipo: 'foto' | 'temperatura' | 'audio' | 'texto'
-}
-
 interface Estacao {
   id: string
   nome: string
   descricao: string
   icone: string
-  missoes: Missao[]
+  requerHorario?: boolean
 }
 
-interface RespostaTemperatura {
+interface MedicaoTemp {
   estacaoId: string
   estacaoNome: string
-  valorTemperatura: number
-  dataHora: string
-}
-
-interface RespostaGeral {
-  estacaoId: string
-  missaoId: string
-  titulo: string
-  conteudo: string
-  midiaUrl?: string
-  dataHora: string
+  valorTemp: number
+  horarioMedicao: string
 }
 
 interface Cracha {
@@ -50,71 +34,43 @@ const mascotes: Mascote[] = [
   { id: 'tatu', nome: 'Bolinha', emoji: '🦔' }
 ]
 
-const estacoes: Estacao[] = [
+const estacoesMedicao: Estacao[] = [
   {
     id: 'fazenda-barauna',
-    nome: 'Fazenda Baraúna (Início da Trilha)',
-    descricao: 'Ponto de recepção e partida. Registre a 1ª medição de temperatura do dia.',
+    nome: '1. Fazenda Baraúna (Início da Trilha)',
+    descricao: 'Afera a temperatura inicial e registre o horário de início da expedição.',
     icone: '🏡',
-    missoes: [
-      { id: 'm-bar-temp', titulo: '1ª Medição de Temperatura', descricao: 'Use o termômetro digital no local e digite a temperatura encontrada em °C.', tipo: 'temperatura' },
-      { id: 'm-bar-foto', titulo: 'Registro de Partida', descricao: 'Tire uma foto da equipe ou do portal de início na Fazenda Baraúna.', tipo: 'foto' }
-    ]
-  },
-  {
-    id: 'saci-perere',
-    nome: 'Estação Saci-Pererê',
-    descricao: 'Investigue os sons e ruídos da mata.',
-    icone: '🌪️',
-    missoes: [
-      { id: 'm-saci-1', titulo: 'Sons da Mata', descricao: 'Grave um áudio dos sons ao seu redor.', tipo: 'audio' }
-    ]
+    requerHorario: true
   },
   {
     id: 'recanto-jatoba',
-    nome: 'Recanto do Jatobá',
-    descricao: 'Observação da flora e 2ª medição de microclima.',
-    icone: '🌰',
-    missoes: [
-      { id: 'm-jat-temp', titulo: '2ª Medição de Temperatura', descricao: 'Use o termômetro digital sob a sombra das árvores e digite a temperatura em °C.', tipo: 'temperatura' },
-      { id: 'm-jat-obs', titulo: 'Observação da Vegetação', descricao: 'Descreva as características das sementes e árvores encontradas.', tipo: 'texto' }
-    ]
-  },
-  {
-    id: 'caipora',
-    nome: 'Estação Caipora',
-    descricao: 'Rastros e vestígios da fauna local.',
-    icone: '🐾',
-    missoes: [
-      { id: 'm-cai-1', titulo: 'Pegadas e Registros', descricao: 'Fotografe marcas ou rastros no solo.', tipo: 'foto' }
-    ]
+    nome: '2. Recanto do Jatobá',
+    descricao: 'Afera a temperatura no microclima sob a copa das árvores.',
+    icone: '🌰'
   },
   {
     id: 'recanto-nego-dagua',
-    nome: 'Recanto do Nego d\'Água',
-    descricao: 'Área próxima ao corpo d\'água e 3ª medição de microclima.',
-    icone: '💧',
-    missoes: [
-      { id: 'm-neg-temp', titulo: '3ª Medição de Temperatura', descricao: 'Use o termômetro digital próximo ao córrego e digite a temperatura em °C.', tipo: 'temperatura' }
-    ]
+    nome: '3. Recanto do Nego d\'Água',
+    descricao: 'Afera a temperatura próximo à zona ciliar / curso d\'água.',
+    icone: '💧'
   }
 ]
 
-// Estado do App
+// Estado Local
 let crachaSalvo: Cracha | null = JSON.parse(localStorage.getItem('exp_cracha') || 'null')
-let respostasGerais: RespostaGeral[] = JSON.parse(localStorage.getItem('exp_respostas') || '[]')
-let medicoesTemperatura: RespostaTemperatura[] = JSON.parse(localStorage.getItem('exp_medicoes_temp') || '[]')
+let medicoesSalvas: MedicaoTemp[] = JSON.parse(localStorage.getItem('exp_medicoes') || '[]')
 
 let mascoteTempId = mascotes[0].id
-let estacaoAtual: Estacao | null = null
-let missaoAtual: Missao | null = null
-let fotoTemp: string | null = null
-let audioTemp: string | null = null
-let verCaderno = false
-let verComparativoTemp = false
-let modalMensagem: string | null = null
+let estacaoSelecionada: Estacao | null = null
+let verTabelaFinal = false
+let modalSucesso = false
 
 const app = document.querySelector<HTMLDivElement>('#app')!
+
+function obterHoraAtual(): string {
+  const agora = new Date()
+  return agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+}
 
 function render() {
   let html = `
@@ -124,8 +80,7 @@ function render() {
         ${crachaSalvo ? `
           <div class="user-badge">
             <small><strong>${crachaSalvo.mascote.emoji}${crachaSalvo.nome}</strong></small>
-            <button id="btn-comparar-temp" class="btn-secondary">📊 Temperaturas</button>
-            <button id="btn-caderno" class="btn-secondary">📜 Caderno</button>
+            <button id="btn-ver-tabela" class="btn-secondary">📊 Tabela de Temperaturas</button>
             <button id="btn-sair" class="btn-danger">Sair</button>
           </div>
         ` : ''}
@@ -136,15 +91,15 @@ function render() {
   if (!crachaSalvo) {
     html += `
       <div class="card-container">
-        <h2>🎒 Criar Crachá de Campo</h2>
+        <h2>🎒 Identificação de Campo</h2>
         <form id="form-cadastro" style="margin-top:12px;">
           <div class="form-group">
-            <label>Nome do Aluno:</label>
-            <input type="text" id="inp-nome" required placeholder="Ex: Maria Silva" />
+            <label>Nome do Estudante:</label>
+            <input type="text" id="inp-nome" required placeholder="Ex: Lucas Silva" />
           </div>
           <div class="form-group">
-            <label>Turma / Código:</label>
-            <input type="text" id="inp-turma" required placeholder="Ex: 6º Ano A" />
+            <label>Turma / Escola:</label>
+            <input type="text" id="inp-turma" required placeholder="Ex: 6º Ano B" />
           </div>
           <div class="form-group">
             <label>Mascote de Expedição:</label>
@@ -161,138 +116,93 @@ function render() {
         </form>
       </div>
     `
-  } else if (verComparativoTemp) {
+  } else if (verTabelaFinal) {
     html += `
       <div class="card-container">
-        <button id="btn-fechar-comparativo" class="btn-back">⬅ Voltar às Estações</button>
-        <h2>📊 Comparativo de Temperatura</h2>
-        <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:15px;">
-          Comparativo dos 3 pontos de medição ao longo da trilha:
+        <button id="btn-voltar" class="btn-back">⬅ Voltar às Estações</button>
+        <h2>📊 Tabela Comparativa de Temperatura</h2>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:15px;">
+          Registro das temperaturas e horários coletados ao longo da trilha:
         </p>
 
-        <div style="display:flex; flex-direction:column; gap:10px;">
-          ${[
-            { id: 'fazenda-barauna', nome: '1. Fazenda Baraúna (Início)' },
-            { id: 'recanto-jatoba', nome: '2. Recanto do Jatobá' },
-            { id: 'recanto-nego-dagua', nome: '3. Recanto do Nego d\'Água' }
-          ].map(ponto => {
-            const med = medicoesTemperatura.find(m => m.estacaoId === ponto.id)
-            return `
-              <div class="resposta-card" style="border-left: 4px solid var(--primary);">
-                <strong>${ponto.nome}</strong>${med ? `
-                  <p style="font-size:1.2rem; font-weight:bold; color:var(--primary-dark); margin-top:4px;">
-                    🌡️ ${med.valorTemperatura} °C
-                  </p>
-                  <small style="color:var(--text-muted);">${med.dataHora}</small>
-                ` : `
-                  <p style="font-size:0.9rem; color:#d97706; margin-top:4px;">⏳ Medição ainda não realizada</p>
-                `}
-              </div>
-            `
-          }).join('')}
-        </div>
+        <table style="width:100%; border-collapse: collapse; text-align:left; font-size:0.9rem;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--border); background:#f1f5f9;">
+              <th style="padding:8px;">Ponto de Coleta</th>
+              <th style="padding:8px;">Temp (°C)</th>
+              <th style="padding:8px;">Horário</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${estacoesMedicao.map(est => {
+              const med = medicoesSalvas.find(m => m.estacaoId === est.id)
+              return `
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding:10px 8px;"><strong>${est.nome}</strong></td>
+                  <td style="padding:10px 8px; color:var(--primary-dark); font-weight:bold;">
+                    ${med ? `${med.valorTemp} °C` : '<span style="color:#d97706;">Pendente</span>'}
+                  </td>
+                  <td style="padding:10px 8px; color:var(--text-muted);">
+                    ${med ? med.horarioMedicao : '-'}
+                  </td>
+                </tr>
+              `
+            }).join('')}
+          </tbody>
+        </table>
       </div>
     `
-  } else if (verCaderno) {
+  } else if (estacaoSelecionada) {
+    const medExistente = medicoesSalvas.find(m => m.estacaoId === estacaoSelecionada!.id)
+    const horaPadrao = medExistente ? medExistente.horarioMedicao : obterHoraAtual()
+
     html += `
       <div class="card-container">
-        <button id="btn-fechar-caderno" class="btn-back">⬅ Voltar às Estações</button>
-        <h2>📜 Caderno de Campo</h2>
-        <p><small>Estudante: ${crachaSalvo.nome} | Turma: ${crachaSalvo.turma}</small></p>
-        <hr style="margin:10px 0; border:0; border-top:1px solid var(--border);" />
+        <button id="btn-voltar" class="btn-back">⬅ Voltar</button>
+        <h2>${estacaoSelecionada.icone} ${estacaoSelecionada.nome}</h2>
+        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:15px;">${estacaoSelecionada.descricao}</p>
 
-        ${respostasGerais.length === 0 ? '<p>Nenhum registro gravado ainda.</p>' : ''}
-        ${respostasGerais.map(r => `
-          <div class="resposta-card">
-            <h4>${r.titulo}</h4>
-            <p style="font-size:0.9rem; margin-top:4px;">${r.conteudo}</p>${r.midiaUrl ? `<div class="preview-box"><img src="${r.midiaUrl}" class="img-preview"/></div>` : ''}
-            <small style="color:var(--text-muted); font-size:0.75rem;">${r.dataHora}</small>
+        <form id="form-medicao">
+          <div class="form-group">
+            <label>Temperatura lida no Termômetro Digital (°C):</label>
+            <input type="number" step="0.1" id="inp-temp" required placeholder="Ex: 26.5" value="${medExistente ? medExistente.valorTemp : ''}" style="font-size:1.2rem; padding:10px;" />
           </div>
-        `).join('')}
-      </div>
-    `
-  } else if (missaoAtual) {
-    html += `
-      <div class="card-container">
-        <button id="btn-voltar-estacao" class="btn-back">⬅ Voltar</button>
-        <h3>${missaoAtual.titulo}</h3>
-        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:12px;">${missaoAtual.descricao}</p>
 
-        <form id="form-missao">
-          ${missaoAtual.tipo === 'temperatura' ? `
-            <div class="form-group">
-              <label>Digite a temperatura aferida no termômetro digital (°C):</label>
-              <input type="number" step="0.1" id="inp-temp-valor" required placeholder="Ex: 27.5" style="font-size:1.2rem; padding:10px;" />
-            </div>
-          ` : ''}
+          <div class="form-group">
+            <label>${estacaoSelecionada.requerHorario ? 'Horário de Início da Trilha:' : 'Horário da Medição:'}</label>
+            <input type="time" id="inp-hora" required value="${horaPadrao}" style="font-size:1.1rem; padding:8px;" />
+          </div>
 
-          ${missaoAtual.tipo === 'foto' ? `
-            <input type="file" id="input-foto" accept="image/*" capture="environment" style="display:none" />
-            <button type="button" id="btn-foto" class="btn-secondary">📷 Capturar Foto</button>
-            <div class="preview-box">
-              ${fotoTemp ? `<img src="${fotoTemp}" class="img-preview"/>` : '<small>Nenhuma foto tirada</small>'}
-            </div>
-          ` : ''}
-
-          ${missaoAtual.tipo === 'texto' ? `
-            <div class="form-group">
-              <textarea id="inp-texto" rows="3" required placeholder="Digite sua resposta ou observação..."></textarea>
-            </div>
-          ` : ''}
-
-          ${missaoAtual.tipo === 'audio' ? `
-            <button type="button" id="btn-audio" class="btn-secondary">🎙️ Registrar Gravador de Áudio</button>
-            <div class="preview-box">
-              ${audioTemp ? '<p>✅ Áudio registrado!</p>' : '<small>Gravação pendente</small>'}
-            </div>
-          ` : ''}
-
-          <button type="submit" class="btn-primary" style="margin-top:14px;">Salvar no Caderno</button>
+          <button type="submit" class="btn-primary" style="margin-top:10px;">Salvar Registro</button>
         </form>
       </div>
     `
-  } else if (estacaoAtual) {
+  } else {
     html += `
-      <div class="card-container">
-        <button id="btn-voltar-home" class="btn-back">⬅ Voltar para Estações</button>
-        <h2>${estacaoAtual.icone} ${estacaoAtual.nome}</h2>
-        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:12px;">${estacaoAtual.descricao}</p>
-
-        ${estacaoAtual.missoes.map(m => {
-          const feita = respostasGerais.some(r => r.missaoId === m.id) || medicoesTemperatura.some(med => estacaoAtual?.id === med.estacaoId && m.tipo === 'temperatura')
+      <div>
+        <h3 style="margin-bottom:10px;">Pontos de Medição de Temperatura</h3>
+        ${estacoesMedicao.map(est => {
+          const med = medicoesSalvas.find(m => m.estacaoId === est.id)
           return `
-            <div class="missao-card">
-              <h4>${m.titulo}${feita ? '✅' : ''}</h4>
-              <p style="font-size:0.85rem; color:var(--text-muted); margin:4px 0 10px 0;">${m.descricao}</p>
-              <button class="btn-primary btn-abrir-missao" data-id="${m.id}">
-                ${feita ? 'Editar Registro' : 'Fazer Registro'}
+            <div class="recanto-card">
+              <h3>${est.icone} ${est.nome}${med ? '✅' : ''}</h3>
+              <p style="font-size:0.85rem; color:var(--text-muted); margin:4px 0 10px 0;">${est.descricao}</p>${med ? `<p style="font-size:0.85rem; margin-bottom:10px;">Registrado: <strong>${med.valorTemp} °C</strong> às ${med.horarioMedicao}</p>` : ''}
+              <button class="btn-primary btn-abrir-estacao" data-id="${est.id}">
+                ${med ? 'Editar Medição' : 'Registrar Medição'}
               </button>
             </div>
           `
         }).join('')}
       </div>
     `
-  } else {
-    html += `
-      <div>
-        <h3 style="margin-bottom:10px;">Estações da Trilha</h3>
-        ${estacoes.map(e => `
-          <div class="recanto-card">
-            <h3>${e.icone}${e.nome}</h3>
-            <p style="font-size:0.85rem; color:var(--text-muted); margin:4px 0 10px 0;">${e.descricao}</p>
-            <button class="btn-primary btn-abrir-estacao" data-id="${e.id}">Acessar Estação</button>
-          </div>
-        `).join('')}
-      </div>
-    `
   }
 
-  if (modalMensagem) {
+  if (modalSucesso) {
     html += `
       <div class="modal-overlay">
         <div class="modal-card">
-          <h3>✅ Registro Salvo!</h3>
-          <p style="margin:10px 0;">${modalMensagem}</p>
+          <h3>✅ Registrado!</h3>
+          <p style="margin:10px 0;">Dados salvos com sucesso na tabela de campo.</p>
           <button id="btn-fechar-modal" class="btn-primary">OK</button>
         </div>
       </div>
@@ -305,10 +215,8 @@ function render() {
 
 function bindEvents() {
   document.querySelector('#nav-home')?.addEventListener('click', () => {
-    estacaoAtual = null
-    missaoAtual = null
-    verCaderno = false
-    verComparativoTemp = false
+    estacaoSelecionada = null
+    verTabelaFinal = false
     render()
   })
 
@@ -331,121 +239,60 @@ function bindEvents() {
   })
 
   document.querySelector('#btn-sair')?.addEventListener('click', () => {
-    if (confirm('Deseja reiniciar a sessão e apagar os dados locais?')) {
+    if (confirm('Deseja apagar as medições e reiniciar?')) {
       localStorage.clear()
       crachaSalvo = null
-      respostasGerais = []
-      medicoesTemperatura = []
-      estacaoAtual = null
-      missaoAtual = null
-      verCaderno = false
-      verComparativoTemp = false
+      medicoesSalvas = []
+      estacaoSelecionada = null
+      verTabelaFinal = false
       render()
     }
   })
 
-  document.querySelector('#btn-caderno')?.addEventListener('click', () => { verCaderno = true; verComparativoTemp = false; render() })
-  document.querySelector('#btn-fechar-caderno')?.addEventListener('click', () => { verCaderno = false; render() })
+  document.querySelector('#btn-ver-tabela')?.addEventListener('click', () => {
+    verTabelaFinal = true
+    render()
+  })
 
-  document.querySelector('#btn-comparar-temp')?.addEventListener('click', () => { verComparativoTemp = true; verCaderno = false; render() })
-  document.querySelector('#btn-fechar-comparativo')?.addEventListener('click', () => { verComparativoTemp = false; render() })
+  document.querySelector('#btn-voltar')?.addEventListener('click', () => {
+    estacaoSelecionada = null
+    verTabelaFinal = false
+    render()
+  })
 
   document.querySelectorAll('.btn-abrir-estacao').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.getAttribute('data-id')
-      estacaoAtual = estacoes.find(x => x.id === id) || null
+      estacaoSelecionada = estacoesMedicao.find(e => e.id === id) || null
       render()
     })
   })
 
-  document.querySelector('#btn-voltar-home')?.addEventListener('click', () => { estacaoAtual = null; render() })
-
-  document.querySelectorAll('.btn-abrir-missao').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.getAttribute('data-id')
-      fotoTemp = null
-      audioTemp = null
-      missaoAtual = estacaoAtual?.missoes.find(x => x.id === id) || null
-      render()
-    })
-  })
-
-  document.querySelector('#btn-voltar-estacao')?.addEventListener('click', () => { missaoAtual = null; render() })
-
-  const btnFoto = document.querySelector('#btn-foto')
-  const inputFoto = document.querySelector('#input-foto') as HTMLInputElement
-  if (btnFoto && inputFoto) {
-    btnFoto.addEventListener('click', () => inputFoto.click())
-    inputFoto.addEventListener('change', () => {
-      const file = inputFoto.files?.[0]
-      if (file) {
-        const r = new FileReader()
-        r.onload = (e) => { fotoTemp = e.target?.result as string; render() }
-        r.readAsDataURL(file)
-      }
-    })
-  }
-
-  document.querySelector('#btn-audio')?.addEventListener('click', () => {
-    audioTemp = "Audio_Registrado"
-    alert('Áudio marcado como registrado!')
-    render()
-  })
-
-  document.querySelector('#form-missao')?.addEventListener('submit', (e) => {
+  document.querySelector('#form-medicao')?.addEventListener('submit', (e) => {
     e.preventDefault()
-    if (!missaoAtual || !estacaoAtual) return
+    if (!estacaoSelecionada) return
 
-    let conteudo = ''
-    let midiaUrl = undefined
+    const tempVal = parseFloat((document.querySelector('#inp-temp') as HTMLInputElement).value)
+    const horaVal = (document.querySelector('#inp-hora') as HTMLInputElement).value
 
-    if (missaoAtual.tipo === 'temperatura') {
-      const valorInp = (document.querySelector('#inp-temp-valor') as HTMLInputElement).value
-      const tempNum = parseFloat(valorInp)
+    if (isNaN(tempVal)) return alert('Por favor, digite um número válido para a temperatura.')
 
-      if (isNaN(tempNum)) return alert('Por favor, digite um valor de temperatura válido!')
+    medicoesSalvas = medicoesSalvas.filter(m => m.estacaoId !== estacaoSelecionada!.id)
+    medicoesSalvas.push({
+      estacaoId: estacaoSelecionada.id,
+      estacaoNome: estacaoSelecionada.nome,
+      valorTemp: tempVal,
+      horarioMedicao: horaVal
+    })
 
-      medicoesTemperatura = medicoesTemperatura.filter(m => m.estacaoId !== estacaoAtual!.id)
-      medicoesTemperatura.push({
-        estacaoId: estacaoAtual.id,
-        estacaoNome: estacaoAtual.nome,
-        valorTemperatura: tempNum,
-        dataHora: new Date().toLocaleString('pt-BR')
-      })
-      localStorage.setItem('exp_medicoes_temp', JSON.stringify(medicoesTemperatura))
-
-      conteudo = `Temperatura registrada: ${tempNum} °C`
-    } else if (missaoAtual.tipo === 'foto') {
-      if (!fotoTemp) return alert('Por favor, tire uma foto!')
-      conteudo = 'Foto de campo anexada'
-      midiaUrl = fotoTemp
-    } else if (missaoAtual.tipo === 'texto') {
-      conteudo = (document.querySelector('#inp-texto') as HTMLTextAreaElement).value
-    } else if (missaoAtual.tipo === 'audio') {
-      if (!audioTemp) return alert('Por favor, grave o áudio!')
-      conteudo = 'Áudio registrado no local'
-    }
-
-    const novaResp: RespostaGeral = {
-      estacaoId: estacaoAtual.id,
-      missaoId: missaoAtual.id,
-      titulo: `${estacaoAtual.nome} - ${missaoAtual.titulo}`,
-      conteudo,
-      midiaUrl,
-      dataHora: new Date().toLocaleString('pt-BR')
-    }
-
-    respostasGerais = respostasGerais.filter(r => r.missaoId !== missaoAtual!.id)
-    respostasGerais.push(novaResp)
-    localStorage.setItem('exp_respostas', JSON.stringify(respostasGerais))
-
-    modalMensagem = `Registro gravado com sucesso!`
+    localStorage.setItem('exp_medicoes', JSON.stringify(medicoesSalvas))
+    modalSucesso = true
     render()
   })
 
   document.querySelector('#btn-fechar-modal')?.addEventListener('click', () => {
-    modalMensagem = null
-    missaoAtual = null
+    modalSucesso = false
+    estacaoSelecionada = null
     render()
   })
 }
