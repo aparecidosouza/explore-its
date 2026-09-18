@@ -89,8 +89,17 @@ function concluirMissaoComSucesso(mensagem: string) {
     estado.descobertas += 10
     salvarProgresso()
     mensagemSucessoModal = mensagem
+
+    const temMissoesPendentesNoRecanto = estado.recantoAtual?.missoes.some(
+      m => !estado.missoesConcluidas.has(m.id)
+    )
+
     estado.missaoAtual = null
-    estado.recantoAtual = null // Redireciona o aluno de volta para o menu inicial de recantos
+
+    if (!temMissoesPendentesNoRecanto) {
+      estado.recantoAtual = null
+    }
+
     renderApp()
   }
 }
