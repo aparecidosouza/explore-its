@@ -56,71 +56,90 @@ const estado: EstadoApp = {
   modoProfessor: false
 }
 
-// Controle do Modal de Feedback de Sucesso
+// Controle do Modal de Feedback e Navegação
 let modalSucessoAberto = false
 let mensagemSucessoModal = ''
 let exibindoRelatorio = false
 let navegandoViaHistorico = false
 
-// Dados do Ecossistema Escolar / Trilha Científica
+// Estações da Trilha Explore ITS / PUC Goiás
 const recantos: Recanto[] = [
   {
-    id: 'recanto-1',
-    nome: 'Recanto das Plantas Medicinais',
-    descricao: 'Explore a horta medicinal, identifique espécies e aprenda sobre princípios ativos.',
-    icone: '🌿',
+    id: 'estacao-barauna',
+    nome: 'Estação Baraúna',
+    descricao: 'Explore a imponente árvore símbolo do Cerrado e observe sua biodiversidade local.',
+    icone: '🌳',
     missoes: [
       {
-        id: 'm1-1',
-        titulo: 'Identificação de Hortelã',
-        descricao: 'Localize a horta de hortelã e observe a textura e o aroma das folhas.',
+        id: 'm-bar-1',
+        titulo: 'Identificação da Espécie',
+        descricao: 'Observe o tronco e a copa da Baraúna para identificar suas adaptações ao ecossistema.',
         concluida: false,
         pergunta: {
-          id: 'p1-1',
-          texto: 'Qual é o principal uso tradicional do chá de hortelã-pimenta?',
+          id: 'p-bar-1',
+          texto: 'Quais características da casca e das folhas da Baraúna auxiliam na sua sobrevivência no Cerrado?',
           tipo: 'multipla_escolha',
           opcoes: [
-            'Auxílio na digestão e alívio de cólicas',
-            'Tratamento de fraturas ósseas',
-            'Substituto do sal de cozinha',
-            'Aumento da pressão arterial'
+            'Casca espessa e folhas adaptadas à conservação de água',
+            'Folhas finas e raiz superficial',
+            'Casca lisa e ausência de raiz principal',
+            'Sementes aquáticas'
           ],
           respostaCorreta: 0
         }
       },
       {
-        id: 'm1-2',
-        titulo: 'Registro Biológico',
-        descricao: 'Escolha uma planta medicinal do recanto e descreva suas características observadas.',
+        id: 'm-bar-2',
+        titulo: 'Registro de Campo',
+        descricao: 'Anote suas observações sobre a fauna associada a esta árvore.',
         concluida: false,
         pergunta: {
-          id: 'p1-2',
-          texto: 'Escreva o nome de uma planta observada e descreva a forma de suas folhas:',
+          id: 'p-bar-2',
+          texto: 'Descreva os insetos ou aves observados no entorno da Baraúna:',
           tipo: 'texto'
         }
       }
     ]
   },
   {
-    id: 'recanto-2',
-    nome: 'Estação de Compostagem',
-    descricao: 'Investigue como a matéria orgânica é reciclada e transformada em adubo pelos decompositores.',
-    icone: '🍂',
+    id: 'estacao-saci-perere',
+    nome: 'Estação Saci-Pererê',
+    descricao: 'Investigue os elementos da cultura e folclore integrados ao meio ambiente.',
+    icone: '🌪️',
     missoes: [
       {
-        id: 'm2-1',
-        titulo: 'Agentes Decompositores',
-        descricao: 'Observe o composto em degradação e identifique a presença de organismos vivos.',
+        id: 'm-saci-1',
+        titulo: 'Semeando Histórias',
+        descricao: 'Relacione o ecossistema local com os elementos narrativos do espaço.',
         concluida: false,
         pergunta: {
-          id: 'p2-1',
-          texto: 'Quais organismos são os principais responsáveis pela transformação dos resíduos na composteira?',
+          id: 'p-saci-1',
+          texto: 'Qual é a importância da preservação das lendas e do conhecimento tradicional para a conservação ambiental?',
+          tipo: 'texto'
+        }
+      }
+    ]
+  },
+  {
+    id: 'estacao-jatoba',
+    nome: 'Estação Jatobá',
+    descricao: 'Descubra a relevância do Jatobá para a fauna e para o uso sustentável de frutos.',
+    icone: '🌰',
+    missoes: [
+      {
+        id: 'm-jat-1',
+        titulo: 'Frutos e Sementes',
+        descricao: 'Analise a rigidez e a estrutura das sementes de Jatobá encontradas na trilha.',
+        concluida: false,
+        pergunta: {
+          id: 'p-jat-1',
+          texto: 'Como a casca dura do fruto do Jatobá protege a semente até o momento do germinar?',
           tipo: 'multipla_escolha',
           opcoes: [
-            'Fungos, bactérias e minhocas',
-            'Apenas luz solar e água',
-            'Pássaros e roedores',
-            'Plásticos e metais'
+            'Protege contra predadores e variações climáticas severas',
+            'Impede completamente a reprodução da árvore',
+            'Serve apenas para atrair água da chuva',
+            'Dissolve a semente com o calor'
           ],
           respostaCorreta: 0
         }
@@ -128,25 +147,70 @@ const recantos: Recanto[] = [
     ]
   },
   {
-    id: 'recanto-3',
-    nome: 'Hotel de Insetos & Polinizadores',
-    descricao: 'Descubra a importância dos insetos solitários na polinização das plantas da escola.',
-    icone: '🐝',
+    id: 'estacao-pioneiras',
+    nome: 'Estação Pioneiras',
+    descricao: 'Compreenda o papel das espécies vegetais pioneiras na recuperação do solo.',
+    icone: '🌱',
     missoes: [
       {
-        id: 'm3-1',
-        titulo: 'Observação de Polinizadores',
-        descricao: 'Observe os furos de madeira do hotel de insetos e procure por abelhas solitárias.',
+        id: 'm-pio-1',
+        titulo: 'Regeneração Vegetal',
+        descricao: 'Observe como as espécies pioneiras ocupam a área para dar lugar à vegetação nativa.',
         concluida: false,
         pergunta: {
-          id: 'p3-1',
-          texto: 'Qual o papel vital das abelhas na manutenção da biodiversidade vegetal?',
+          id: 'p-pio-1',
+          texto: 'Qual o papel fundamental das plantas pioneiras na restauração de áreas degradadas?',
           tipo: 'multipla_escolha',
           opcoes: [
-            'Polinização das flores permitindo a geração de frutos e sementes',
-            'Consumo total das folhas das árvores',
-            'Aumento da compactação do solo',
-            'Limpeza de resíduos plásticos'
+            'Preparar o solo e criar sombra para espécies mais sensíveis',
+            'Impedir o crescimento de qualquer outra árvore',
+            'Consumir todos os nutrientes do solo sem reposição',
+            'Modificar o clima de toda a região instantaneamente'
+          ],
+          respostaCorreta: 0
+        }
+      }
+    ]
+  },
+  {
+    id: 'estacao-caipora',
+    nome: 'Estação Caipora',
+    descricao: 'Explore a proteção da fauna silvestre e o equilíbrio da cadeia alimentar no Cerrado.',
+    icone: '🐾',
+    missoes: [
+      {
+        id: 'm-cai-1',
+        titulo: 'Guardiões da Floresta',
+        descricao: 'Identifique pegadas, rastros ou sinais de animais nativos na estação.',
+        concluida: false,
+        pergunta: {
+          id: 'p-cai-1',
+          texto: 'Relate os vestígios da presença da fauna encontrados nesta estação:',
+          tipo: 'texto'
+        }
+      }
+    ]
+  },
+  {
+    id: 'estacao-nego-dagua',
+    nome: 'Estação Nego D\'Água',
+    descricao: 'Analise a importância dos recursos hídricos e das matas de galeria para a região.',
+    icone: '💧',
+    missoes: [
+      {
+        id: 'm-neg-1',
+        titulo: 'Recursos Hídricos e Mata Ciliar',
+        descricao: 'Examine a vegetação de proteção ao redor do curso d\'água.',
+        concluida: false,
+        pergunta: {
+          id: 'p-neg-1',
+          texto: 'Como a mata ciliar atua na proteção dos rios e córregos contra o assoreamento?',
+          tipo: 'multipla_escolha',
+          opcoes: [
+            'Suas raízes fixam o solo e filtram os resíduos que iriam para a água',
+            'Aumenta a evaporação acelerada da água',
+            'Impede a passagem da fauna aquática',
+            'Bloqueia a entrada de luz e oxigênio na água'
           ],
           respostaCorreta: 0
         }
@@ -160,20 +224,20 @@ const app = document.querySelector<HTMLDivElement>('#app')!
 
 // Funções de Armazenamento Local (LocalStorage)
 function salvarCracha(cracha: CrachaEstudante) {
-  localStorage.setItem('ecotrilha_cracha', JSON.stringify(cracha))
+  localStorage.setItem('explore_its_cracha', JSON.stringify(cracha))
 }
 
 function carregarCrachaSalvo(): CrachaEstudante | null {
-  const salvo = localStorage.getItem('ecotrilha_cracha')
+  const salvo = localStorage.getItem('explore_its_cracha')
   return salvo ? JSON.parse(salvo) : null
 }
 
 function salvarRespostas(respostas: RespostaSubmetida[]) {
-  localStorage.setItem('ecotrilha_respostas', JSON.stringify(respostas))
+  localStorage.setItem('explore_its_respostas', JSON.stringify(respostas))
 }
 
 function carregarRespostasSalvas(): RespostaSubmetida[] {
-  const salvas = localStorage.getItem('ecotrilha_respostas')
+  const salvas = localStorage.getItem('explore_its_respostas')
   return salvas ? JSON.parse(salvas) : []
 }
 
@@ -191,7 +255,7 @@ function atualizarHistoricoNavegacao() {
     modoProfessor: estado.modoProfessor
   }
 
-  // Se estamos na Tela Inicial (Raiz do App), usamos replaceState para não acumular histórico desnecessário
+  // Se estamos na Tela Inicial (Raiz do App), usamos replaceState para não acumular histórico
   const estaNaTelaInicial = !estado.recantoAtual && !estado.missaoAtual && !exibindoRelatorio && !estado.modoProfessor
 
   if (estaNaTelaInicial) {
@@ -223,26 +287,7 @@ window.addEventListener('popstate', (e) => {
     estado.modoProfessor = false
   }
 
-  // Renderiza a interface sem adicionar novo item à pilha
-  let conteudo = renderizarHeader()
-
-  if (estado.modoProfessor) {
-    conteudo += renderizarPainelProfessor()
-  } else if (exibindoRelatorio) {
-    conteudo += renderizarRelatorioCientifico()
-  } else if (!estado.cracha) {
-    conteudo += renderizarFormularioCracha()
-  } else if (estado.missaoAtual) {
-    conteudo += renderizarMissao(estado.missaoAtual)
-  } else if (estado.recantoAtual) {
-    conteudo += renderizarDetalheRecanto(estado.recantoAtual)
-  } else {
-    conteudo += renderizarListaRecantos()
-  }
-
-  conteudo += renderizarModalSucesso()
-  app.innerHTML = conteudo
-  vincularEventos()
+  renderAppSemHistorico()
 })
 
 // Componente: Header do App
@@ -250,7 +295,7 @@ function renderizarHeader(): string {
   return `
     <header class="app-header">
       <div class="header-content">
-        <h1 id="btn-logo" class="logo">🌿 EcoTrilha Escolar</h1>
+        <h1 id="btn-logo" class="logo">🍃 Explore ITS</h1>
         ${estado.cracha ? `
           <div class="user-badge">
             <span class="user-name">👤 ${estado.cracha.nome} (${estado.cracha.turma})</span>
@@ -269,8 +314,8 @@ function renderizarHeader(): string {
 function renderizarFormularioCracha(): string {
   return `
     <section class="card-container">
-      <h2>Identificação do Cientista Mirim</h2>
-      <p>Informe seus dados para registrar as descobertas no seu Caderno de Campo:</p>
+      <h2>Identificação do Investigador</h2>
+      <p>Informe seus dados para registrar sua jornada na Trilha da Semente Peregrina:</p>
       <form id="form-cracha" class="cracha-form">
         <div class="form-group">
           <label for="nome-aluno">Seu Nome Completo:</label>
@@ -278,7 +323,7 @@ function renderizarFormularioCracha(): string {
         </div>
         <div class="form-group">
           <label for="turma-aluno">Sua Turma / Ano:</label>
-          <input type="text" id="turma-aluno" placeholder="Ex: 6º Ano A" required />
+          <input type="text" id="turma-aluno" placeholder="Ex: 8º Ano B" required />
         </div>
         <button type="submit" class="btn-primary">Iniciar Expedição</button>
       </form>
@@ -286,13 +331,13 @@ function renderizarFormularioCracha(): string {
   `
 }
 
-// Componente: Lista Principal de Recantos
+// Componente: Lista Principal de Estações
 function renderizarListaRecantos(): string {
   return `
     <section class="recantos-container">
       <div class="welcome-box">
-        <h2>Estações de Investigação</h2>
-        <p>Escolha um Recanto Aprendiz para realizar suas missões de campo:</p>
+        <h2>Estações da Trilha</h2>
+        <p>Selecione uma das estações para explorar os desafios ecológicos:</p>
       </div>
       <div class="grid-recantos">
         ${recantos.map(recanto => {
@@ -309,8 +354,8 @@ function renderizarListaRecantos(): string {
               <div class="progress-bar">
                 <div class="progress-fill" style="width: ${(concluidas / total) * 100}%"></div>
               </div>
-              <span class="progress-text">${concluidas} de${total} missões registradas</span>
-              <button class="btn-primary btn-explorar" data-id="${recanto.id}">Explorar Recanto</button>
+              <span class="progress-text">${concluidas} de${total} desafios concluídos</span>
+              <button class="btn-primary btn-explorar" data-id="${recanto.id}">Explorar Estação</button>
             </div>
           `
         }).join('')}
@@ -319,7 +364,7 @@ function renderizarListaRecantos(): string {
   `
 }
 
-// Componente: Detalhes do Recanto Selecionado
+// Componente: Detalhes da Estação Selecionada
 function renderizarDetalheRecanto(recanto: Recanto): string {
   return `
     <section class="recanto-detalhe">
@@ -341,7 +386,7 @@ function renderizarDetalheRecanto(recanto: Recanto): string {
                 <p>${missao.descricao}</p>
               </div>
               <button class="btn-primary btn-iniciar-missao" data-missaoid="${missao.id}">
-                ${resolvida ? 'Refazer Missão' : 'Iniciar Investigação'}
+                ${resolvida ? 'Refazer Desafio' : 'Iniciar Investigação'}
               </button>
             </div>
           `
@@ -355,16 +400,16 @@ function renderizarDetalheRecanto(recanto: Recanto): string {
 function renderizarMissao(missao: Missao): string {
   return `
     <section class="missao-detalhe">
-      <button id="btn-voltar-missoes" class="btn-back">⬅ Voltar ao Recanto</button>
+      <button id="btn-voltar-missoes" class="btn-back">⬅ Voltar à Estação</button>
       
       <div class="missao-header">
-        <span class="tag">Investigação de Campo</span>
+        <span class="tag">Desafio de Campo</span>
         <h2>${missao.titulo}</h2>
         <p>${missao.descricao}</p>
       </div>
 
       <div class="pergunta-box">
-        <h3>Desafio Científico</h3>
+        <h3>Investigação Científica</h3>
         <p class="pergunta-texto">${missao.pergunta.texto}</p>
 
         <form id="form-resposta">
@@ -379,27 +424,27 @@ function renderizarMissao(missao: Missao): string {
             </div>
           ` : `
             <div class="form-group">
-              <textarea id="resposta-texto" rows="4" placeholder="Escreva aqui suas observações de campo..." required></textarea>
+              <textarea id="resposta-texto" rows="4" placeholder="Escreva aqui suas observações sobre esta estação..." required></textarea>
             </div>
           `}
-          <button type="submit" class="btn-primary">Submeter Descoberta</button>
+          <button type="submit" class="btn-primary">Registrar Descoberta</button>
         </form>
       </div>
     </section>
   `
 }
 
-// Componente: Caderno de Campo / Relatório
+// Componente: Caderno de Campo Virtual
 function renderizarRelatorioCientifico(): string {
   return `
     <section class="relatorio-container">
       <button id="btn-voltar-relatorio" class="btn-back">⬅ Voltar</button>
       <h2>📜 Caderno de Campo Virtual</h2>
-      <p><strong>Cientista:</strong> ${estado.cracha?.nome} | <strong>Turma:</strong> ${estado.cracha?.turma}</p>
+      <p><strong>Investigador:</strong> ${estado.cracha?.nome} | <strong>Turma:</strong> ${estado.cracha?.turma}</p>
 
       ${estado.respostas.length === 0 ? `
         <div class="empty-state">
-          <p>Você ainda não registrou nenhuma descoberta. Explore as estações e responda aos desafios!</p>
+          <p>Sua caderneta está vazia. Visite as estações e registre suas descobertas!</p>
         </div>
       ` : `
         <div class="respostas-historico">
@@ -408,11 +453,11 @@ function renderizarRelatorioCientifico(): string {
             return `
               <div class="resposta-card">
                 <span class="data-hora">${r.dataHora}</span>
-                <h4>${recanto?.nome || 'Recanto'}</h4>
+                <h4>${recanto?.nome || 'Estação'}</h4>
                 <p><strong>Pergunta:</strong> ${r.perguntaTexto}</p>
                 <p class="resposta-dada"><strong>Sua Resposta:</strong> ${r.respostaDada}</p>
                 <span class="status-tag ${r.estaCorreta ? 'correta' : 'registro'}">
-                  ${r.estaCorreta ? '✓ Resposta Correta' : '📝 Observação Registrada'}
+                  ${r.estaCorreta ? '✓ Registro Concluído' : '📝 Observação Registrada'}
                 </span>
               </div>
             `
@@ -428,21 +473,21 @@ function renderizarPainelProfessor(): string {
   return `
     <section class="painel-professor">
       <button id="btn-voltar-prof" class="btn-back">⬅ Voltar ao Modo Aluno</button>
-      <h2>👨‍🏫 Painel do Professor / Curador</h2>
-      <p>Visão geral de participações e respostas enviadas neste dispositivo:</p>
+      <h2>👨‍🏫 Painel do Educador</h2>
+      <p>Acompanhamento das atividades registradas neste dispositivo:</p>
 
       <div class="stats-cards">
         <div class="stat-card">
-          <h3>Total de Registros</h3>
+          <h3>Total de Respostas</h3>
           <span class="number">${estado.respostas.length}</span>
         </div>
         <div class="stat-card">
-          <h3>Aluno Ativo</h3>
-          <span class="text">${estado.cracha ? estado.cracha.nome : 'Nenhum'}</span>
+          <h3>Aluno Atual</h3>
+          <span class="text">${estado.cracha ? estado.cracha.nome : 'Não identificado'}</span>
         </div>
       </div>
 
-      <h3>Registros Locais Armazenados</h3>
+      <h3>Histórico de Atividades</h3>
       <div class="tabela-container">
         <table class="tabela-respostas">
           <thead>
@@ -462,7 +507,7 @@ function renderizarPainelProfessor(): string {
                 <td>${r.respostaDada}</td>
               </tr>
             `).join('')}
-            ${estado.respostas.length === 0 ? `<tr><td colspan="4">Nenhum registro encontrado.</td></tr>` : ''}
+            ${estado.respostas.length === 0 ? `<tr><td colspan="4">Nenhuma resposta gravada.</td></tr>` : ''}
           </tbody>
         </table>
       </div>
@@ -471,13 +516,13 @@ function renderizarPainelProfessor(): string {
   `
 }
 
-// Componente: Modal de Sucesso Feedback
+// Componente: Modal de Sucesso
 function renderizarModalSucesso(): string {
   if (!modalSucessoAberto) return ''
   return `
     <div class="modal-overlay">
       <div class="modal-card">
-        <div class="modal-icon">🎉</div>
+        <div class="modal-icon">🌱</div>
         <h3>Descoberta Registrada!</h3>
         <p>${mensagemSucessoModal}</p>
         <button id="btn-fechar-modal" class="btn-primary">Continuar Trilha</button>
@@ -486,10 +531,8 @@ function renderizarModalSucesso(): string {
   `
 }
 
-// Renderizador Principal da Interface
-function renderApp() {
-  atualizarHistoricoNavegacao()
-
+// Auxiliar de Renderização sem acionar novo histórico
+function renderAppSemHistorico() {
   let conteudo = renderizarHeader()
 
   if (estado.modoProfessor) {
@@ -508,8 +551,13 @@ function renderApp() {
 
   conteudo += renderizarModalSucesso()
   app.innerHTML = conteudo
-
   vincularEventos()
+}
+
+// Renderizador Principal da Interface
+function renderApp() {
+  atualizarHistoricoNavegacao()
+  renderAppSemHistorico()
 }
 
 // Associação de Eventos da Interface
@@ -538,7 +586,7 @@ function vincularEventos() {
     })
   }
 
-  // Explorar Recanto
+  // Explorar Estação
   document.querySelectorAll('.btn-explorar').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const target = e.currentTarget as HTMLElement
@@ -548,7 +596,7 @@ function vincularEventos() {
     })
   })
 
-  // Voltar do Recanto para a Lista
+  // Voltar da Estação para a Lista
   document.querySelector('#btn-voltar-recantos')?.addEventListener('click', () => {
     estado.recantoAtual = null
     renderApp()
@@ -566,7 +614,7 @@ function vincularEventos() {
     })
   })
 
-  // Voltar da Missão para o Recanto
+  // Voltar da Missão para a Estação
   document.querySelector('#btn-voltar-missoes')?.addEventListener('click', () => {
     estado.missaoAtual = null
     renderApp()
@@ -612,19 +660,18 @@ function vincularEventos() {
 
       salvarRespostas(estado.respostas)
 
-      mensagemSucessoModal = correta 
-        ? 'Excelente observação! Sua resposta foi salva no seu Caderno de Campo.' 
-        : 'Sua resposta foi registrada no Caderno de Campo para revisão posterior.'
-      
+      // Regra de Navegação Inteligente: se concluiu a missão, retorna à lista de estações ao fechar o modal
+      mensagemSucessoModal = 'Sua observação foi salva no Caderno de Campo com sucesso!'
       modalSucessoAberto = true
       renderApp()
     })
   }
 
-  // Modal Fechar
+  // Modal Fechar -> Retorna ao Menu Principal de Estações
   document.querySelector('#btn-fechar-modal')?.addEventListener('click', () => {
     modalSucessoAberto = false
     estado.missaoAtual = null
+    estado.recantoAtual = null
     renderApp()
   })
 
