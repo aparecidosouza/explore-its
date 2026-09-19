@@ -18,7 +18,7 @@ interface Missao {
   titulo: string
   descricao: string
   instrucoesHtml?: string
-  tipo: 'foto' | 'temperatura' | 'audio' | 'texto' | 'quiz'
+  tipo: 'foto' | 'temperatura' | 'audio' | 'texto' | 'quiz' | 'investigacao-corrego'
   opcoesQuiz?: OpcaoQuiz[]
   requerHorario?: boolean
 }
@@ -153,10 +153,21 @@ const estacoes: Estacao[] = [
   {
     id: 'recanto-nego-dagua',
     nome: '6. Recanto do Nego d\'Água',
-    descricao: 'Área próxima ao curso d\'água.',
+    descricao: 'Área próxima ao curso d\'água para investigação de interações ecológicas.',
     icone: '💧',
     missoes: [
-      { id: 'm-neg-temp', titulo: '3ª Medição de Temperatura', descricao: 'Meça a temperatura próximo ao córrego.', tipo: 'temperatura' }
+      {
+        id: 'm-neg-temp',
+        titulo: '3ª Medição de Temperatura',
+        descricao: 'Meça a temperatura próximo ao córrego.',
+        tipo: 'temperatura'
+      },
+      {
+        id: 'm-neg-investigacao',
+        titulo: '🌊 Quem vive às margens do córrego?',
+        descricao: 'Permanecendo na ponte (sem entrar na água), encontre 2 evidências ecológicas, fotografe 1 delas e elabore sua hipótese.',
+        tipo: 'investigacao-corrego'
+      }
     ]
   }
 ]
@@ -176,6 +187,11 @@ let verTabelaTemp = false
 let verCaderno = false
 let verConquistas = false
 let modalMensagem: string | null = null
+
+// Estado específico da investigação do Nego d'Água
+let evidenciasSelecionadas: string[] = []
+let capivaraAvistada = false
+let proximaInvestigacao = ''
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
@@ -271,6 +287,7 @@ function render() {
     const total = calcularTotalMissoes()
     const concluidas = respostasGerais.length
     const progressoPct = Math.round((concluidas / total) * 100)
+    const temInvestigacaoCorrego = respostasGerais.some(r => r.missaoId === 'm-neg-investigacao')
 
     html += `
       <div class="card-container">
@@ -300,10 +317,10 @@ function render() {
             <strong>Fotógrafo Científico</strong>
             <p style="font-size:0.75rem; color:var(--text-muted);">${respostasGerais.some(r => r.midiaUrl) ? 'Foto capturada!' : 'Tire uma foto'}</p>
           </div>
-          <div class="missao-card" style="opacity: ${respostasGerais.some(r => r.titulo.includes('Sons')) ? '1' : '0.4'}; text-align:center;">
-            <div style="font-size:2rem;">🎙️</div>
-            <strong>Investigador Sonoro</strong>
-            <p style="font-size:0.75rem; color:var(--text-muted);">${respostasGerais.some(r => r.titulo.includes('Sons')) ? 'Áudio gravado!' : 'Grave os sons'}</p>
+          <div class="missao-card" style="opacity: ${temInvestigacaoCorrego ? '1' : '0.4'}; text-align:center;">
+            <div style="font-size:2rem;">🏅</div>
+            <strong>Investigador de Relações Ecológicas</strong>
+            <p style="font-size:0.75rem; color:var(--text-muted);">${temInvestigacaoCorrego ? 'Evidências analisadas no córrego!' : 'Conclua a investigação no Nego d\'Água'}</p>
           </div>
           <div class="missao-card" style="opacity: ${concluidas >= total ? '1' : '0.4'}; text-align:center;">
             <div style="font-size:2rem;">🏆</div>
@@ -365,7 +382,7 @@ function render() {
         ${respostasGerais.map(r => `
           <div class="resposta-card">
             <h4>${r.titulo}</h4>
-            <p style="font-size:0.9rem; margin-top:4px;">${r.conteudo}</p>${r.midiaUrl ? `<div class="preview-box"><img src="${r.midiaUrl}" class="img-preview"/></div>` : ''}
+            <p style="font-size:0.9rem; margin-top:4px; whitespace: pre-line;">${r.conteudo}</p>${r.midiaUrl ? `<div class="preview-box"><img src="${r.midiaUrl}" class="img-preview"/></div>` : ''}
             <small style="color:var(--text-muted); font-size:0.75rem;">${r.dataHora}</small>
           </div>
         `).join('')}
@@ -384,6 +401,76 @@ function render() {
         ${missaoAtual.instrucoesHtml ? missaoAtual.instrucoesHtml : ''}
 
         <form id="form-missao">
+          ${missaoAtual.tipo === 'investigacao-corrego' ? `
+            <!-- Alerta e botão de Capivara à Vista -->
+            <div style="background:#fef3c7; border:2px solid #f59e0b; padding:12px; border-radius:10px; margin-bottom:15px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <strong>🐾 Viu uma capivara no local?</strong>
+                <button type="button" id="btn-toggle-capivara" class="btn-secondary" style="font-size:0.8rem; padding:4px 8px;">
+                  ${capivaraAvistada ? '✅ Avistada!' : 'Marcar Avistamento'}
+                </button>
+              </div>
+              ${capivaraAvistada ? `
+                <div style="margin-top:10px; font-size:0.85rem; color:#92400e; background:white; padding:8px; border-radius:6px;">
+                  <strong>⚠️ Atenção Científica:</strong> Observe de longe! Não tente se aproximar, alimentar nem chamar o animal. Fotografe apenas se for seguro.
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- Etapa 1: Seleção de Evidências -->
+            <div class="form-group">
+              <label>1. Selecione pelo menos 2 evidências observadas da ponte:</label>
+              <div style="display:flex; flex-direction:column; gap:8px; margin-top:6px;">
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer;">
+                  <input type="checkbox" class="chk-evidencia" value="🌿 Vegetação (pindaíbas, plantas, frutos, sementes)" ${evidenciasSelecionadas.includes('🌿 Vegetação (pindaíbas, plantas, frutos, sementes)') ? 'checked' : ''}/>
+                  🌿 Vegetação (pindaíbas, plantas, frutos, sementes)
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer;">
+                  <input type="checkbox" class="chk-evidencia" value="🐾 Animais ou Sinais (pegadas, fezes, marcas de alimentação, trilhas)" ${evidenciasSelecionadas.includes('🐾 Animais ou Sinais (pegadas, fezes, marcas de alimentação, trilhas)') ? 'checked' : ''}/>
+                  🐾 Animais ou Sinais (pegadas, fezes, marcas de alimentação, trilhas)
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; cursor:pointer;">
+                  <input type="checkbox" class="chk-evidencia" value="💧 Água e Margem (correnteza, transparência, galhos, matéria orgânica)" ${evidenciasSelecionadas.includes('💧 Água e Margem (correnteza, transparência, galhos, matéria orgânica)') ? 'checked' : ''}/>
+                  💧 Água e Margem (correnteza, transparência, galhos, matéria orgânica)
+                </label>
+              </div>
+            </div>
+
+            <!-- Etapa 2: Fotografia da Evidência -->
+            <div class="form-group">
+              <label>2. Fotografe 1 das evidências encontradas:</label>
+              <input type="file" id="input-foto" accept="image/*" capture="environment" style="display:none" />
+              <button type="button" id="btn-foto" class="btn-secondary" style="margin-top:4px;">📷 Capturar Foto da Evidência</button>
+              <div class="preview-box">
+                ${fotoTemp ? `<img src="${fotoTemp}" class="img-preview"/>` : '<small>Nenhuma foto tirada</small>'}
+              </div>
+            </div>
+
+            <!-- Etapa 3: Elaboração da Hipótese -->
+            <div class="form-group">
+              <label>3. O que você observou e o que isso <u>sugere</u> sobre o ambiente?</label>
+              <textarea id="inp-hipotese" rows="3" required placeholder="Ex: Encontramos marcas de alimentação na margem. Isso SUGERE que a vegetação local serve de alimento para os animais."></textarea>
+            </div>
+
+            <!-- Princípio Científico -->
+            <div style="background:#eff6ff; border-left:4px solid #3b82f6; padding:10px; border-radius:4px; font-size:0.82rem; color:#1e40af; margin-bottom:12px;">
+              <strong>🧠 Princípio Científico:</strong> Observação não é conclusão. Uma evidência apoia uma hipótese, mas precisamos de mais investigações para ter certeza!
+            </div>
+
+            <!-- Etapa 4: Próxima Investigação -->
+            <div class="form-group">
+              <label>4. Se vocês voltassem aqui amanhã, o que procurariam para testar essa hipótese?</label>
+              <select id="sel-proxima-investigacao" required style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border); font-size:0.88rem; margin-top:4px;">
+                <option value="">-- Selecione uma opção de teste --</option>
+                <option value="Novas marcas de alimentação nas plantas">Novas marcas de alimentação nas plantas</option>
+                <option value="Pegadas recentes na lama da margem">Pegadas recentes na lama da margem</option>
+                <option value="Presença direta de capivaras ou outros animais">Presença direta de capivaras ou outros animais</option>
+                <option value="Alterações no volume de folhas e galhos acumulados">Alterações no volume de folhas e galhos acumulados</option>
+                <option value="Outra evidência de campo">Outra evidência de campo</option>
+              </select>
+            </div>
+          ` : ''}
+
           ${missaoAtual.tipo === 'quiz' && missaoAtual.opcoesQuiz ? `
             <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px;">
               ${missaoAtual.opcoesQuiz.map(opt => `
@@ -602,6 +689,8 @@ function bindEvents() {
       fotoTemp = null
       audioTemp = null
       opcaoSelecionadaQuiz = null
+      evidenciasSelecionadas = []
+      capivaraAvistada = false
       missaoAtual = estacaoAtual?.missoes.find(m => m.id === id) || null
       render()
     })
@@ -612,6 +701,17 @@ function bindEvents() {
   document.querySelectorAll('input[name="opcao-quiz"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
       opcaoSelecionadaQuiz = (e.target as HTMLInputElement).value
+    })
+  })
+
+  document.querySelector('#btn-toggle-capivara')?.addEventListener('click', () => {
+    capivaraAvistada = !capivaraAvistada
+    render()
+  })
+
+  document.querySelectorAll('.chk-evidencia').forEach(chk => {
+    chk.addEventListener('change', () => {
+      evidenciasSelecionadas = Array.from(document.querySelectorAll('.chk-evidencia:checked')).map(el => (el as HTMLInputElement).value)
     })
   })
 
@@ -642,7 +742,24 @@ function bindEvents() {
     let conteudo = ''
     let midiaUrl = undefined
 
-    if (missaoAtual.tipo === 'quiz') {
+    if (missaoAtual.tipo === 'investigacao-corrego') {
+      const chks = Array.from(document.querySelectorAll('.chk-evidencia:checked')).map(el => (el as HTMLInputElement).value)
+      if (chks.length < 2) {
+        return alert('Por favor, selecione pelo menos 2 evidências observadas!')
+      }
+      if (!fotoTemp) {
+        return alert('Por favor, fotografe 1 das evidências!')
+      }
+
+      const hipotese = (document.querySelector('#inp-hipotese') as HTMLTextAreaElement).value
+      const proxima = (document.querySelector('#sel-proxima-investigacao') as HTMLSelectElement).value
+
+      if (!hipotese.trim()) return alert('Por favor, descreva o que observou e sua hipótese!')
+      if (!proxima) return alert('Por favor, escolha o que investigaria amanhã!')
+
+      conteudo = `Evidências selecionadas:\n- ${chks.join('\n- ')}\n\nHipótese Ecológica:\n"${hipotese}"\n\nPróximo Teste Científico:\n${proxima}${capivaraAvistada ? '\n\n🐾 Capivara avistada com segurança no local!' : ''}`
+      midiaUrl = fotoTemp
+    } else if (missaoAtual.tipo === 'quiz') {
       if (!opcaoSelecionadaQuiz) return alert('Por favor, escolha uma das opções!')
       const opt = missaoAtual.opcoesQuiz?.find(o => o.id === opcaoSelecionadaQuiz)
       if (!opt) return
@@ -696,7 +813,7 @@ function bindEvents() {
     const concluidas = estacaoAtual.missoes.filter(m => respostasGerais.some(r => r.missaoId === m.id)).length
 
     if (concluidas === totalMissoes) {
-      modalMensagem = `🎉 Parabéns! Você concluiu todas as atividades do ${estacaoAtual.nome}. Retornando à trilha de recantos!`
+      modalMensagem = `🎉 Parabéns! Você concluiu todas as atividades do ${estacaoAtual.nome}. Medalha 'Investigador das Relações Ecológicas' Desbloqueada!`
     } else {
       modalMensagem = `Atividade salva com sucesso!`
     }
