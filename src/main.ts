@@ -40,7 +40,6 @@ let modalMensagem: string | null = null
 // Estado específico da investigação do Nego d'Água
 let evidenciasSelecionadas: string[] = []
 let capivaraAvistada = false
-let proximaInvestigacao = ''
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
