@@ -20,6 +20,7 @@ const mascotes: Mascote[] = [
 ]
 
 
+
 // Estado Local
 let crachaSalvo: Cracha | null = JSON.parse(localStorage.getItem('exp_cracha') || 'null')
 let respostasGerais: RespostaAtividade[] = JSON.parse(localStorage.getItem('exp_respostas') || '[]')
@@ -447,8 +448,8 @@ function render() {
     `
   }
 
-  if (modalMensagem) {
-    html += `
+  +if (modalMensagem) {
+    html = `
       <div class="modal-overlay">
         <div class="modal-card">
           <h3>✅ Atividade Salva!</h3>
@@ -509,7 +510,7 @@ function bindEvents() {
   document.querySelector('#btn-conquistas')?.addEventListener('click', () => { verConquistas = true; verTabelaTemp = false; verCaderno = false; render() })
   document.querySelector('#btn-ver-conquistas-final')?.addEventListener('click', () => { verConquistas = true; verTabelaTemp = false; verCaderno = false; estacaoAtual = null; render() })
   document.querySelector('#btn-tabela-temp')?.addEventListener('click', () => { verTabelaTemp = true; verCaderno = false; verConquistas = false; render() })
-  document.querySelector('#btn-caderno')?.addEventListener('click', () => { verCaderno = true; verTabelaTemp = false; verCaderno = false; render() })
+  document.querySelector('#btn-caderno')?.addEventListener('click', () => { verCaderno = true; verTabelaTemp = false; verConquistas = false; render() })
   document.querySelector('#btn-voltar-estacoes')?.addEventListener('click', () => { verTabelaTemp = false; verCaderno = false; verConquistas = false; render() })
 
   document.querySelectorAll('.btn-abrir-estacao').forEach(btn => {
