@@ -1,139 +1,160 @@
-import { Recanto } from '../@types'
+import type { Estacao } from '../@types'
 
-export const recantos: Recanto[] = [
+export const estacoes: Estacao[] = [
   {
-    id: 'barauna',
-    titulo: 'Fazenda Baraúna (Entrada)',
+    id: 'fazenda-barauna',
+    nome: '1. Fazenda Baraúna (Início da Trilha)',
+    descricao: 'Ponto de recepção e partida da expedição.',
     icone: '🏡',
-    eixoAmbiental: 'Clima & Linha de Base',
-    descricao: 'Área aberta exposta ao sol na entrada da expedição. Medição da temperatura inicial.',
     missoes: [
       {
-        id: 'barauna-temp',
-        titulo: 'Termometria Inicial da Expedição',
-        orientacaoCientifica: 'Segurem o termômetro no ar à sombra do corpo por 20 segundos na área externa da Fazenda Baraúna antes de entrar na trilha e registrem a temperatura.',
-        recursoRequerido: 'temperatura',
-        sucesso: 'Temperatura inicial da Fazenda Baraúna registrada com sucesso!'
-      }
-    ]
-  },
-  {
-    id: 'saci',
-    titulo: 'Recanto do Saci-Pererê',
-    icone: '🌀',
-    eixoAmbiental: 'Acolhimento & Contrato Ecológico',
-    descricao: 'Ponto de recepção, assinatura do pacto e registro do primeiro passo na trilha.',
-    missoes: [
-      {
-        id: 'saci-01',
-        titulo: 'Pacto de Investigação Ecológica',
-        orientacaoCientifica: 'Assinem o compromisso de respeito à fauna, flora e normas da trilha para emitir o crachá da equipe.',
-        sucesso: 'Contrato assinado! Acesso liberado à Trilha da Semente Peregrina.'
+        id: 'm-bar-foto',
+        titulo: 'Registro de Partida',
+        descricao: 'Tire uma foto do grupo ou da entrada da fazenda.',
+        tipo: 'foto'
       },
       {
-        id: 'saci-inicio-trilha',
-        titulo: 'O Primeiro Passo na Trilha',
-        orientacaoCientifica: 'Olhem para o início da mata, percebam como a iluminação muda sob o portal das árvores e tirem uma foto da equipe pronta para começar a jornada!',
-        recursoRequerido: 'camera',
-        permiteFoto: true,
-        sucesso: 'Expedição iniciada oficialmente! Sigam em frente até o Recanto do Jatobá.'
+        id: 'm-bar-temp',
+        titulo: '1ª Medição de Temperatura',
+        descricao: 'Meça a temperatura ambiental inicial e confirme o horário de partida.',
+        tipo: 'temperatura',
+        requerHorario: true
       }
     ]
   },
+
   {
-    id: 'jatoba',
-    titulo: 'Recanto do Jatobá',
-    icone: '🌳',
-    eixoAmbiental: 'Flora & Sombra Arbórea',
-    descricao: 'Análise botânica do imponente Jatobá e medição do impacto da sombra das árvores.',
+    id: 'saci-perere',
+    nome: '2. Estação Saci-Pererê',
+    descricao: 'Investigue os sons e ruídos da mata.',
+    icone: '🌪️',
     missoes: [
       {
-        id: 'jatoba-temp',
-        titulo: 'Medição na Sombra da Copa',
-        orientacaoCientifica: 'Segurem o termômetro suspenso no ar sob a sombra da copa do Jatobá por 20 segundos e registrem a temperatura.',
-        recursoRequerido: 'temperatura',
-        sucesso: 'Temperatura sob a copa do Jatobá registrada!'
+        id: 'm-saci-1',
+        titulo: 'Sons da Mata',
+        descricao: 'Grave um áudio dos sons da natureza ao seu redor.',
+        tipo: 'audio'
+      }
+    ]
+  },
+
+  {
+    id: 'recanto-jatoba',
+    nome: '3. Recanto do Jatobá',
+    descricao: 'Observação da flora e 2º ponto de microclima.',
+    icone: '🌰',
+    missoes: [
+      {
+        id: 'm-jat-temp',
+        titulo: '2ª Medição de Temperatura',
+        descricao: 'Meça a temperatura sob a copa das árvores.',
+        tipo: 'temperatura'
       },
       {
-        id: 'jatoba-01',
-        titulo: 'Adaptações da Casca e Folhas',
-        orientacaoCientifica: 'Examinem o tronco do Jatobá e encontrem uma folha ou casca caída para registro fotográfico.',
-        recursoRequerido: 'camera',
-        permiteFoto: true,
-        sucesso: 'Evidência botânica registrada com sucesso!'
+        id: 'm-jat-obs',
+        titulo: 'Observação da Vegetação',
+        descricao: 'Descreva as sementes e características das árvores encontradas.',
+        tipo: 'texto'
       }
     ]
   },
+
   {
-    id: 'pioneiras',
-    titulo: 'Recanto das Pioneiras',
-    icone: '🐝',
-    eixoAmbiental: 'Fauna & Polinizadores',
-    descricao: 'Observação da fauna, insetos polinizadores e aves em áreas de regeneração.',
+    id: 'recanto-pioneiras',
+    nome: '4. Recanto das Pioneiras',
+    descricao:
+      'Investigação sobre plantas pioneiras e os organismos que ajudam a regenerar a mata.',
+    icone: '🌱',
     missoes: [
       {
-        id: 'pioneiras-01',
-        titulo: 'Detetive de Polinizadores',
-        orientacaoCientifica: 'Procurem abelhas, borboletas ou insetos nas flores ao redor e registrem uma imagem.',
-        recursoRequerido: 'camera',
-        permiteFoto: true,
-        sucesso: 'Polinizador catalogado!'
+        id: 'm-pio-quiz-organismos',
+        titulo: '🧠 Quem Ajuda a Floresta a Voltar?',
+        descricao:
+          'Marque a opção que lista TODOS os organismos capazes de auxiliar as plantas pioneiras na regeneração da área.',
+        tipo: 'quiz',
+        opcoesQuiz: [
+          {
+            id: 'opt-a',
+            texto:
+              'Apenas insetos grandes que comem as folhas das árvores adultas.',
+            correta: false,
+            explicacao:
+              'Incorreto. A regeneração precisa de dispersores de sementes, polinizadores e decompositores.'
+          },
+          {
+            id: 'opt-b',
+            texto:
+              'Formigas dispersoras de sementes, aves frugívoras, abelhas polinizadoras, minhocas e fungos decompositores.',
+            correta: true,
+            explicacao:
+              'Correto! Todos esses organismos atuam juntos transportando sementes, polinizando e enriquecendo o solo.'
+          },
+          {
+            id: 'opt-c',
+            texto:
+              'Apenas grandes mamíferos que caminham pela vegetação.',
+            correta: false,
+            explicacao:
+              'Incorreto. Pequenos insetos, fungos e aves têm papel fundamental no solo e nas sementes.'
+          }
+        ]
+      },
+
+      {
+        id: 'm-pio-busca-foto',
+        titulo: '🔎 Desafio do Detetive: Foto no Campo',
+        descricao:
+          'Agora que você aprendeu quem são os ajudantes da floresta, procure no local e fotografe 1 ou 2 organismos (ou sinais deles) atuando no solo ou na vegetação.',
+        instrucoesHtml: `
+          <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:8px; font-size:0.88rem; margin-bottom:12px; color:#166534;">
+            <p style="margin-bottom:6px;"><strong>O que procurar no solo ou nas plantas:</strong></p>
+            <ul style="padding-left:18px; margin:4px 0;">
+              <li>🐜 Formigas carregando folhas ou sementes</li>
+              <li>🐝 Insetos visitando flores</li>
+              <li>🍄 Fungos/cogumelos em troncos ou matéria orgânica</li>
+              <li>🪱 Pequenos invertebrados no solo</li>
+            </ul>
+          </div>
+        `,
+        tipo: 'foto'
       }
     ]
   },
+
   {
     id: 'caipora',
-    titulo: 'Recanto do Caipora',
-    icone: '👂',
-    eixoAmbiental: 'Paisagem Sonora',
-    descricao: 'Escuta atenta da mata e registro dos sons da biodiversidade.',
+    nome: '5. Estação Caipora',
+    descricao: 'Rastros e vestígios da fauna local.',
+    icone: '🐾',
     missoes: [
       {
-        id: 'caipora-01',
-        titulo: 'Gravação da Bioacústica',
-        orientacaoCientifica: 'Façam 30 segundos de silêncio e gravem o som ambiente da floresta (pássaros, vento e insetos).',
-        recursoRequerido: 'audio',
-        permiteAudio: true,
-        sucesso: 'Áudio dos sons da mata salvo no relatório!'
+        id: 'm-cai-1',
+        titulo: 'Pegadas e Registros',
+        descricao: 'Fotografe marcas ou rastros no solo.',
+        tipo: 'foto'
       }
     ]
   },
+
   {
-    id: 'nego-dagua',
-    titulo: 'Recanto do Nego D\'Água',
+    id: 'recanto-nego-dagua',
+    nome: "6. Recanto do Nego d'Água",
+    descricao:
+      "Área próxima ao curso d'água para investigação de interações ecológicas.",
     icone: '💧',
-    eixoAmbiental: 'Recursos Hídricos & Veredas',
-    descricao: 'Investigação do curso d\'água, umidade da vereda e microclima ciliar.',
     missoes: [
       {
-        id: 'nego-temp',
-        titulo: 'Microclima Úmido sobre a Vereda',
-        orientacaoCientifica: 'Na ponte sobre o córrego, meçam a temperatura do ar sobre a água corrente (à sombra). Comparem com a Fazenda Baraúna e o Jatobá.',
-        recursoRequerido: 'temperatura',
-        sucesso: 'Temperatura da vereda do Nego D\'Água registrada!'
+        id: 'm-neg-temp',
+        titulo: '3ª Medição de Temperatura',
+        descricao: 'Meça a temperatura próximo ao córrego.',
+        tipo: 'temperatura'
       },
       {
-        id: 'nego-01',
-        titulo: 'Mapeamento do Vetor de Fluxo',
-        orientacaoCientifica: 'Tirem uma foto do córrego e desenhem a linha vermelha indicando o sentido de fluxo da água.',
-        recursoRequerido: 'desenho',
-        permiteFoto: true,
-        permiteDesenho: true,
-        sucesso: 'Fluxo hídrico mapeado no relatório!'
-      },
-      {
-        id: 'nego-quiz-clima',
-        titulo: 'Desafio Científico: Regulação Térmica',
-        orientacaoCientifica: 'Analisem as medições de temperatura coletadas ao longo da expedição e respondam:',
-        pergunta: 'O que explica a redução de temperatura observada no Recanto do Nego D\'Água em relação à entrada na Fazenda Baraúna?',
-        opcoes: [
-          'A sombra da mata ciliar e a evapotranspiração do córrego absorvem calor e umedecem o ar.',
-          'A velocidade do vento é sempre mais forte dentro da mata densa.',
-          'A Fazenda Baraúna fica mais perto do sol do que a vereda.'
-        ],
-        correta: 0,
-        sucesso: 'Excelente dedução científica! A vegetação e a água funcionam como um regulador térmico natural.',
-        dica: 'Lembrem-se da presença da água e das árvores densas na vereda.'
+        id: 'm-neg-investigacao',
+        titulo: '🌊 Quem vive às margens do córrego?',
+        descricao:
+          'Permanecendo na ponte (sem entrar na água), encontre 2 evidências ecológicas, fotografe 1 delas e elabore sua hipótese.',
+        tipo: 'investigacao-corrego'
       }
     ]
   }
