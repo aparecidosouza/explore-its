@@ -231,7 +231,7 @@ function render() {
         ${respostasGerais.map(r => `
           <div class="resposta-card">
             <h4>${r.titulo}</h4>
-            <p style="font-size:0.9rem; margin-top:4px; whitespace: pre-line;">${r.conteudo}</p>${r.midiaUrl ? `<div class="preview-box"><img src="${r.midiaUrl}" class="img-preview"/></div>` : ''}
+            <p style="font-size:0.9rem; margin-top:4px; white-space: pre-line;">${r.conteudo}</p>${r.midiaUrl ? `<div class="preview-box"><img src="${r.midiaUrl}" class="img-preview"/></div>` : ''}
             <small style="color:var(--text-muted); font-size:0.75rem;">${r.dataHora}</small>
           </div>
         `).join('')}
@@ -448,7 +448,7 @@ function render() {
     `
   }
 
-  +if (modalMensagem) {
+  if (modalMensagem) {
     html = `
       <div class="modal-overlay">
         <div class="modal-card">
