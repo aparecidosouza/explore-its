@@ -24,8 +24,8 @@ export const estacoes: Estacao[] = [
   },
 
   {
-    id: 'saci-perere',
-    nome: '2. Estação Saci-Pererê',
+    id: 'recanto-saci-perere',
+    nome: '2. Recanto do Saci-Pererê',
     descricao: 'Investigue os sons e ruídos da mata.',
     icone: '🌪️',
     missoes: [
@@ -123,7 +123,7 @@ export const estacoes: Estacao[] = [
 
   {
     id: 'caipora',
-    nome: '5. Estação Caipora',
+    nome: '5. Recanto da Caipora',
     descricao: 'Rastros e vestígios da fauna local.',
     icone: '🐾',
     missoes: [

@@ -20,7 +20,6 @@ const mascotes: Mascote[] = [
 ]
 
 
-
 // Estado Local
 let crachaSalvo: Cracha | null = JSON.parse(localStorage.getItem('exp_cracha') || 'null')
 let respostasGerais: RespostaAtividade[] = JSON.parse(localStorage.getItem('exp_respostas') || '[]')
@@ -40,6 +39,7 @@ let modalMensagem: string | null = null
 // Estado específico da investigação do Nego d'Água
 let evidenciasSelecionadas: string[] = []
 let capivaraAvistada = false
+let proximaInvestigacao = ''
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
@@ -83,76 +83,6 @@ function obterCategoriaCientifica(): { titulo: string, descricao: string, icone:
   }
 }
 
-async function carregarMapaInterativo() {
-  console.log('FUNÇÃO DO MAPA EXECUTADA')
-  
-  const container = document.querySelector<HTMLDivElement>('#mapa-container')
-
-  if (!container) return
-
-  try {
-    const resposta = await fetch('/explore-its/mapa-explore-its.svg')
-
-    if (!resposta.ok) {
-      throw new Error('Não foi possível carregar o mapa.')
-    }
-
-    const svgTexto = await resposta.text()
-
-    container.innerHTML = svgTexto
-
-    const svg = container.querySelector('svg')
-
-    if (svg) {
-  svg.classList.add('mapa-svg')
-  svg.setAttribute('role', 'img')
-  svg.setAttribute(
-    'aria-label',
-    'Mapa da Trilha da Semente Peregrina'
-  )
-
-  // RECANTOS INTERATIVOS DO MAPA
-const recantosMapa = [
-  { mapa: 'fazenda-barauna', estacao: 'fazenda-barauna' },
-  { mapa: 'recanto-saci-perere', estacao: 'recanto-saci-perere' },
-  { mapa: 'recanto-jatoba', estacao: 'recanto-jatoba' },
-  { mapa: 'recanto-pioneiras', estacao: 'recanto-pioneiras' },
-  { mapa: 'recanto-caipora', estacao: 'caipora' },
-  { mapa: 'recanto-nego-dagua', estacao: 'recanto-nego-dagua' }
-]
-
-recantosMapa.forEach(({ mapa, estacao }) => {
-  const marcador = svg.querySelector<SVGElement>(`#${mapa}`)
-
-  if (!marcador) {
-    console.warn(`Marcador ${mapa} não encontrado no SVG.`)
-    return
-  }
-
-  marcador.style.cursor = 'pointer'
-
-  marcador.addEventListener('click', () => {
-    const recanto = estacoes.find(e => e.id === estacao)
-
-    if (!recanto) {
-      console.warn(`Estação ${estacao} não encontrada no aplicativo.`)
-      return
-    }
-
-    estacaoAtual = recanto
-    missaoAtual = null
-    render()
-  })
-})
-}
-  } catch (erro) {
-    console.error('Erro ao carregar o mapa:', erro)
-
-    container.innerHTML =
-      '<p class="mapa-erro">Não foi possível carregar o mapa.</p>'
-  }
-}
-
 function render() {
   const categoria = obterCategoriaCientifica()
 
@@ -173,106 +103,35 @@ function render() {
     </header>
   `
 
-if (!crachaSalvo) {
-  html += `
-    <div class="tela-identificacao">
-
-      <section class="boas-vindas-expedicao">
-
-        <div class="identificacao-selo">
-          🌿 EXPLORE ITS
-        </div>
-
-        <h2>Trilha da Semente Peregrina</h2>
-
-        <p class="identificacao-chamada">
-          A natureza está cheia de pistas.<br>
-          <strong>Vamos descobrir o que ela tem para contar?</strong>
-        </p>
-
-        <div class="identificacao-ilustracao">
-          🌱 🔎 🐜 🦜
-        </div>
-
-      </section>
-
-      <section class="card-container identificacao-card">
-
-        <div class="identificacao-titulo">
-          <span>🧭</span>
-          <div>
-            <small>PRIMEIRO PASSO</small>
-            <h3>Prepare sua expedição</h3>
-          </div>
-        </div>
-
-        <p class="identificacao-instrucao">
-          Conte quem está participando da investigação e escolha
-          seu companheiro de expedição.
-        </p>
-
-        <form id="form-cadastro">
-
+  if (!crachaSalvo) {
+    html += `
+      <div class="card-container">
+        <h2>🎒 Identificação de Campo</h2>
+        <form id="form-cadastro" style="margin-top:12px;">
           <div class="form-group">
-            <label>Nome do Estudante / Grupo</label>
-            <input
-              type="text"
-              id="inp-nome"
-              required
-              placeholder="Ex: Grupo Alpha ou Maria Silva"
-            />
+            <label>Nome do Estudante / Grupo:</label>
+            <input type="text" id="inp-nome" required placeholder="Ex: Grupo Alpha ou Maria Silva" />
           </div>
-
           <div class="form-group">
-            <label>Turma / Escola</label>
-            <input
-              type="text"
-              id="inp-turma"
-              required
-              placeholder="Ex: 6º Ano B"
-            />
+            <label>Turma / Escola:</label>
+            <input type="text" id="inp-turma" required placeholder="Ex: 6º Ano B" />
           </div>
-
           <div class="form-group">
-            <label>Escolha seu companheiro de expedição</label>
-
+            <label>Mascote de Expedição:</label>
             <div class="mascotes-grid">
               ${mascotes.map(m => `
-                <div
-                  class="mascote-card ${m.id === mascoteTempId ? 'selecionado' : ''}"
-                  data-id="${m.id}"
-                >
+                <div class="mascote-card ${m.id === mascoteTempId ? 'selecionado' : ''}" data-id="${m.id}">
                   <span class="mascote-emoji">${m.emoji}</span>
                   <strong>${m.nome}</strong>
-                  <small>companheiro</small>
                 </div>
               `).join('')}
             </div>
           </div>
-
-          <button
-            type="submit"
-            class="btn-primary btn-iniciar-expedicao"
-          >
-            Começar a investigação →
-          </button>
-
+          <button type="submit" class="btn-primary" style="margin-top:10px;">Iniciar Expedição</button>
         </form>
-
-      </section>
-
-      <section class="identificacao-mensagem">
-        <span>👀</span>
-        <p>
-          <strong>Observe.</strong>
-          <strong>Investigue.</strong>
-          <strong>Descubra.</strong>
-        </p>
-      </section>
-
-    </div>
-  `
-} else if (verConquistas) {
+      </div>
+    `
+  } else if (verConquistas) {
     const total = calcularTotalMissoes()
     const concluidas = respostasGerais.length
     const progressoPct = Math.round((concluidas / total) * 100)
@@ -283,11 +142,12 @@ if (!crachaSalvo) {
         <button id="btn-voltar-estacoes" class="btn-back">⬅ Voltar às Estações</button>
         <h2>🎖️ Nível do Grupo & Conquistas</h2>
 
-        <div class="conquista-nivel">
-          <div class="conquista-nivel-icone">${categoria.icone}</div>
-          <h3>${categoria.titulo}</h3>
-          <p>${categoria.descricao}</p>
+        <div style="background:#f0fdf4; border:2px solid var(--primary); padding:16px; border-radius:12px; margin:15px 0; text-align:center;">
+          <div style="font-size:3rem; margin-bottom:6px;">${categoria.icone}</div>
+          <h3 style="color:var(--primary-dark); font-size:1.2rem;">${categoria.titulo}</h3>
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-top:6px;">${categoria.descricao}</p>
         </div>
+
         <h4>Progresso da Trilha (${concluidas}/${total} atividades)</h4>
         <div style="background:#e2e8f0; border-radius:10px; height:16px; width:100%; margin:8px 0 15px 0; overflow:hidden;">
           <div style="background:var(--primary); height:100%; width:${progressoPct}%; transition:width 0.3s;"></div>
@@ -370,7 +230,7 @@ if (!crachaSalvo) {
         ${respostasGerais.map(r => `
           <div class="resposta-card">
             <h4>${r.titulo}</h4>
-            <p style="font-size:0.9rem; margin-top:4px; white-space: pre-line;">${r.conteudo}</p>${r.midiaUrl ? `<div class="preview-box"><img src="${r.midiaUrl}" class="img-preview"/></div>` : ''}
+            <p style="font-size:0.9rem; margin-top:4px; whitespace: pre-line;">${r.conteudo}</p>${r.midiaUrl ? `<div class="preview-box"><img src="${r.midiaUrl}" class="img-preview"/></div>` : ''}
             <small style="color:var(--text-muted); font-size:0.75rem;">${r.dataHora}</small>
           </div>
         `).join('')}
@@ -554,141 +414,41 @@ if (!crachaSalvo) {
       </div>
     `
   } else {
-  html += `
-    <div class="home-exploracao">
-
-      <section class="hero-exploracao">
-        <div class="hero-selo">🌿 EXPLORE ITS</div>
-
-        <h2>Trilha da Semente Peregrina</h2>
-
-        <p class="hero-frase">
-          A natureza deixou pistas.<br>
-          <strong>Você consegue encontrá-las?</strong>
-        </p>
-
-        <div class="ciclo-investigador">
+    html += `
+      <div>
+        <div style="background:white; padding:12px 16px; border-radius:12px; border:1px solid var(--border); margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
           <div>
-            <span>👀</span>
-            <small>Observar</small>
+            <small style="color:var(--text-muted);">Status do Grupo:</small>
+            <div style="font-weight:bold; color:var(--primary-dark); font-size:0.95rem;">${categoria.titulo}</div>
           </div>
-          <div class="ciclo-seta">→</div>
-          <div>
-            <span>🔎</span>
-            <small>Investigar</small>
-          </div>
-          <div class="ciclo-seta">→</div>
-          <div>
-            <span>📝</span>
-            <small>Registrar</small>
-          </div>
-          <div class="ciclo-seta">→</div>
-          <div>
-            <span>💡</span>
-            <small>Descobrir</small>
-          </div>
+          <div style="font-size:1.8rem;">${categoria.icone}</div>
         </div>
-      </section>
 
-      <section class="mapa-exploracao">
-        <div class="mapa-cabecalho">
-          <span>MAPA DA EXPEDIÇÃO</span>
-          <h3>Trilha da Semente Peregrina</h3>
-         <p>Conheça o percurso e os pontos de investigação.</p>
-      </div>
-
-     <div
-  class="mapa-container"
-  id="mapa-container"
-  aria-label="Mapa interativo da Trilha da Semente Peregrina"
->
-  <div class="mapa-carregando">Carregando mapa...</div>
-</div>
-
-      <section class="orientacao-exploracao">
-        <div class="orientacao-icone">🧭</div>
-        <div>
-          <strong>Como explorar?</strong>
-          <p>
-            Escolha um recanto, observe o ambiente e siga as pistas.
-            A resposta está na natureza.
-          </p>
-        </div>
-      </section>
-
-      <div class="titulo-recantos">
-        <div>
-          <span>EXPEDIÇÃO</span>
-          <h3>Escolha um recanto para começar</h3>
-        </div>
-      </div>
-
-      <div class="recantos-grid">
-        ${estacoes.map((e, index) => {
+        <h3 style="margin-bottom:10px;">Estações da Trilha</h3>
+        ${estacoes.map(e => {
           const totalM = e.missoes.length
-          const concM = e.missoes.filter(m =>
-            respostasGerais.some(r => r.missaoId === m.id)
-          ).length
-
+          const concM = e.missoes.filter(m => respostasGerais.some(r => r.missaoId === m.id)).length
           const concluida = concM === totalM && totalM > 0
 
           return `
-            <article class="recanto-card novo-recanto-card ${concluida ? 'recanto-concluido' : ''}">
-
-              <div class="recanto-topo">
-                <div class="recanto-numero">
-                  ${index + 1}
-                </div>
-
-                <div class="recanto-icone">
-                  ${e.icone}
-                </div>
-
-                ${concluida ? `
-                  <div class="recanto-check">✓</div>
-                ` : ''}
-              </div>
-
-              <div class="recanto-conteudo">
-                <small class="recanto-label">RECANTO ${index + 1}</small>
-
-                <h3>${e.nome}</h3>
-
-                <p>${e.descricao}</p>
-
-                <div class="recanto-status">
-                  ${concluida
-                    ? '✓ Investigação registrada'
-                    : '🔎 Pronto para investigar'}
-                </div>
-
-                <button
-                  class="btn-primary btn-abrir-estacao"
-                  data-id="${e.id}"
-                >
-                  ${concluida ? 'Revisar investigação' : 'Explorar recanto →'}
-                </button>
-              </div>
-
-            </article>
+            <div class="recanto-card" style="${concluida ? 'border-left:5px solid var(--primary);' : ''}">
+              <h3>${e.icone} ${e.nome}${concluida ? '✅' : ''}</h3>
+              <p style="font-size:0.85rem; color:var(--text-muted); margin:4px 0 8px 0;">${e.descricao}</p>
+              <small style="color:var(--primary); font-weight:600; display:block; margin-bottom:10px;">
+                📋 ${concM}/${totalM} atividade(s) concluída(s)
+              </small>
+              <button class="btn-primary btn-abrir-estacao" data-id="${e.id}">
+                ${concluida ? 'Revisar Recanto' : 'Entrar no Recanto'}
+              </button>
+            </div>
           `
         }).join('')}
       </div>
-
-      <section class="frase-final-exploracao">
-        <span>🌱</span>
-        <p>
-          <strong>Observe com atenção.</strong><br>
-          Cada detalhe pode ser uma descoberta.
-        </p>
-      </section>
-
-    </div>
-  `
-}
+    `
+  }
 
   if (modalMensagem) {
-    html = `
+    html += `
       <div class="modal-overlay">
         <div class="modal-card">
           <h3>✅ Atividade Salva!</h3>
@@ -700,7 +460,6 @@ if (!crachaSalvo) {
   }
 
   app.innerHTML = html
-  carregarMapaInterativo()
   bindEvents()
 }
 
@@ -750,7 +509,7 @@ function bindEvents() {
   document.querySelector('#btn-conquistas')?.addEventListener('click', () => { verConquistas = true; verTabelaTemp = false; verCaderno = false; render() })
   document.querySelector('#btn-ver-conquistas-final')?.addEventListener('click', () => { verConquistas = true; verTabelaTemp = false; verCaderno = false; estacaoAtual = null; render() })
   document.querySelector('#btn-tabela-temp')?.addEventListener('click', () => { verTabelaTemp = true; verCaderno = false; verConquistas = false; render() })
-  document.querySelector('#btn-caderno')?.addEventListener('click', () => { verCaderno = true; verTabelaTemp = false; verConquistas = false; render() })
+  document.querySelector('#btn-caderno')?.addEventListener('click', () => { verCaderno = true; verTabelaTemp = false; verCaderno = false; render() })
   document.querySelector('#btn-voltar-estacoes')?.addEventListener('click', () => { verTabelaTemp = false; verCaderno = false; verConquistas = false; render() })
 
   document.querySelectorAll('.btn-abrir-estacao').forEach(btn => {
