@@ -20,6 +20,7 @@ const mascotes: Mascote[] = [
 ]
 
 
+
 // Estado Local
 let crachaSalvo: Cracha | null = JSON.parse(localStorage.getItem('exp_cracha') || 'null')
 let respostasGerais: RespostaAtividade[] = JSON.parse(localStorage.getItem('exp_respostas') || '[]')
@@ -29,14 +30,7 @@ let mascoteTempId = mascotes[0].id
 let estacaoAtual: Estacao | null = null
 let missaoAtual: Missao | null = null
 let fotoTemp: string | null = null
-
 let audioTemp: string | null = null
-
-let mediaRecorder: MediaRecorder | null = null
-let audioChunks: Blob[] = []
-let streamAudio: MediaStream | null = null
-let gravandoAudio = false
-
 let opcaoSelecionadaQuiz: string | null = null
 let verTabelaTemp = false
 let verCaderno = false
@@ -168,7 +162,7 @@ async function carregarMapaInterativo() {
   if (!container) return
 
   try {
-    const resposta = await fetch('/explore-its/mapa-trilha-app.svg')
+    const resposta = await fetch('/explore-its/mapa-explore-its.svg')
 
     if (!resposta.ok) {
       throw new Error('Não foi possível carregar o mapa.')
@@ -195,12 +189,12 @@ const svg = container.querySelector('svg')
 
   // RECANTOS INTERATIVOS DO MAPA
 const recantosMapa = [
-  { mapa: 'marcador_inicio', estacao: 'inicio-trilha' },
-  { mapa: 'marcador_recanto_saci_perere', estacao: 'recanto-saci-perere' },
-  { mapa: 'marcador_recanto_jatoba', estacao: 'recanto-jatoba' },
-  { mapa: 'marcador_recanto_pioneiras', estacao: 'recanto-pioneiras' },
-  { mapa: 'marcador_recanto_caipora', estacao: 'caipora' },
-  { mapa: 'marcador_recanto_nego_dagua', estacao: 'recanto-nego-dagua' }
+  { mapa: 'fazenda-barauna', estacao: 'fazenda-barauna' },
+  { mapa: 'recanto-saci-perere', estacao: 'recanto-saci-perere' },
+  { mapa: 'recanto-jatoba', estacao: 'recanto-jatoba' },
+  { mapa: 'recanto-pioneiras', estacao: 'recanto-pioneiras' },
+  { mapa: 'recanto-caipora', estacao: 'caipora' },
+  { mapa: 'recanto-nego-dagua', estacao: 'recanto-nego-dagua' }
 ]
 
 recantosMapa.forEach(({ mapa, estacao }) => {
@@ -568,7 +562,7 @@ if (telaAtual === 'inicio') {
           </thead>
           <tbody>
             ${[
-              { id: 'inicio-trilha', nome: '1. Início da Trilha' },
+              { id: 'fazenda-barauna', nome: '1. Fazenda Baraúna' },
               { id: 'recanto-jatoba', nome: '3. Recanto do Jatobá' },
               { id: 'recanto-nego-dagua', nome: '6. Recanto do Nego d\'Água' }
             ].map(ponto => {
@@ -727,24 +721,11 @@ if (telaAtual === 'inicio') {
           ` : ''}
 
           ${missaoAtual.tipo === 'audio' ? `
-            <button type="button" id="btn-audio" class="btn-secondary">
-              ${gravandoAudio ? '⏹️ Parar gravação' : '🎙️ Iniciar gravação'}
-            </button>
-
-          <div class="preview-box">
-          ${gravandoAudio
-            ? '<p>🔴 Gravando... observe os sons ao seu redor.</p>'
-             : audioTemp
-              ? `
-                <p>✅ Gravação concluída</p>
-                <audio controls src="${audioTemp}" style="width:100%; margin-top:8px;"></audio>
-                <small>Ouça o registro antes de salvar a atividade.</small>
-        `
-        : '<small>Gravação pendente</small>'
-    }
-
-  </div>
-` : ''}
+            <button type="button" id="btn-audio" class="btn-secondary">🎙️ Gravador de Áudio</button>
+            <div class="preview-box">
+              ${audioTemp ? '<p>✅ Áudio registrado!</p>' : '<small>Gravação pendente</small>'}
+            </div>
+          ` : ''}
 
           <button type="submit" class="btn-primary" style="margin-top:14px;">Salvar Atividade</button>
         </form>
@@ -760,17 +741,17 @@ if (telaAtual === 'inicio') {
 
     html += `
       <div class="card-container">
-        <button id="btn-voltar-home" class="btn-back">⬅ Voltar às Etapas</button>
+        <button id="btn-voltar-home" class="btn-back">⬅ Voltar às Estações</button>
         <h2>${estacaoAtual.icone} ${estacaoAtual.nome}</h2>
         <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:15px;">${estacaoAtual.descricao}</p>
 
         ${estacaoConclvida ? `
           <div style="background:#f0fdf4; border:2px solid var(--primary); padding:14px; border-radius:10px; margin-bottom:15px; text-align:center;">
-            <h4 style="color:var(--primary-dark);">🎉 Etapa concluída!</h4>
+            <h4 style="color:var(--primary-dark);">🎉 Recanto Concluído com Sucesso!</h4>
             <p style="font-size:0.85rem; color:var(--text-muted); margin:4px 0 10px 0;">Todas as atividades deste ponto foram entregues.</p>
             ${proximaEstacao ? `
               <button class="btn-primary btn-proximo-recanto" data-id="${proximaEstacao.id}">
-                Próxima etapa: ${proximaEstacao.nome} ➔
+                Ir para o Próximo Recanto (${proximaEstacao.nome}) ➔
               </button>
             ` : `
               <button id="btn-ver-conquistas-final" class="btn-primary">
@@ -780,7 +761,7 @@ if (telaAtual === 'inicio') {
           </div>
         ` : ''}
 
-        <h3>Atividades desta etapa:</h3>
+        <h3>Atividades deste Recanto:</h3>
         <div style="margin-top:10px; display:flex; flex-direction:column; gap:10px;">
           ${estacaoAtual.missoes.map(m => {
             const feita = respostasGerais.some(r => r.missaoId === m.id)
@@ -798,202 +779,279 @@ if (telaAtual === 'inicio') {
       </div>
     `
   } else if (telaAtual === 'trilha') {
+  html += `
+    <div class="home-exploracao">
 
-    const etapasConcluidas = estacoes.filter(estacao =>
-      estacao.missoes.length > 0 &&
-      estacao.missoes.every(missao =>
-        respostasGerais.some(resposta => resposta.missaoId === missao.id)
-      )
-    ).length
+      <section class="hero-exploracao">
+        <div class="hero-selo">🌿 EXPLORE ITS</div>
 
-    const totalEtapas = estacoes.length
+        <h2>Trilha da Semente Peregrina</h2>
 
-    html += `
-
-      <div class="home-exploracao">
-
-        <section class="hero-exploracao">
-          <div class="hero-selo">🌿 EXPEDIÇÃO CIENTÍFICA</div>
-
-          <h2>Trilha da Semente Peregrina</h2>
-
-          <p class="hero-frase">
-            A natureza deixou pistas.<br>
-            <strong>Você consegue encontrá-las?</strong>
-          </p>
-
-          <div class="ciclo-investigador">
-            <div>
-              <span>👀</span>
-              <small>Observar</small>
-            </div>
-            <div class="ciclo-seta">→</div>
-            <div>
-              <span>🔎</span>
-              <small>Investigar</small>
-            </div>
-            <div class="ciclo-seta">→</div>
-            <div>
-              <span>📝</span>
-              <small>Registrar</small>
-            </div>
-            <div class="ciclo-seta">→</div>
-            <div>
-              <span>💡</span>
-              <small>Descobrir</small>
-            </div>
-          </div>
-        </section>
-
-        <section class="mapa-exploracao">
-          <div class="mapa-cabecalho">
-            <span>MAPA DA EXPEDIÇÃO</span>
-            <h3>Trilha da Semente Peregrina</h3>
-            <p>Siga o percurso e encontre os pontos de investigação.</p>
-          </div>
-
-          <div
-            class="mapa-container"
-            id="mapa-container"
-            aria-label="Mapa interativo da Trilha da Semente Peregrina"
-          >
-            <div class="mapa-carregando">Carregando mapa...</div>
-          </div>
-        </section>
-
-        <section class="orientacao-exploracao">
-          <div class="orientacao-icone">🧭</div>
-          <div>
-           <strong>Como explorar?</strong>
-           <p>
-            Siga o mapa, encontre cada etapa e faça a investigação.
-            Observe, registre e deixe a natureza revelar as pistas.
-           </p>
-          </div>
-        </section>
-
-        <div class="titulo-recantos">
-          <div>
-            <span>EXPEDIÇÃO EM ANDAMENTO</span>
-
-            <h3>${etapasConcluidas} de ${totalEtapas} etapas concluídas</h3>
-
-          <div class="progresso-expedicao">
-            <div
-              class="progresso-expedicao-preenchimento"
-              style="width: ${(etapasConcluidas / totalEtapas) * 100}%"
-            ></div>
-          </div>
-
-    <p>Toque em um marcador do mapa para abrir uma etapa da investigação.</p>
-  </div>
-</div>
-
-        <div class="recantos-grid" style="display:none;">
-          ${estacoes.map((e, index) => {
-            const totalM = e.missoes.length
-            const concM = e.missoes.filter(m =>
-              respostasGerais.some(r => r.missaoId === m.id)
-            ).length
-
-            const concluida = concM === totalM && totalM > 0
-            const emAndamento = concM > 0 && !concluida
-
-            return `
-              <article class="recanto-card novo-recanto-card ${concluida ? 'recanto-concluido' : ''}">
-
-                <div class="recanto-topo">
-                  <div class="recanto-numero">
-                    ${index + 1}
-                  </div>
-
-                  <div class="recanto-icone">
-                    ${e.icone}
-                  </div>
-
-                  ${concluida ? `
-                    <div class="recanto-check">✓</div>
-                  ` : ''}
-                </div>
-
-                <div class="recanto-conteudo">
-                  <h3>${e.nome}</h3>
-
-                  <p>${e.descricao}</p>
-
-                  <div class="recanto-status">
-                    ${concluida
-                    ? '✓ Investigação registrada'
-                    : emAndamento
-                      ? `📝 Em andamento — ${concM} de ${totalM} atividades`
-                      : '🔎 Pronto para investigar'}
-                  </div>
-
-                  <button
-                    class="btn-primary btn-abrir-estacao"
-                    data-id="${e.id}"
-                  >
-                    ${concluida ? 'Revisar investigação' : 'Explorar etapa →'}
-                  </button>
-                </div>
-
-              </article>
-            `
-          }).join('')}
-        </div>
-
-        <section class="frase-final-exploracao">
-          <span>🌱</span>
-          <p>
-            <strong>Observe com atenção.</strong><br>
-            Cada detalhe pode ser uma descoberta.
-          </p>
-        </section>
-
-      </div>
-    `
-  }
-
-if (modalMensagem) {
-  const etapaConcluida = estacaoAtual
-    ? estacaoAtual.missoes.every(m =>
-        respostasGerais.some(r => r.missaoId === m.id)
-      )
-    : false
-
-  html = `
-    <div class="modal-overlay">
-      <div class="modal-card">
-        <h3>
-          ${etapaConcluida
-            ? '🎉 Etapa concluída!'
-            : '✅ Atividade salva!'}
-        </h3>
-
-        <p style="margin:10px 0;">
-          ${modalMensagem}
+        <p class="hero-frase">
+          A natureza deixou pistas.<br>
+          <strong>Você consegue encontrá-las?</strong>
         </p>
 
-        <button id="btn-fechar-modal" class="btn-primary">
-          OK
-        </button>
+        <div class="ciclo-investigador">
+          <div>
+            <span>👀</span>
+            <small>Observar</small>
+          </div>
+          <div class="ciclo-seta">→</div>
+          <div>
+            <span>🔎</span>
+            <small>Investigar</small>
+          </div>
+          <div class="ciclo-seta">→</div>
+          <div>
+            <span>📝</span>
+            <small>Registrar</small>
+          </div>
+          <div class="ciclo-seta">→</div>
+          <div>
+            <span>💡</span>
+            <small>Descobrir</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="mapa-exploracao">
+        <div class="mapa-cabecalho">
+          <span>MAPA DA EXPEDIÇÃO</span>
+          <h3>Trilha da Semente Peregrina</h3>
+         <p>Conheça o percurso e os pontos de investigação.</p>
       </div>
+
+     <div
+  class="mapa-container"
+  id="mapa-container"
+  aria-label="Mapa interativo da Trilha da Semente Peregrina"
+>
+  <div class="mapa-carregando">Carregando mapa...</div>
+
+  })
+
+  document.querySelector('#form-cadastro')?.addEventListener('submit', (e) => {
+  e.preventDefault()
+
+  const nome = (document.querySelector('#inp-nome') as HTMLInputElement).value
+  const turma = (document.querySelector('#inp-turma') as HTMLInputElement).value
+  const m = mascotes.find(x => x.id === mascoteTempId) || mascotes[0]
+
+  crachaSalvo = { nome, turma, mascote: m }
+  localStorage.setItem('exp_cracha', JSON.stringify(crachaSalvo))
+
+  telaAtual = 'trilha'
+  render()
+})
+
+  document.querySelector('#btn-sair')?.addEventListener('click', () => {
+    if (confirm('Deseja apagar os dados locais e reiniciar?')) {
+      localStorage.clear()
+      crachaSalvo = null
+      respostasGerais = []
+      medicoesTemperatura = []
+      estacaoAtual = null
+      missaoAtual = null
+      verTabelaTemp = false
+      verCaderno = false
+      verConquistas = false
+      render()
+    }
+  })
+
+  document.querySelector('#btn-conquistas')?.addEventListener('click', () => { verConquistas = true; verTabelaTemp = false; verCaderno = false; render() })
+  document.querySelector('#btn-ver-conquistas-final')?.addEventListener('click', () => { verConquistas = true; verTabelaTemp = false; verCaderno = false; estacaoAtual = null; render() })
+  document.querySelector('#btn-tabela-temp')?.addEventListener('click', () => { verTabelaTemp = true; verCaderno = false; verConquistas = false; render() })
+  document.querySelector('#btn-caderno')?.addEventListener('click', () => { verCaderno = true; verTabelaTemp = false; verConquistas = false; render() })
+  document.querySelector('#btn-voltar-estacoes')?.addEventListener('click', () => { verTabelaTemp = false; verCaderno = false; verConquistas = false; render() })
+
+  document.querySelectorAll('.btn-abrir-estacao').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id')
+      estacaoAtual = estacoes.find(e => e.id === id) || null
+      render()
+    })
+  })
+
+  document.querySelectorAll('.btn-proximo-recanto').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id')
+      estacaoAtual = estacoes.find(e => e.id === id) || null
+      missaoAtual = null
+      render()
+    })
+  })
+
+  document.querySelector('#btn-voltar-home')?.addEventListener('click', () => { estacaoAtual = null; render() })
+
+  document.querySelectorAll('.btn-abrir-missao').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id')
+      fotoTemp = null
+      audioTemp = null
+      opcaoSelecionadaQuiz = null
+      evidenciasSelecionadas = []
+      capivaraAvistada = false
+      missaoAtual = estacaoAtual?.missoes.find(m => m.id === id) || null
+      render()
+    })
+  })
+
+  document.querySelector('#btn-voltar-estacao')?.addEventListener('click', () => { missaoAtual = null; render() })
+
+  document.querySelectorAll('input[name="opcao-quiz"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      opcaoSelecionadaQuiz = (e.target as HTMLInputElement).value
+    })
+  })
+
+  document.querySelector('#btn-toggle-capivara')?.addEventListener('click', () => {
+    capivaraAvistada = !capivaraAvistada
+    render()
+  })
+
+  document.querySelectorAll('.chk-evidencia').forEach(chk => {
+    chk.addEventListener('change', () => {
+      evidenciasSelecionadas = Array.from(document.querySelectorAll('.chk-evidencia:checked')).map(el => (el as HTMLInputElement).value)
+    })
+  })
+
+  const btnFoto = document.querySelector('#btn-foto')
+  const inputFoto = document.querySelector('#input-foto') as HTMLInputElement
+  if (btnFoto && inputFoto) {
+    btnFoto.addEventListener('click', () => inputFoto.click())
+    inputFoto.addEventListener('change', () => {
+      const file = inputFoto.files?.[0]
+      if (file) {
+        const r = new FileReader()
+        r.onload = (e) => { fotoTemp = e.target?.result as string; render() }
+        r.readAsDataURL(file)
+      }
+    })
+  }
+
+  document.querySelector('#btn-audio')?.addEventListener('click', () => {
+    audioTemp = "Audio_Registrado"
+    alert('Áudio gravado com sucesso!')
+    render()
+  })
+
+  document.querySelector('#form-missao')?.addEventListener('submit', (e) => {
+    e.preventDefault()
+    if (!missaoAtual || !estacaoAtual) return
+
+    let conteudo = ''
+    let midiaUrl = undefined
+</div>
+
+      <section class="orientacao-exploracao">
+        <div class="orientacao-icone">🧭</div>
+        <div>
+          <strong>Como explorar?</strong>
+          <p>
+            Escolha um recanto, observe o ambiente e siga as pistas.
+            A resposta está na natureza.
+          </p>
+        </div>
+      </section>
+
+      <div class="titulo-recantos">
+        <div>
+          <span>EXPEDIÇÃO</span>
+          <h3>Escolha um recanto para começar</h3>
+        </div>
+      </div>
+
+      <div class="recantos-grid">
+        ${estacoes.map((e, index) => {
+          const totalM = e.missoes.length
+          const concM = e.missoes.filter(m =>
+            respostasGerais.some(r => r.missaoId === m.id)
+          ).length
+
+          const concluida = concM === totalM && totalM > 0
+
+          return `
+            <article class="recanto-card novo-recanto-card ${concluida ? 'recanto-concluido' : ''}">
+
+              <div class="recanto-topo">
+                <div class="recanto-numero">
+                  ${index + 1}
+                </div>
+
+                <div class="recanto-icone">
+                  ${e.icone}
+                </div>
+
+                ${concluida ? `
+                  <div class="recanto-check">✓</div>
+                ` : ''}
+              </div>
+
+              <div class="recanto-conteudo">
+                <small class="recanto-label">RECANTO ${index + 1}</small>
+
+                <h3>${e.nome}</h3>
+
+                <p>${e.descricao}</p>
+
+                <div class="recanto-status">
+                  ${concluida
+                    ? '✓ Investigação registrada'
+                    : '🔎 Pronto para investigar'}
+                </div>
+
+                <button
+                  class="btn-primary btn-abrir-estacao"
+                  data-id="${e.id}"
+                >
+                  ${concluida ? 'Revisar investigação' : 'Explorar recanto →'}
+                </button>
+              </div>
+
+            </article>
+          `
+        }).join('')}
+      </div>
+
+      <section class="frase-final-exploracao">
+        <span>🌱</span>
+        <p>
+          <strong>Observe com atenção.</strong><br>
+          Cada detalhe pode ser uma descoberta.
+        </p>
+      </section>
+
     </div>
   `
 }
 
-  app.innerHTML = html
-
-  if (telaAtual === 'mapa-its') {
-    carregarMapaITS()
-  } else if (telaAtual === 'trilha') {
-    carregarMapaInterativo()
+  if (modalMensagem) {
+    html = `
+      <div class="modal-overlay">
+        <div class="modal-card">
+          <h3>✅ Atividade Salva!</h3>
+          <p style="margin:10px 0;">${modalMensagem}</p>
+          <button id="btn-fechar-modal" class="btn-primary">OK</button>
+        </div>
+      </div>
+    `
   }
 
-  bindEvents()
+ app.innerHTML = html
+
+if (telaAtual === 'mapa-its') {
+  carregarMapaITS()
+} else {
+  carregarMapaInterativo()
+}
+
+bindEvents()
 }
 
 function bindEvents() {
+
   document.querySelector('#btn-explorar-its')?.addEventListener('click', () => {
     telaAtual = 'mapa-its'
     render()
@@ -1016,8 +1074,6 @@ function bindEvents() {
     verTabelaTemp = false
     verCaderno = false
     verConquistas = false
-    localidadeAtual = null
-    telaAtual = 'inicio'
     render()
   })
 
@@ -1026,235 +1082,11 @@ function bindEvents() {
       mascoteTempId = el.getAttribute('data-id') || mascotes[0].id
       render()
     })
-  })
-
-  document.querySelector('#form-cadastro')?.addEventListener('submit', (e) => {
-    e.preventDefault()
-
-    const nome = (document.querySelector('#inp-nome') as HTMLInputElement).value
-    const turma = (document.querySelector('#inp-turma') as HTMLInputElement).value
-    const m = mascotes.find(x => x.id === mascoteTempId) || mascotes[0]
-
-    crachaSalvo = { nome, turma, mascote: m }
-    localStorage.setItem('exp_cracha', JSON.stringify(crachaSalvo))
-
-    telaAtual = 'trilha'
-    render()
-  })
-
-  document.querySelector('#btn-sair')?.addEventListener('click', () => {
-    if (confirm('Deseja apagar os dados locais e reiniciar?')) {
-      localStorage.clear()
-      crachaSalvo = null
-      respostasGerais = []
-      medicoesTemperatura = []
-      estacaoAtual = null
-      missaoAtual = null
-      verTabelaTemp = false
-      verCaderno = false
-      verConquistas = false
-      localidadeAtual = null
-      telaAtual = 'inicio'
-      render()
-    }
-  })
-
-  document.querySelector('#btn-conquistas')?.addEventListener('click', () => {
-    verConquistas = true
-    verTabelaTemp = false
-    verCaderno = false
-    render()
-  })
-
-  document.querySelector('#btn-ver-conquistas-final')?.addEventListener('click', () => {
-    verConquistas = true
-    verTabelaTemp = false
-    verCaderno = false
-    estacaoAtual = null
-    render()
-  })
-
-  document.querySelector('#btn-tabela-temp')?.addEventListener('click', () => {
-    verTabelaTemp = true
-    verCaderno = false
-    verConquistas = false
-    render()
-  })
-
-  document.querySelector('#btn-caderno')?.addEventListener('click', () => {
-    verCaderno = true
-    verTabelaTemp = false
-    verConquistas = false
-    render()
-  })
-
-  document.querySelector('#btn-voltar-estacoes')?.addEventListener('click', () => {
-    verTabelaTemp = false
-    verCaderno = false
-    verConquistas = false
-  render()
-})
-
-  document.querySelectorAll('.btn-abrir-estacao').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.getAttribute('data-id')
-      estacaoAtual = estacoes.find(e => e.id === id) || null
-      render()
-    })
-  })
-
-  document.querySelectorAll('.btn-proximo-recanto').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.getAttribute('data-id')
-      estacaoAtual = estacoes.find(e => e.id === id) || null
-      missaoAtual = null
-      render()
-    })
-  })
-
-  document.querySelector('#btn-voltar-home')?.addEventListener('click', () => {
-    estacaoAtual = null
-    render()
-  })
-
-  document.querySelectorAll('.btn-abrir-missao').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.getAttribute('data-id')
-      
-      console.log('MISSÃO CLICADA:', id)
-
-      fotoTemp = null
-      audioTemp = null
-      opcaoSelecionadaQuiz = null
-      evidenciasSelecionadas = []
-      capivaraAvistada = false
-      missaoAtual = estacaoAtual?.missoes.find(m => m.id === id) || null
-      render()
-    })
-  })
-
-  document.querySelector('#btn-voltar-estacao')?.addEventListener('click', () => {
-    missaoAtual = null
-    render()
-  })
-
-  document.querySelectorAll('input[name="opcao-quiz"]').forEach(radio => {
-    radio.addEventListener('change', (e) => {
-      opcaoSelecionadaQuiz = (e.target as HTMLInputElement).value
-    })
-  })
-
-  document.querySelector('#btn-toggle-capivara')?.addEventListener('click', () => {
-    capivaraAvistada = !capivaraAvistada
-    render()
-  })
-
-  document.querySelectorAll('.chk-evidencia').forEach(chk => {
-    chk.addEventListener('change', () => {
-      evidenciasSelecionadas = Array.from(
-        document.querySelectorAll('.chk-evidencia:checked')
-      ).map(el => (el as HTMLInputElement).value)
-    })
-  })
-
-  const btnFoto = document.querySelector('#btn-foto')
-  const inputFoto = document.querySelector('#input-foto') as HTMLInputElement | null
-
-  if (btnFoto && inputFoto) {
-    btnFoto.addEventListener('click', () => inputFoto.click())
-
-    inputFoto.addEventListener('change', () => {
-      const file = inputFoto.files?.[0]
-
-      if (file) {
-        const r = new FileReader()
-        r.onload = (e) => {
-          fotoTemp = e.target?.result as string
-          render()
-        }
-        r.readAsDataURL(file)
-      }
-    })
-  }
-
-document.querySelector('#btn-audio')?.addEventListener('click', async () => {
-
-  // INICIAR GRAVAÇÃO
-  if (!gravandoAudio) {
-    try {
-      streamAudio = await navigator.mediaDevices.getUserMedia({
-        audio: true
-      })
-
-      audioChunks = []
-
-      mediaRecorder = new MediaRecorder(streamAudio)
-
-      mediaRecorder.addEventListener('dataavailable', (event) => {
-        if (event.data.size > 0) {
-          audioChunks.push(event.data)
-        }
-      })
-
-      mediaRecorder.addEventListener('stop', () => {
-        const audioBlob = new Blob(audioChunks, {
-          type: mediaRecorder?.mimeType || 'audio/webm'
-        })
-
-        if (audioTemp) {
-          URL.revokeObjectURL(audioTemp)
-        }
-
-        audioTemp = URL.createObjectURL(audioBlob)
-
-        streamAudio?.getTracks().forEach(track => track.stop())
-
-        streamAudio = null
-        mediaRecorder = null
-        gravandoAudio = false
-
-        render()
-      })
-
-      mediaRecorder.start()
-      gravandoAudio = true
-
-      render()
-
-    } catch (erro) {
-      console.error('Erro ao acessar o microfone:', erro)
-
-      alert(
-        'Não foi possível acessar o microfone. Verifique se o navegador tem permissão para usá-lo.'
-      )
-    }
-
-    return
-  }
-
-  // PARAR GRAVAÇÃO
-  if (mediaRecorder && mediaRecorder.state === 'recording') {
-    mediaRecorder.stop()
-  }
-})
-
-  document.querySelector('#form-missao')?.addEventListener('submit', (e) => {
-    e.preventDefault()
-
-    if (!missaoAtual || !estacaoAtual) return
-
-    let conteudo = ''
-    let midiaUrl: string | undefined = undefined
-
     if (missaoAtual.tipo === 'investigacao-corrego') {
-      const chks = Array.from(
-        document.querySelectorAll('.chk-evidencia:checked')
-      ).map(el => (el as HTMLInputElement).value)
-
+      const chks = Array.from(document.querySelectorAll('.chk-evidencia:checked')).map(el => (el as HTMLInputElement).value)
       if (chks.length < 2) {
         return alert('Por favor, selecione pelo menos 2 evidências observadas!')
       }
-
       if (!fotoTemp) {
         return alert('Por favor, fotografe 1 das evidências!')
       }
@@ -1262,22 +1094,13 @@ document.querySelector('#btn-audio')?.addEventListener('click', async () => {
       const hipotese = (document.querySelector('#inp-hipotese') as HTMLTextAreaElement).value
       const proxima = (document.querySelector('#sel-proxima-investigacao') as HTMLSelectElement).value
 
-      if (!hipotese.trim()) {
-        return alert('Por favor, descreva o que observou e sua hipótese!')
-      }
-
-      if (!proxima) {
-        return alert('Por favor, escolha o que investigaria amanhã!')
-      }
+      if (!hipotese.trim()) return alert('Por favor, descreva o que observou e sua hipótese!')
+      if (!proxima) return alert('Por favor, escolha o que investigaria amanhã!')
 
       conteudo = `Evidências selecionadas:\n- ${chks.join('\n- ')}\n\nHipótese Ecológica:\n"${hipotese}"\n\nPróximo Teste Científico:\n${proxima}${capivaraAvistada ? '\n\n🐾 Capivara avistada com segurança no local!' : ''}`
       midiaUrl = fotoTemp
-
     } else if (missaoAtual.tipo === 'quiz') {
-      if (!opcaoSelecionadaQuiz) {
-        return alert('Por favor, escolha uma das opções!')
-      }
-
+      if (!opcaoSelecionadaQuiz) return alert('Por favor, escolha uma das opções!')
       const opt = missaoAtual.opcoesQuiz?.find(o => o.id === opcaoSelecionadaQuiz)
       if (!opt) return
 
@@ -1286,48 +1109,30 @@ document.querySelector('#btn-audio')?.addEventListener('click', async () => {
       }
 
       conteudo = `Resposta Correta: ${opt.texto}`
-
     } else if (missaoAtual.tipo === 'temperatura') {
-      const tempVal = parseFloat(
-        (document.querySelector('#inp-temp') as HTMLInputElement).value
-      )
+      const tempVal = parseFloat((document.querySelector('#inp-temp') as HTMLInputElement).value)
       const horaVal = (document.querySelector('#inp-hora') as HTMLInputElement).value
 
-      if (isNaN(tempVal)) {
-        return alert('Por favor, digite um valor de temperatura válido!')
-      }
+      if (isNaN(tempVal)) return alert('Por favor, digite um valor de temperatura válido!')
 
-      medicoesTemperatura = medicoesTemperatura.filter(
-        m => m.estacaoId !== estacaoAtual!.id
-      )
-
+      medicoesTemperatura = medicoesTemperatura.filter(m => m.estacaoId !== estacaoAtual!.id)
       medicoesTemperatura.push({
         estacaoId: estacaoAtual.id,
         estacaoNome: estacaoAtual.nome,
         valorTemp: tempVal,
         horarioMedicao: horaVal
       })
-
       localStorage.setItem('exp_medicoes', JSON.stringify(medicoesTemperatura))
 
       conteudo = `Temperatura: ${tempVal} °C às ${horaVal}`
-
     } else if (missaoAtual.tipo === 'foto') {
-      if (!fotoTemp) {
-        return alert('Por favor, tire uma foto!')
-      }
-
+      if (!fotoTemp) return alert('Por favor, tire uma foto!')
       conteudo = 'Foto registrada no local'
       midiaUrl = fotoTemp
-
     } else if (missaoAtual.tipo === 'texto') {
       conteudo = (document.querySelector('#inp-texto') as HTMLTextAreaElement).value
-
     } else if (missaoAtual.tipo === 'audio') {
-      if (!audioTemp) {
-        return alert('Por favor, grave o áudio!')
-      }
-
+      if (!audioTemp) return alert('Por favor, grave o áudio!')
       conteudo = 'Áudio gravado no local'
     }
 
@@ -1340,22 +1145,17 @@ document.querySelector('#btn-audio')?.addEventListener('click', async () => {
       dataHora: new Date().toLocaleString('pt-BR')
     }
 
-    respostasGerais = respostasGerais.filter(
-      r => r.missaoId !== missaoAtual!.id
-    )
-
+    respostasGerais = respostasGerais.filter(r => r.missaoId !== missaoAtual!.id)
     respostasGerais.push(novaResp)
     localStorage.setItem('exp_respostas', JSON.stringify(respostasGerais))
 
     const totalMissoes = estacaoAtual.missoes.length
-    const concluidas = estacaoAtual.missoes.filter(
-      m => respostasGerais.some(r => r.missaoId === m.id)
-    ).length
+    const concluidas = estacaoAtual.missoes.filter(m => respostasGerais.some(r => r.missaoId === m.id)).length
 
     if (concluidas === totalMissoes) {
-      modalMensagem = `Você concluiu as atividades de ${estacaoAtual.nome}. Seus registros foram salvos no Caderno do Investigador.`
+      modalMensagem = `🎉 Parabéns! Você concluiu todas as atividades do ${estacaoAtual.nome}. Medalha 'Investigador das Relações Ecológicas' Desbloqueada!`
     } else {
-      modalMensagem = 'Atividade salva com sucesso!'
+      modalMensagem = `Atividade salva com sucesso!`
     }
 
     render()
@@ -1366,10 +1166,7 @@ document.querySelector('#btn-audio')?.addEventListener('click', async () => {
 
     if (estacaoAtual) {
       const totalMissoes = estacaoAtual.missoes.length
-      const concluidas = estacaoAtual.missoes.filter(
-        m => respostasGerais.some(r => r.missaoId === m.id)
-      ).length
-
+      const concluidas = estacaoAtual.missoes.filter(m => respostasGerais.some(r => r.missaoId === m.id)).length
       if (concluidas === totalMissoes) {
         estacaoAtual = null
       }

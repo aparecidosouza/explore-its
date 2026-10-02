@@ -1,31 +1,31 @@
 import type { Estacao } from '../@types'
 
 export const estacoes: Estacao[] = [
-  {
-    id: 'fazenda-barauna',
-    nome: '1. Fazenda Baraúna (Início da Trilha)',
-    descricao: 'Ponto de recepção e partida da expedição.',
-    icone: '🏡',
+    {
+   id: 'inicio-trilha',
+   nome: 'Início da Trilha',
+    descricao: 'Ponto de partida da expedição pela Trilha da Semente Peregrina.',
+    icone: '🥾',
     missoes: [
       {
         id: 'm-bar-foto',
         titulo: 'Registro de Partida',
-        descricao: 'Tire uma foto do grupo ou da entrada da fazenda.',
+        descricao: 'Registre uma foto do grupo no início da trilha.',
         tipo: 'foto'
       },
       {
         id: 'm-bar-temp',
         titulo: '1ª Medição de Temperatura',
-        descricao: 'Meça a temperatura ambiental inicial e confirme o horário de partida.',
+        descricao: 'Meça a temperatura ambiental no início da trilha e registre o horário de partida.',
         tipo: 'temperatura',
         requerHorario: true
-      }
-    ]
+     }
+   ]
   },
 
   {
     id: 'recanto-saci-perere',
-    nome: '2. Recanto do Saci-Pererê',
+    nome: 'Recanto do Saci-Pererê',
     descricao: 'Investigue os sons e ruídos da mata.',
     icone: '🌪️',
     missoes: [
@@ -40,7 +40,7 @@ export const estacoes: Estacao[] = [
 
   {
     id: 'recanto-jatoba',
-    nome: '3. Recanto do Jatobá',
+    nome: 'Recanto do Jatobá',
     descricao: 'Observação da flora e 2º ponto de microclima.',
     icone: '🌰',
     missoes: [
@@ -61,7 +61,7 @@ export const estacoes: Estacao[] = [
 
   {
     id: 'recanto-pioneiras',
-    nome: '4. Recanto das Pioneiras',
+    nome: 'Recanto das Pioneiras',
     descricao:
       'Investigação sobre plantas pioneiras e os organismos que ajudam a regenerar a mata.',
     icone: '🌱',
@@ -123,7 +123,7 @@ export const estacoes: Estacao[] = [
 
   {
     id: 'caipora',
-    nome: '5. Recanto da Caipora',
+    nome: 'Recanto da Caipora',
     descricao: 'Rastros e vestígios da fauna local.',
     icone: '🐾',
     missoes: [
@@ -138,7 +138,7 @@ export const estacoes: Estacao[] = [
 
   {
     id: 'recanto-nego-dagua',
-    nome: "6. Recanto do Nego d'Água",
+    nome: "Recanto do Nego d'Água",
     descricao:
       "Área próxima ao curso d'água para investigação de interações ecológicas.",
     icone: '💧',

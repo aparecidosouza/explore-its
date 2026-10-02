@@ -1458,6 +1458,30 @@ select:focus-visible {
   font-size: 1.25rem;
 }
 
+.titulo-recantos h3 {
+  margin-top: 2px;
+  color: var(--verde-mata-escuro);
+  font-family: var(--fonte-titulo);
+  font-size: 1.25rem;
+}
+
+/* PROGRESSO DA EXPEDIÇÃO */
+
+.progresso-expedicao {
+  width: 100%;
+  height: 10px;
+  margin: 10px 0 8px;
+  background: var(--terra-areia);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progresso-expedicao-preenchimento {
+  height: 100%;
+  background: var(--amarelo-semente);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
 
 /* GRID DOS RECANTOS */
 
@@ -1591,11 +1615,16 @@ select:focus-visible {
 }
 
 .recanto-status {
-  margin: 12px 0 9px;
-
+  align-self: flex-start;
+  margin: 12px 0 10px;
+  padding: 5px 9px;
   color: var(--verde-mata);
-  font-size: 0.73rem;
+  background: rgba(107, 143, 61, 0.10);
+  border: 1px solid rgba(107, 143, 61, 0.20);
+  border-radius: 999px;
+  font-size: 0.72rem;
   font-weight: 700;
+  line-height: 1.2;
 }
 
 .recanto-conteudo .btn-primary {
@@ -1618,6 +1647,11 @@ select:focus-visible {
     );
 }
 
+.recanto-concluido .recanto-status {
+  color: var(--verde-mata-escuro);
+  background: rgba(107, 143, 61, 0.18);
+  border-color: rgba(46, 93, 58, 0.30);
+}
 
 /* FRASE FINAL */
 
@@ -2226,4 +2260,343 @@ select:focus-visible {
   display: block;
   width: 100%;
   height: auto;
+}
+
+/* =========================================================
+   PÁGINA DE LOCALIDADE — ESTRUTURA BASE
+   ========================================================= */
+
+.tela-localidade {
+  width: min(100% - 32px, 1100px);
+  margin: 0 auto;
+  padding: 24px 0 60px;
+}
+
+/* Voltar ao mapa */
+
+.localidade-voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  margin-bottom: 18px;
+  padding: 8px 0;
+
+  border: 0;
+  background: transparent;
+
+  color: var(--verde-mata);
+  font: inherit;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+/* Área da fotografia principal */
+
+.localidade-hero {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+
+  overflow: hidden;
+  border-radius: 24px;
+
+  display: flex;
+  align-items: flex-end;
+
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+}
+
+/* Temporário — será substituído pela fotografia */
+
+.localidade-hero-placeholder {
+  background:
+    linear-gradient(
+      135deg,
+      var(--verde-mata),
+      var(--verde-folha)
+    );
+}
+
+/* Conteúdo que ficará sobre a fotografia */
+
+.localidade-hero-conteudo {
+  position: relative;
+  z-index: 2;
+
+  width: 100%;
+  padding: 36px;
+
+  color: var(--marfim);
+}
+
+.localidade-categoria {
+  display: inline-block;
+
+  margin-bottom: 10px;
+  padding: 7px 12px;
+
+  border-radius: 999px;
+
+  background: rgba(250, 248, 242, 0.18);
+
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.localidade-hero h1 {
+  margin: 0;
+  max-width: 700px;
+
+  color: var(--marfim);
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  line-height: 1.05;
+  font-weight: 700;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* Celular */
+
+@media (max-width: 600px) {
+
+  .tela-localidade {
+    width: min(100% - 24px, 1100px);
+    padding-top: 16px;
+  }
+
+  .localidade-hero {
+    border-radius: 18px;
+  }
+
+  .localidade-hero-conteudo {
+    padding: 22px;
+  }
+
+  .localidade-hero h1 {
+    font-size: 2rem;
+  }
+}
+
+/* =========================================================
+   LOCALIDADE — DADOS RÁPIDOS
+   ========================================================= */
+
+.localidade-dados {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+
+  margin: 26px 0 32px;
+}
+
+.localidade-dado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 110px;
+  padding: 16px;
+
+  background: var(--marfim);
+  border: 1px solid rgba(46, 93, 58, 0.16);
+  border-radius: 16px;
+
+  text-align: center;
+
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.06);
+}
+
+.localidade-dado > span {
+  margin-bottom: 5px;
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.localidade-dado strong {
+  display: block;
+
+  color: var(--verde-mata);
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.localidade-dado small {
+  margin-top: 3px;
+
+  color: var(--cinza-texto);
+  font-size: 0.82rem;
+}
+
+/* Celular */
+
+@media (max-width: 600px) {
+
+  .localidade-dados {
+    gap: 8px;
+    margin: 20px 0 26px;
+  }
+
+  .localidade-dado {
+    min-height: 95px;
+    padding: 12px 6px;
+    border-radius: 13px;
+  }
+
+  .localidade-dado > span {
+    font-size: 1.45rem;
+  }
+
+  .localidade-dado strong {
+    font-size: 1rem;
+  }
+
+  .localidade-dado small {
+    font-size: 0.72rem;
+  }
+}
+
+/* =========================================================
+   LOCALIDADE — SUA MISSÃO
+   ========================================================= */
+
+.localidade-missao {
+  margin: 0 0 22px;
+  padding: 24px;
+
+  background: rgba(107, 143, 61, 0.08);
+  border: 1px solid rgba(46, 93, 58, 0.14);
+  border-radius: 18px;
+}
+
+.localidade-secao-label {
+  display: block;
+  margin-bottom: 5px;
+
+  color: var(--terracota-cultura);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+}
+
+.localidade-missao h2 {
+  margin: 0 0 18px;
+
+  color: var(--verde-mata);
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.localidade-acoes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.localidade-acoes span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 48px;
+  padding: 9px 8px;
+
+  background: var(--marfim);
+  border: 1px solid rgba(46, 93, 58, 0.14);
+  border-radius: 12px;
+
+  color: var(--cinza-texto);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Botão principal da localidade */
+
+.localidade-iniciar {
+  width: 100%;
+  min-height: 52px;
+
+  margin-top: 2px;
+
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* Frase de encerramento */
+
+.localidade-frase-final {
+  margin: 14px 0 0;
+
+  color: var(--verde-mata);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Celular */
+
+@media (max-width: 600px) {
+
+  .localidade-missao {
+    padding: 18px;
+  }
+
+  .localidade-acoes {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .localidade-acoes span {
+    min-height: 44px;
+    font-size: 0.82rem;
+  }
+}
+
+/* =========================================================
+   LOCALIDADE — TEXTO DE APRESENTAÇÃO
+   ========================================================= */
+
+.localidade-chamada {
+  margin-top: 22px;
+  margin-bottom: 4px;
+}
+
+.localidade-chamada > span {
+  display: block;
+  margin-bottom: 5px;
+
+  color: var(--verde-folha);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.localidade-chamada h2 {
+  margin: 0 0 8px;
+
+  color: var(--verde-mata);
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+.localidade-chamada p {
+  max-width: 720px;
+  margin: 0;
+
+  color: var(--cinza-texto);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 600px) {
+
+  .localidade-chamada {
+    margin-top: 18px;
+  }
+
+  .localidade-chamada h2 {
+    font-size: 1.3rem;
+  }
 }
