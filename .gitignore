@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# Arquivos de teste e backup do Explore ITS
+/mapa-explore-ITS*.svg
+/src/*_backup.ts
