@@ -2600,3 +2600,527 @@ select:focus-visible {
     font-size: 1.3rem;
   }
 }
+
+/* Escalas de observação da paisagem */
+
+.paisagem-escala {
+  margin: 18px 0 22px;
+}
+
+.paisagem-escala label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.paisagem-extremos {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+}
+
+.paisagem-escala input[type="range"] {
+  width: 100%;
+  display: block;
+  margin: 0;
+}
+
+/* Escalas do Retrato da Paisagem no Caderno */
+
+.caderno-escala {
+  margin: 14px 0;
+}
+
+.caderno-escala strong {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 5px;
+}
+
+.caderno-escala-extremos {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.caderno-escala-linha {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  background: #d9ddd8;
+  border-radius: 999px;
+}
+
+.caderno-escala-marcador {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--verde-mata, #2E5D3A);
+  transform: translate(-50%, -50%);
+}
+
+/* Fotografia do Retrato da Paisagem no Caderno */
+
+.resposta-card .preview-box {
+  margin-top: 10px;
+}
+
+.resposta-card .img-preview {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  border-radius: 8px;
+}
+
+/* Comparação dos Pontos A, B e C */
+
+.comparacao-paisagens {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.comparacao-paisagens > p {
+  font-size: 0.9rem;
+  margin: 8px 0 20px;
+}
+
+.comparacao-variavel strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.comparacao-extremos {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+}
+
+.comparacao-linha {
+  position: relative;
+  width: 100%;
+  height: 36px;
+  border-top: 6px solid #d9ddd8;
+}
+
+.comparacao-ponto {
+  position: absolute;
+  top: -12px;
+  transform: translateX(-50%);
+
+  width: 24px;
+  height: 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: var(--verde-mata, #2E5D3A);
+  color: white;
+
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.comparacao-a {
+  top: -13px;
+}
+
+.comparacao-b {
+  top: -7px;
+}
+
+.comparacao-c {
+  top: -1px;
+}
+
+/* Comparação das temperaturas */
+
+.comparacao-temperatura {
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.comparacao-temperatura > strong {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.comparacao-temperatura-valores {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.comparacao-temperatura-valores > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+
+  padding: 9px 4px;
+
+  background: #f5f6f3;
+  border-radius: 8px;
+}
+
+.temperatura-ponto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 24px;
+  height: 24px;
+
+  border-radius: 50%;
+
+  background: var(--verde-mata, #2E5D3A);
+  color: white;
+
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+/* Interpretação dos Retratos da Paisagem */
+
+.interpretacao-paisagem {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.interpretacao-paisagem h4 {
+  margin: 0 0 8px;
+}
+
+.interpretacao-paisagem p {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.interpretacao-paisagem label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+}
+
+.interpretacao-paisagem textarea {
+  width: 100%;
+  min-height: 90px;
+  box-sizing: border-box;
+  resize: vertical;
+  padding: 10px;
+
+  font: inherit;
+
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.interpretacao-paisagem .btn-primary {
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* =====================================================
+   DESAFIOS DA EXPEDIÇÃO
+   ===================================================== */
+
+.desafios-expedicao {
+  max-width: 520px;
+}
+
+.desafios-cabecalho {
+  margin: 14px 0 22px;
+}
+
+.desafios-cabecalho > span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--verde-folha, #6B8F3D);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.desafios-cabecalho h2 {
+  margin: 0 0 8px;
+  color: var(--verde-mata, #2E5D3A);
+}
+
+.desafios-cabecalho p {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.desafios-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.desafio-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  padding: 14px;
+
+  text-align: left;
+  font: inherit;
+
+  background: #FAF8F2;
+  border: 1px solid #E8DCC6;
+  border-radius: 12px;
+
+  cursor: pointer;
+}
+
+.desafio-card:hover {
+  border-color: #6B8F3D;
+}
+
+.desafio-icone {
+  flex: 0 0 44px;
+
+  width: 44px;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #E8DCC6;
+  border-radius: 50%;
+
+  font-size: 1.35rem;
+}
+
+.desafio-card > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.desafio-card strong {
+  color: #2E5D3A;
+  font-size: 0.95rem;
+}
+
+.desafio-card small {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+/* =====================================================
+   CADERNO — DESCOBERTAS DA EXPEDIÇÃO
+   ===================================================== */
+
+.descobertas-caderno {
+  margin-top: 20px;
+}
+
+.descoberta-caderno-card {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  column-gap: 12px;
+  align-items: start;
+  padding: 10px;
+}
+
+.descoberta-caderno-card h4 {
+  grid-column: 2;
+  margin: 2px 0 6px;
+}
+
+.descoberta-caderno-card .preview-box {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  margin: 0;
+  width: 110px;
+  height: 82px;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.descoberta-caderno-card .img-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.descoberta-caderno-card .pergunta-descoberta {
+  grid-column: 2;
+  margin: 0 0 6px;
+}
+
+.descoberta-caderno-card .pergunta-descoberta strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.78rem;
+}
+
+.descoberta-caderno-card .pergunta-descoberta p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.descoberta-caderno-card > small {
+  grid-column: 2;
+  font-size: 0.7rem !important;
+}
+
+@media (max-width: 420px) {
+  .descoberta-caderno-card {
+    grid-template-columns: 92px 1fr;
+  }
+
+  .descoberta-caderno-card .preview-box {
+    width: 92px;
+    height: 72px;
+  }
+}
+
+/* Ajuste dos cartões após agrupamento por categoria */
+
+.descoberta-caderno-card {
+  grid-template-columns: 110px 1fr;
+  min-height: 0;
+  padding: 8px 10px;
+  align-items: center;
+}
+
+.descoberta-caderno-card .preview-box {
+  grid-column: 1;
+  grid-row: 1;
+  width: 110px;
+  height: 72px;
+}
+
+.descoberta-caderno-card > small {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  margin-top: 3px;
+}
+
+.descoberta-caderno-card .pergunta-descoberta {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+}
+
+/* =====================================================
+   CADERNO — GALERIA DE DESCOBERTAS
+   ===================================================== */
+
+/* Pequenos habitantes, pistas e vidas conectadas */
+
+.grupo-descobertas.grupo-fotos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* Título ocupa toda a largura */
+
+.grupo-descobertas.grupo-fotos > h4 {
+  grid-column: 1 / -1;
+  margin-bottom: 0 !important;
+}
+
+/* Cada descoberta é um cartão da grade */
+
+.grupo-descobertas.grupo-fotos > .descoberta-caderno-card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 7px;
+}
+
+/* Fotografia */
+
+.grupo-descobertas.grupo-fotos
+> .descoberta-caderno-card
+> .preview-box {
+  width: 100%;
+  height: 120px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+/* Imagem */
+
+.grupo-descobertas.grupo-fotos
+> .descoberta-caderno-card
+> .preview-box
+> .img-preview {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: cover;
+  display: block;
+  border-radius: 8px;
+}
+
+/* Horário */
+
+.grupo-descobertas.grupo-fotos
+> .descoberta-caderno-card
+> small {
+  width: 100%;
+  margin: 0;
+  font-size: 0.68rem !important;
+}
+
+/* =====================================================
+   CADERNO — IDENTIFICAÇÃO DA EXPEDIÇÃO
+   ===================================================== */
+
+.caderno-expedicao-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  margin: 6px 0 18px;
+  padding: 10px 12px;
+
+  background: #FAF8F2;
+  border: 1px solid #E8DCC6;
+  border-radius: 10px;
+}
+
+.caderno-expedicao-info > span {
+  color: #6B8F3D;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.caderno-expedicao-info > strong {
+  color: #2E5D3A;
+  font-size: 0.88rem;
+}
