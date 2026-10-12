@@ -545,8 +545,8 @@ if (marcadorFim) {
 }
 
 function render() {
-  
-  let html = `
+
+  let html = telaAtual === 'inicio' ? '' : `
     <header class="app-header">
       <div class="header-content">
         <span class="logo" id="nav-home">🍃 Explore ITS</span>
@@ -561,31 +561,119 @@ function render() {
       </div>
     </header>
   `
+
 if (telaAtual === 'inicio') {
   html += `
-    <main class="tela-inicio-its">
+    <main class="tela-inicio-its inicio-figma">
 
-      <section class="inicio-its-hero">
+      <section class="inicio-figma-hero">
 
-        <div class="inicio-its-selo">
-          🌿 EXPLORE ITS
-        </div>
+        <img
+          class="inicio-figma-lago"
+          src="/explore-its/imagens-inicio/represe-its 1.png"
+          alt="Paisagem do lago do Instituto do Trópico Subúmido"
+        >
 
-        <h1>Instituto do Trópico Subúmido</h1>
+        
+<div class="inicio-figma-marfim"></div>
 
-        <p class="inicio-its-chamada">
-          Um espaço onde natureza, ciência, história e cultura
-          se encontram.
-        </p>
+<img
+  class="inicio-figma-curva"
+  src="/explore-its/imagens-inicio/curva-marfim.svg"
+  alt=""
+  aria-hidden="true"
+>
 
-        <p class="inicio-its-texto">
-          Explore os diferentes espaços do ITS e descubra
-          o que cada lugar tem para contar.
-        </p>
+<img
+  class="inicio-figma-logos"
 
-        <button id="btn-explorar-its" class="btn-primary">
-          Explorar o ITS →
+          src="/explore-its/imagens-inicio/Logo ITS + PUC Goiás g 1.png"
+          alt="Logotipos do ITS e da PUC Goiás"
+        >
+
+<div class="inicio-figma-titulos">
+  <h1>
+    <span>Explore o</span>
+    <strong>ITS</strong>
+  </h1>
+  <p>Natureza, ciência e cultura<br>em um só lugar</p>
+</div>
+
+
+
+<div class="inicio-figma-fotos">
+
+  <div class="inicio-quadro">
+    <img id="foto-quadro-1" src="/explore-its/imagens-inicio/galeria/quadro1_01.webp" alt="Fotografia do ITS">
+    <img id="foto-proxima-1" class="inicio-foto-proxima" src="/explore-its/imagens-inicio/galeria/quadro1_02.webp" alt="">
+  </div>
+
+  <div class="inicio-quadro">
+    <img id="foto-quadro-2" src="/explore-its/imagens-inicio/galeria/quadro2_01.webp" alt="Fotografia do ITS">
+    <img id="foto-proxima-2" class="inicio-foto-proxima" src="/explore-its/imagens-inicio/galeria/quadro2_02.webp" alt="">
+  </div>
+
+  <div class="inicio-quadro">
+    <img id="foto-quadro-3" src="/explore-its/imagens-inicio/galeria/quadro3_01.webp" alt="Fotografia do ITS">
+    <img id="foto-proxima-3" class="inicio-foto-proxima" src="/explore-its/imagens-inicio/galeria/quadro3_02.webp" alt="">
+  </div>
+
+</div>
+
+
+      </section>
+
+      <section class="inicio-figma-inferior">
+
+        <div class="inicio-figma-temas">
+
+  <button type="button" class="inicio-tema-item" data-tema="natureza">
+    <img src="/explore-its/imagens-inicio/natureza.svg" alt="">
+    <span>Natureza</span>
+  </button>
+
+  <button type="button" class="inicio-tema-item" data-tema="cultura">
+    <img src="/explore-its/imagens-inicio/cultura.svg" alt="">
+    <span>Cultura</span>
+  </button>
+
+  <button type="button" class="inicio-tema-item" data-tema="educacao">
+    <img src="/explore-its/imagens-inicio/ciencia.svg" alt="">
+    <span>Educação</span>
+  </button>
+
+  <button type="button" class="inicio-tema-item" data-tema="extensao">
+    <img src="/explore-its/imagens-inicio/historia.svg" alt="">
+    <span>Extensão</span>
+  </button>
+
+</div>
+
+        <button id="btn-explorar-its" class="inicio-figma-botao">
+          COMEÇAR A EXPLORAR <span class="inicio-seta">→</span>
         </button>
+
+        <div class="inicio-figma-rodape">
+  <strong>Visite o ITS</strong>
+  <div>
+
+    <button type="button" class="inicio-rodape-item" id="btn-como-chegar">
+      <img src="/explore-its/imagens-inicio/como_chegar.svg" alt="">
+      <span>Como chegar</span>
+    </button>
+
+    <button type="button" class="inicio-rodape-item" id="btn-instagram">
+      <img src="/explore-its/imagens-inicio/instagram.svg" alt="">
+      <span>Instagram</span>
+    </button>
+
+    <button type="button" class="inicio-rodape-item" id="btn-contato">
+      <img src="/explore-its/imagens-inicio/contato.svg" alt="">
+      <span>Contato</span>
+    </button>
+
+  </div>
+</div>
 
       </section>
 
@@ -633,17 +721,23 @@ if (telaAtual === 'inicio') {
         ← Voltar ao mapa
       </button>
 
-      <section class="localidade-hero localidade-hero-placeholder">
+<section class="localidade-hero">
 
-        <div class="localidade-hero-conteudo">
-          <span class="localidade-categoria">
-            🌿 EXPERIÊNCIA NO CERRADO
-          </span>
+  <img
+    src="/explore-its/imagem/trilha/inicio_trilha.webp"
+    alt="Entrada da Trilha da Semente Peregrina"
+    class="localidade-hero-imagem"
+  >
 
-          <h1>Trilha da Semente Peregrina</h1>
-        </div>
+  <div class="localidade-hero-conteudo">
+    <span class="localidade-categoria">
+      🌿 EXPERIÊNCIA NO CERRADO
+    </span>
 
-      </section>
+    <h1>Trilha da Semente Peregrina</h1>
+  </div>
+
+</section>
 
       <section class="localidade-conteudo">
 
@@ -2578,11 +2672,344 @@ if (modalMensagem) {
   bindEvents()
 }
 
+
+
+let temporizadorFotosInicio: ReturnType<typeof setInterval> | null = null
+
+function iniciarGaleriaInicio() {
+
+  // Encerra o temporizador anterior
+  if (temporizadorFotosInicio !== null) {
+    clearInterval(temporizadorFotosInicio)
+    temporizadorFotosInicio = null
+  }
+
+  const quadros = [1, 2, 3].map(numero => ({
+    numero,
+    atual: document.querySelector<HTMLImageElement>(
+      `#foto-quadro-${numero}`
+    ),
+    proxima: document.querySelector<HTMLImageElement>(
+      `#foto-proxima-${numero}`
+    ),
+    indice: 1
+  }))
+
+  if (quadros.some(quadro => !quadro.atual || !quadro.proxima)) {
+    return
+  }
+
+  // Evita movimento quando o usuário prefere animações reduzidas
+  const reduzirMovimento = window.matchMedia(
+    '(prefers-reduced-motion: reduce)'
+  ).matches
+
+  const duracao = reduzirMovimento ? 0 : 900
+  const intervalo = 6000
+
+  function trocarFotografia(
+    quadro: typeof quadros[number]
+  ) {
+
+    const atual = quadro.atual!
+    const proxima = quadro.proxima!
+
+    if (
+      telaAtual !== 'inicio' ||
+      !atual.isConnected ||
+      !proxima.isConnected
+    ) {
+      return
+    }
+
+    const proximoIndice = (quadro.indice % 4) + 1
+    const numeroFoto = String(proximoIndice).padStart(2, '0')
+
+    const caminho =
+      `/explore-its/imagens-inicio/galeria/quadro${quadro.numero}_${numeroFoto}.webp`
+
+    // Carrega a próxima fotografia antes da transição
+    const imagem = new Image()
+
+    imagem.onload = () => {
+
+      if (
+        telaAtual !== 'inicio' ||
+        !atual.isConnected ||
+        !proxima.isConnected
+      ) {
+        return
+      }
+
+      proxima.style.transition = 'none'
+      proxima.style.opacity = '0'
+      proxima.src = caminho
+
+      // Garante que a animação comece com a nova imagem invisível
+      void proxima.offsetWidth
+
+      proxima.style.transition =
+        `opacity ${duracao}ms ease-in-out`
+
+      proxima.style.opacity = '1'
+
+      // Depois da dissolvência, atualiza a fotografia de base
+      setTimeout(() => {
+
+        if (
+          telaAtual !== 'inicio' ||
+          !atual.isConnected ||
+          !proxima.isConnected
+        ) {
+          return
+        }
+
+        atual.src = caminho
+        proxima.style.transition = 'none'
+        proxima.style.opacity = '0'
+
+        quadro.indice = proximoIndice
+
+      }, duracao + 50)
+    }
+
+    imagem.src = caminho
+  }
+
+  // Cada quadro troca em um momento diferente
+  function executarCiclo() {
+
+    quadros.forEach((quadro, posicao) => {
+
+      setTimeout(() => {
+        trocarFotografia(quadro)
+      }, posicao * 1500)
+
+    })
+  }
+
+  temporizadorFotosInicio = setInterval(() => {
+
+    if (telaAtual !== 'inicio') {
+
+      if (temporizadorFotosInicio !== null) {
+        clearInterval(temporizadorFotosInicio)
+        temporizadorFotosInicio = null
+      }
+
+      return
+    }
+
+    executarCiclo()
+
+  }, intervalo)
+}
+
+
 function bindEvents() {
+if (telaAtual === 'inicio') {
+  iniciarGaleriaInicio()
+}
+
+  // COMO CHEGAR
+  document.querySelector('#btn-como-chegar')?.addEventListener('click', () => {
+    const destino = encodeURIComponent('Memorial do Cerrado da PUC Goiás, Goiânia, GO')
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${destino}`
+    window.open(url, '_blank', 'noopener,noreferrer')
+  })
+
+  // INSTAGRAM
+  document.querySelector('#btn-instagram')?.addEventListener('click', () => {
+    window.open(
+      'https://www.instagram.com/memorialdocerrado/',
+      '_blank',
+      'noopener,noreferrer'
+    )
+  })
+
+  // CONTATO
+  document.querySelector('#btn-contato')?.addEventListener('click', () => {
+    const janela = document.createElement('div')
+    janela.className = 'inicio-modal-fundo'
+
+    janela.innerHTML = `
+      <div class="inicio-modal" role="dialog" aria-modal="true" aria-labelledby="inicio-modal-titulo">
+        <button class="inicio-modal-fechar" aria-label="Fechar janela">×</button>
+
+        <h2 id="inicio-modal-titulo">Contato e visitas</h2>
+
+        <p>
+          Quer conhecer o Instituto do Trópico Subúmido?
+          Entre em contato com a equipe responsável pelo
+          Memorial do Cerrado para obter informações sobre
+          visitas e atividades educativas.
+        </p>
+
+        <p>
+          <strong>Atendimento e agendamentos</strong>
+        </p>
+
+        <p>
+          Em breve, disponibilizaremos aqui os canais
+          de contato e as informações para agendamento de visitas.
+        </p>
+      </div>
+    `
+
+    document.body.appendChild(janela)
+
+    const fechar = () => janela.remove()
+
+    janela.querySelector('.inicio-modal-fechar')?.addEventListener('click', fechar)
+
+    janela.addEventListener('click', (evento) => {
+      if (evento.target === janela) fechar()
+    })
+  })
+
+  // COMEÇAR A EXPLORAR
   document.querySelector('#btn-explorar-its')?.addEventListener('click', () => {
     telaAtual = 'mapa-its'
     render()
   })
+
+document.querySelector('[data-tema="natureza"]')?.addEventListener('click', () => {
+  const janela = document.createElement('div')
+  janela.className = 'inicio-modal-fundo'
+
+  janela.innerHTML = `
+    <div class="inicio-modal" role="dialog" aria-modal="true" aria-labelledby="inicio-modal-titulo">
+      <button class="inicio-modal-fechar" aria-label="Fechar janela">×</button>
+
+      <h2 id="inicio-modal-titulo">Natureza no ITS</h2>
+
+      <img
+        src="/explore-its/imagens-inicio/represe-its 1.png"
+        alt="Paisagem natural do ITS"
+      >
+
+      <p>
+        Descubra a biodiversidade do Cerrado, suas paisagens,
+        plantas, animais e ambientes naturais.
+      </p>
+    </div>
+  `
+
+  document.body.appendChild(janela)
+
+  const fechar = () => janela.remove()
+
+  janela.querySelector('.inicio-modal-fechar')?.addEventListener('click', fechar)
+
+  janela.addEventListener('click', (evento) => {
+    if (evento.target === janela) fechar()
+  })
+})
+
+document.querySelector('[data-tema="cultura"]')?.addEventListener('click', () => {
+  const janela = document.createElement('div')
+  janela.className = 'inicio-modal-fundo'
+
+  janela.innerHTML = `
+    <div class="inicio-modal" role="dialog" aria-modal="true" aria-labelledby="inicio-modal-titulo">
+      <button class="inicio-modal-fechar" aria-label="Fechar janela">×</button>
+
+      <h2 id="inicio-modal-titulo">Cultura no ITS</h2>
+
+      <img
+        src="/explore-its/imagens-inicio/vila_cenografica_1 1.png"
+        alt="Vila Cenográfica do ITS"
+      >
+
+      <p>
+        Conheça espaços que valorizam a história, as tradições
+        e a diversidade cultural de Goiás. A Vila Cenográfica,
+        o Quilombo e a Aldeia Indígena proporcionam experiências
+        de aprendizagem sobre diferentes modos de vida.
+      </p>
+    </div>
+  `
+
+  document.body.appendChild(janela)
+
+  const fechar = () => janela.remove()
+
+  janela.querySelector('.inicio-modal-fechar')?.addEventListener('click', fechar)
+
+  janela.addEventListener('click', (evento) => {
+    if (evento.target === janela) fechar()
+  })
+})
+
+document.querySelector('[data-tema="educacao"]')?.addEventListener('click', () => {
+  const janela = document.createElement('div')
+  janela.className = 'inicio-modal-fundo'
+
+  janela.innerHTML = `
+    <div class="inicio-modal" role="dialog" aria-modal="true" aria-labelledby="inicio-modal-titulo">
+      <button class="inicio-modal-fechar" aria-label="Fechar janela">×</button>
+
+      <h2 id="inicio-modal-titulo">Educação no ITS</h2>
+
+      <img
+        src="/explore-its/imagens-inicio/caminho_represa 1.png"
+        alt="Ambiente utilizado em atividades educativas no ITS"
+      >
+
+      <p>
+        No ITS, aprender vai além da sala de aula.
+        Estudantes exploram ambientes naturais e culturais,
+        observam, investigam e descobrem conhecimentos
+        por meio de experiências educativas.
+      </p>
+    </div>
+  `
+
+  document.body.appendChild(janela)
+
+  const fechar = () => janela.remove()
+
+  janela.querySelector('.inicio-modal-fechar')?.addEventListener('click', fechar)
+
+  janela.addEventListener('click', (evento) => {
+    if (evento.target === janela) fechar()
+  })
+})
+
+document.querySelector('[data-tema="extensao"]')?.addEventListener('click', () => {
+  const janela = document.createElement('div')
+  janela.className = 'inicio-modal-fundo'
+
+  janela.innerHTML = `
+    <div class="inicio-modal" role="dialog" aria-modal="true" aria-labelledby="inicio-modal-titulo">
+      <button class="inicio-modal-fechar" aria-label="Fechar janela">×</button>
+
+      <h2 id="inicio-modal-titulo">Extensão no ITS</h2>
+
+      <img
+        src="/explore-its/imagens-inicio/vila_cenografica_1 1.png"
+        alt="Espaço do ITS utilizado em atividades de extensão"
+      >
+
+      <p>
+        O ITS aproxima a universidade da sociedade.
+        Por meio de visitas, projetos e atividades educativas,
+        promove o encontro entre estudantes, professores
+        e comunidades, valorizando a troca de conhecimentos.
+      </p>
+    </div>
+  `
+
+  document.body.appendChild(janela)
+
+  const fechar = () => janela.remove()
+
+  janela.querySelector('.inicio-modal-fechar')?.addEventListener('click', fechar)
+
+  janela.addEventListener('click', (evento) => {
+    if (evento.target === janela) fechar()
+  })
+})
 
   document.querySelector('#btn-voltar-mapa-its')?.addEventListener('click', () => {
     localidadeAtual = null
