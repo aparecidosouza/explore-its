@@ -345,12 +345,114 @@ if (svg) {
   svg.classList.add('mapa-svg')
   svg.setAttribute('role', 'img')
   svg.setAttribute(
-    'aria-label',
-    'Mapa da Trilha da Semente Peregrina'
-  )
+  'aria-label',
+  'Mapa interativo dos espaços do Instituto do Trópico Subúmido'
+)
 
 // ESTAÇÕES DE INVESTIGAÇÃO DO MAPA
-    
+
+const localidadesMapa = [
+  {
+    id: 'marcador_viveiro',
+    nome: 'Viveiro',
+    descricao: 'Um espaço dedicado ao cultivo e ao desenvolvimento de mudas de plantas, contribuindo para a conservação da vegetação do Cerrado.'
+  },
+{
+  id: 'marcador_arte_cultura',
+  nome: 'Arte e Cultura',
+  descricao: 'Um espaço dedicado às manifestações artísticas e culturais, valorizando a criatividade, a expressão e a diversidade cultural.'
+},
+{
+  id: 'marcador_museu',
+  nome: 'Museu',
+  descricao: 'Um espaço de preservação e divulgação de acervos que contribuem para o conhecimento da história, da cultura e do patrimônio regional.'
+},
+{
+  id: 'marcador_espaco_dalila',
+  nome: 'Espaço Dalila',
+  descricao: 'Conheça o Espaço Dalila, um dos ambientes que integram o Instituto do Trópico Subúmido e suas atividades educativas e culturais.'
+},
+{
+  id: 'marcador_vila_cenografica',
+  nome: 'Vila Cenográfica',
+  descricao: 'Um espaço que reproduz ambientes e construções tradicionais, proporcionando aos visitantes uma experiência de aproximação com a história e os modos de vida de diferentes comunidades.'
+},
+{
+  id: 'marcador_fazenda_barauna',
+  nome: 'Fazenda Baraúna',
+  descricao: 'Um espaço que integra o percurso de visitação do ITS e serve como ponto de referência para as atividades educativas e de exploração da Trilha da Semente Peregrina.'
+},
+  { id: 'marcador_trilha_semente_peregrina', nome: 'Trilha da Semente Peregrina' },
+{
+  id: 'marcador_trilha_sensorial',
+  nome: 'Trilha Sensorial',
+  descricao: 'Um percurso educativo que convida os visitantes a explorar o ambiente por meio dos sentidos, estimulando a percepção de sons, aromas, texturas e outros elementos da natureza.'
+},
+{
+  id: 'marcador_aldeia_timbira',
+  nome: 'Aldeia Timbira',
+  descricao: 'Um espaço de valorização e divulgação dos conhecimentos, das tradições e das expressões culturais dos povos indígenas Timbira, contribuindo para o reconhecimento da diversidade cultural brasileira.'
+},
+{
+  id: 'marcador_quilombo',
+  nome: 'Quilombo',
+  descricao: 'Um espaço educativo dedicado à valorização da história, da cultura e das formas de organização das comunidades quilombolas, destacando sua contribuição para a formação da sociedade brasileira.'
+},
+{
+  id: 'marcador_nascente',
+  nome: 'Nascente do Córrego São Nicolau',
+  descricao: 'Um ambiente natural que permite observar a importância das nascentes para a formação dos cursos d’água, a conservação dos recursos hídricos e o equilíbrio dos ecossistemas do Cerrado.'
+}
+]
+
+localidadesMapa.forEach(({ id, nome, descricao }) => {
+  const marcador = svg.querySelector<SVGElement>(`#${id}`)
+
+  if (!marcador) {
+    console.warn(`Marcador não encontrado: ${id}`)
+    return
+  }
+
+  marcador.style.cursor = 'pointer'
+  marcador.setAttribute('aria-label', nome)
+
+  const titulo = document.createElementNS(
+    'http://www.w3.org/2000/svg',
+    'title'
+  )
+
+  titulo.textContent = nome
+  marcador.appendChild(titulo)
+
+  if (id !== 'marcador_trilha_semente_peregrina') {
+    marcador.addEventListener('click', () => {
+      const cartao = document.querySelector<HTMLElement>(
+        '#cartao-localidade-its'
+      )
+
+      if (!cartao) return
+
+      const textoDescricao =
+        descricao ?? 'Conheça este espaço do Instituto do Trópico Subúmido.'
+
+      cartao.innerHTML = `
+        <h3>${nome}</h3>
+        <p>${textoDescricao}</p>
+        <button type="button" disabled>
+          Conhecer este espaço →
+        </button>
+      `
+
+      cartao.hidden = false
+      cartao.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest'
+      })
+    })
+  }
+})
+
+
   const marcadorTrilha = svg.querySelector<SVGElement>(
     '#marcador_trilha_semente_peregrina'
   )
@@ -546,10 +648,10 @@ if (marcadorFim) {
 
 function render() {
 
-  let html = telaAtual === 'inicio' ? '' : `
+  let html = (telaAtual === 'inicio' || telaAtual === 'localidade') ? '' : `
     <header class="app-header">
       <div class="header-content">
-        <span class="logo" id="nav-home">🍃 Explore ITS</span>
+      <span class="logo" id="nav-home">🍃 Explore o ITS</span>
         ${crachaSalvo && telaAtual === 'trilha' ? `
           <div class="user-badge">
             <small><strong>${crachaSalvo.mascote.emoji}${crachaSalvo.nome}</strong></small>
@@ -683,17 +785,34 @@ if (telaAtual === 'inicio') {
   html += `
     <main class="tela-mapa-its">
 
-      <section class="mapa-its-introducao">
-        <div class="inicio-its-selo">
-          🌿 EXPLORE ITS
-        </div>
+<section class="mapa-its-introducao">
 
-        <h2>Explore os espaços do ITS</h2>
+  <button
+    type="button"
+    id="btn-voltar-inicio-its"
+    class="mapa-its-voltar"
+    aria-label="Voltar à página inicial"
+  >
+    ←
+  </button>
+
+  <img
+    class="mapa-its-foto-museu"
+    src="/explore-its/imagem/museu-its.webp"
+    alt="Museu do Instituto do Trópico Subúmido"
+  >
+
+  <div class="inicio-its-selo">
+    🌿 EXPLORE O ITS
+  </div>
+
+        <h2>Explore o<br>ITS</h2>
 
         <p>
-          Toque em uma localidade do mapa para conhecer
-          esse espaço e descobrir o que existe por lá.
-        </p>
+  Toque em alguma localidade do<br>
+  mapa para conhecer esse espaço<br>
+  e descobrir o que existe por lá.
+</p>
       </section>
 
       <section class="mapa-its-area">
@@ -709,6 +828,13 @@ if (telaAtual === 'inicio') {
         </div>
 
       </section>
+
+      <!-- CARTÃO INFORMATIVO DAS LOCALIDADES -->
+      <section
+        id="cartao-localidade-its"
+        class="cartao-localidade-its"
+        hidden
+      ></section>
 
     </main>
   `
@@ -730,11 +856,8 @@ if (telaAtual === 'inicio') {
   >
 
   <div class="localidade-hero-conteudo">
-    <span class="localidade-categoria">
-      🌿 EXPERIÊNCIA NO CERRADO
-    </span>
-
-    <h1>Trilha da Semente Peregrina</h1>
+    
+    <h1>Trilha da<br>Semente Peregrina</h1>
   </div>
 
 </section>
@@ -742,9 +865,7 @@ if (telaAtual === 'inicio') {
       <section class="localidade-conteudo">
 
         <div class="localidade-chamada">
-          <span>EXPLORE • OBSERVE • INVESTIGUE</span>
-          <h2>Uma trilha. Muitas pistas.</h2>
-
+          
           <p>
             Ao longo do percurso, a natureza revela pistas sobre
             o Cerrado, seus organismos, a água e as transformações
@@ -782,34 +903,28 @@ if (telaAtual === 'inicio') {
 
           <h2>Investigue a trilha como um cientista</h2>
 
-          <div class="localidade-acoes">
-            <span>👀 Observar</span>
-            <span>📷 Registrar</span>
-            <span>🌡️ Medir</span>
-            <span>🔎 Investigar</span>
-          </div>
+<div class="localidade-acoes">
+  <span><b>👀</b>Observar</span>
+  <span><b>❓</b>Questionar</span>
+  <span><b>🔎</b>Investigar</span>
+  <span><b>💡</b>Explicar</span>
+</div>
 
         </section>
 
-${crachaSalvo ? `
-  <button
-    id="btn-continuar-expedicao"
-    class="btn-primary localidade-iniciar"
-  >
+${inicioExpedicao ? `
+  <button id="btn-continuar-expedicao" class="btn-primary localidade-iniciar">
     Continuar a expedição →
   </button>
+
+  <button id="btn-nova-expedicao" class="localidade-nova-expedicao">
+    ↻ Iniciar uma nova expedição
+  </button>
 ` : `
-  <button
-    id="btn-iniciar-expedicao"
-    class="btn-primary localidade-iniciar"
-  >
+  <button id="btn-iniciar-expedicao" class="btn-primary localidade-iniciar">
     Iniciar a expedição →
   </button>
 `}
-
-        <p class="localidade-frase-final">
-          🌱 A natureza dá as pistas. Você faz a investigação.
-        </p>
 
       </section>
 
@@ -3017,6 +3132,13 @@ document.querySelector('[data-tema="extensao"]')?.addEventListener('click', () =
     render()
   })
 
+    // Retornar do mapa geral à página inicial
+  document.querySelector('#btn-voltar-inicio-its')?.addEventListener('click', () => {
+    localidadeAtual = null
+    telaAtual = 'inicio'
+    render()
+  })
+
   document.querySelector('#btn-iniciar-expedicao')?.addEventListener('click', () => {
     telaAtual = 'cadastro'
     render()
@@ -3024,6 +3146,45 @@ document.querySelector('[data-tema="extensao"]')?.addEventListener('click', () =
 
 document.querySelector('#btn-continuar-expedicao')?.addEventListener('click', () => {
   telaAtual = 'trilha'
+  render()
+})
+
+// INICIAR UMA NOVA EXPEDIÇÃO
+document.querySelector('#btn-nova-expedicao')?.addEventListener('click', () => {
+  const confirmar = confirm(
+    'Deseja iniciar uma nova expedição? Os registros da expedição anterior serão apagados.'
+  )
+
+  if (!confirmar) return
+
+  // Apaga somente os registros conhecidos da expedição
+  localStorage.removeItem('exp_cracha')
+  localStorage.removeItem('exp_inicio_expedicao')
+  localStorage.removeItem('exp_id_expedicao')
+  localStorage.removeItem('exp_respostas')
+  localStorage.removeItem('exp_medicoes')
+
+  // Reinicia os dados mantidos na memória
+  crachaSalvo = null
+  inicioExpedicao = null
+  idExpedicao = null
+  respostasGerais = []
+  medicoesTemperatura = []
+
+  // Reinicia a navegação e os estados temporários conhecidos
+  estacaoAtual = null
+  missaoAtual = null
+  paisagemAtual = null
+  desafioAtual = null
+  desafiosExpedicaoAberto = false
+
+  verTabelaTemp = false
+  verCaderno = false
+  verConquistas = false
+
+  localidadeAtual = null
+  telaAtual = 'localidade'
+
   render()
 })
 

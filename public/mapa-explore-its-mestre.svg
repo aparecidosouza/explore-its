@@ -27,9 +27,9 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
-     inkscape:zoom="0.69583333"
-     inkscape:cx="449.82036"
-     inkscape:cy="600"
+     inkscape:zoom="1.4"
+     inkscape:cx="450"
+     inkscape:cy="600.35714"
      inkscape:window-width="1920"
      inkscape:window-height="1094"
      inkscape:window-x="-11"
@@ -5458,7 +5458,7 @@
          id="path42"
          sodipodi:nodetypes="cccsssssccscscc" /></g><g
        id="marcador_fazenda_barauna"
-       transform="matrix(1.3499998,0,0,1.3499998,-46.333058,-60.449425)"
+       transform="matrix(1.3499998,0,0,1.3499998,-45.803891,-58.332757)"
        style="stroke-width:0.740741"
        inkscape:label="marcador_fazenda_barauna"><circle
          style="fill:#c02933;fill-opacity:1;stroke:#ffffff;stroke-width:0.592594;stroke-dasharray:none;stroke-opacity:1"
@@ -5584,7 +5584,7 @@
                  id="path57-0"
                  sodipodi:nodetypes="cczcczcc" /></g></g></g></g></g><g
        id="marcador_trilha_semente_peregrina"
-       transform="matrix(1.3499998,0,0,1.3499998,-30.861229,-85.783378)"
+       transform="matrix(1.3499998,0,0,1.3499998,-29.273728,-87.370879)"
        style="stroke-width:0.740741"
        inkscape:label="marcador_trilha_semente_peregrina"><circle
          style="fill:#536c53;fill-opacity:1;stroke:#ffffff;stroke-width:0.592594;stroke-dasharray:none;stroke-opacity:1"
