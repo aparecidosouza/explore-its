@@ -2277,25 +2277,31 @@ select:focus-visible {
 .tela-localidade {
   width: min(100%, 390px);
   margin: 0 auto;
-  padding: 24px 0 60px;
+  padding: 0 0 60px;
 }
 
-/* Voltar ao mapa */
+/* LOCALIDADE — SETA CIRCULAR DE RETORNO */
 
 .localidade-voltar {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
 
-  margin-bottom: 18px;
-  padding: 8px 0;
+  width: 40px;
+  height: 40px;
+
+  margin: 0 0 18px auto;
+  padding: 0;
 
   border: 0;
-  background: transparent;
+  border-radius: 50%;
 
+  background: var(--marfim);
   color: var(--verde-mata);
-  font: inherit;
-  font-weight: 600;
+
+  font-size: 1.4rem;
+  font-weight: 500;
+  line-height: 1;
 
   cursor: pointer;
 }
@@ -2328,35 +2334,20 @@ select:focus-visible {
   );
 }
 
-/* Fotografia com recorte orgânico */
+/* Fotografia da entrada da trilha */
 
 .localidade-hero-imagem {
   position: relative;
-  inset: auto;
-
   display: block;
+
   width: 100%;
   height: 230px;
 
   object-fit: cover;
   object-position: center;
 
-  border-radius: 20px 20px 0 0;
+  border-radius: 0;
   z-index: 0;
-
-  /* Curva orgânica:
-     abre mais espaço marfim na região do título
-     e preserva a fotografia à direita */
-
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 390 230' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M0 0 H390 V225 C330 210 290 195 245 160 C190 115 120 65 0 70 Z'/%3E%3C/svg%3E");
-
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 390 230' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M0 0 H390 V225 C330 210 290 195 245 160 C190 115 120 65 0 70 Z'/%3E%3C/svg%3E");
-
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
 }
 
 /* ==========================================
@@ -2368,7 +2359,7 @@ select:focus-visible {
   z-index: 1;
 
   width: 100%;
-  margin-top: -70px;
+  margin-top: 12px;
   padding: 0 0 8px;
 
   color: var(--verde-mata);
@@ -2414,7 +2405,7 @@ select:focus-visible {
 
   .tela-localidade {
     width: min(100%, 390px);
-    padding-top: 16px;
+    padding-top: 0px;
   }
 
   .localidade-hero {
@@ -3803,6 +3794,30 @@ background: linear-gradient(
    Alterações restritas à tela .tela-mapa-its.
    ========================================= */
 
+body:has(.tela-mapa-its) {
+  padding: 0;
+  background: #FAF8F2;
+}
+
+body:has(.tela-mapa-its) #app {
+  max-width: 390px;
+  min-height: 0;
+}
+
+/* =========================================
+   LOCALIDADE — PADRÃO VISUAL DAS TELAS ITS
+   ========================================= */
+
+body:has(.tela-localidade) {
+  padding: 0;
+  background: #FAF8F2;
+}
+
+body:has(.tela-localidade) #app {
+  max-width: 390px;
+  min-height: 0;
+}
+
 .tela-mapa-its {
   width: 100%;
   max-width: 390px;
@@ -3907,16 +3922,28 @@ background: linear-gradient(
   margin: 4px 0 9px;
   color: #2E5D3A;
   font-family: var(--fonte-titulo);
-  font-size: 1.32rem;
-  font-weight: 700;
-  line-height: 1.18;
+  line-height: 1;
+}
+
+.tela-mapa-its .mapa-its-introducao h2 span {
+  display: block;
+  font-size: 1.55rem;
+  font-weight: 600;
+}
+
+.tela-mapa-its .mapa-its-introducao h2 strong {
+  display: block;
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 0.95;
 }
 
 .tela-mapa-its .mapa-its-introducao p {
   margin: 0;
   color: #3A3A3A;
-  font-size: .83rem;
-  line-height: 1.4;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.5;
 }
 
 .tela-mapa-its .mapa-its-voltar {
@@ -3941,7 +3968,7 @@ background: linear-gradient(
 
 .tela-mapa-its .mapa-its-area {
   position: relative;
-  margin: -55px 0 0;
+  margin: -25px 0 0;
   padding: 0;
   background: transparent;
   z-index: 0;
@@ -3978,4 +4005,184 @@ background: linear-gradient(
       rgba(207, 218, 190, 0.08) 68%,
       rgba(250, 248, 242, 0) 100%
     );
+}
+
+/* PÁGINA INICIAL — AJUSTE DA TIPOGRAFIA */
+
+.tela-inicial p {
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+/* TESTE DE TIPOGRAFIA — MAPA ITS */
+
+.tela-mapa-its p {
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  line-height: 1.5 !important;
+}
+
+/* =========================================
+   EXPLORE ITS — NAVEGAÇÃO INFERIOR
+   ========================================= */
+
+.navegacao-inferior {
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+  max-width: 390px;
+  min-height: 68px;
+  margin: 0 auto;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+
+  background: #FAF8F2;
+  border-top: 1px solid #E8DCC6;
+  box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.08);
+
+  z-index: 1000;
+}
+
+.nav-item {
+  flex: 1;
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  padding: 5px 2px;
+
+  border: none;
+  background: transparent;
+  color: #3A3A3A;
+
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.nav-icone {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.nav-item.ativo {
+  color: #2E5D3A;
+  font-weight: 700;
+}
+
+.nav-item.ativo .nav-icone {
+  color: #2E5D3A;
+}
+
+/* Espaçamento para a navegação inferior */
+
+.tela-mapa-its,
+.tela-localidade {
+  padding-bottom: 100px;
+  box-sizing: border-box;
+}
+
+/* =========================================
+   EXPLORE ITS — CARTÕES DAS LOCALIDADES
+   ========================================= */
+
+.tela-explorar {
+  width: min(100%, 390px);
+  margin: 0 auto;
+  padding: 20px 12px 110px;
+  box-sizing: border-box;
+}
+
+.explorar-grade {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.explorar-cartao {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+
+  background: #FFFFFF;
+  border: 1px solid #E8DCC6;
+  border-radius: 14px;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.explorar-foto {
+  display: block;
+  width: 100%;
+  height: 105px;
+  object-fit: cover;
+}
+
+.explorar-foto-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #E4EBD9;
+  font-size: 38px;
+}
+
+.explorar-cartao-conteudo {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 7px;
+  padding: 12px 10px;
+}
+
+.explorar-cartao h3 {
+  margin: 0;
+  color: #2E5D3A;
+  font-size: 14px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.explorar-cartao p {
+  margin: 0;
+  color: #3A3A3A;
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+.explorar-acao {
+  display: block;
+  margin-top: auto;
+  padding-top: 8px;
+  color: #2E5D3A;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* =========================================
+   LOCALIDADE — ALINHAMENTO SUPERIOR
+   ========================================= */
+
+.tela-localidade {
+  padding-top: 0;
+}
+
+.app-header:has(+ .tela-localidade) {
+  display: none;
 }

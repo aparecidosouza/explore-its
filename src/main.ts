@@ -141,6 +141,7 @@ let gravandoAudio = false
 // Navegação entre as telas principais do aplicativo
 type TelaApp =
   | 'inicio'
+  | 'explorar'
   | 'mapa-its'
   | 'localidade'
   | 'cadastro'
@@ -781,20 +782,147 @@ if (telaAtual === 'inicio') {
 
     </main>
   `
+} else if (telaAtual === 'explorar') {
+
+  html += `
+    <main class="tela-explorar">
+
+      <section class="explorar-introducao">
+        <span>🌿 EXPLORE O ITS</span>
+
+        <h1>Explore os espaços do ITS</h1>
+
+        <p>
+          Descubra os diferentes ambientes do Instituto
+          do Trópico Subúmido e escolha o que deseja conhecer.
+        </p>
+      </section>
+
+<section class="explorar-localidades">
+
+  <h2>O que você deseja explorar?</h2>
+
+<div class="explorar-grade">
+
+  <button type="button" class="explorar-cartao" data-localidade="aldeia-timbira">
+    <div class="explorar-foto explorar-foto-placeholder"><span>🛖</span></div>
+    <div class="explorar-cartao-conteudo">
+      <h3>Aldeia Timbira</h3>
+      <p>Conheça saberes e tradições indígenas.</p>
+      
+    </div>
+  </button>
+
+  <button type="button" class="explorar-cartao" data-localidade="arte-cultura">
+    <div class="explorar-foto explorar-foto-placeholder"><span>🎨</span></div>
+    <div class="explorar-cartao-conteudo">
+      <h3>Arte e Cultura</h3>
+      <p>Descubra histórias por meio da arte.</p>
+      
+    </div>
+  </button>
+
+  <button type="button" class="explorar-cartao" data-localidade="espaco-dalila">
+    <div class="explorar-foto explorar-foto-placeholder"><span>🏡</span></div>
+    <div class="explorar-cartao-conteudo">
+      <h3>Espaço Dalila</h3>
+      <p>Explore um espaço de memórias.</p>
+      
+    </div>
+  </button>
+
+  <button type="button" class="explorar-cartao" data-localidade="fazenda-barauna">
+    <div class="explorar-foto explorar-foto-placeholder"><span>🌾</span></div>
+    <div class="explorar-cartao-conteudo">
+      <h3>Fazenda Baraúna</h3>
+      <p>Conheça histórias da vida rural.</p>
+      
+    </div>
+  </button>
+
+  <button type="button" class="explorar-cartao" data-localidade="museu">
+    <img
+      class="explorar-foto"
+      src="/explore-its/imagem/museu-its.webp"
+      alt="Museu do ITS"
+    >
+    <div class="explorar-cartao-conteudo">
+      <h3>Museu</h3>
+      <p>Descubra histórias do Cerrado.</p>
+      
+    </div>
+  </button>
+
+  <button type="button" class="explorar-cartao" data-localidade="nascente">
+    <div class="explorar-foto explorar-foto-placeholder"><span>💧</span></div>
+    <div class="explorar-cartao-conteudo">
+      <h3>Nascente</h3>
+      <p>Investigue de onde vem a água.</p>
+      
+    </div>
+  </button>
+
+  <button type="button" class="explorar-cartao" data-localidade="quilombo">
+    <div class="explorar-foto explorar-foto-placeholder"><span>🥁</span></div>
+    <div class="explorar-cartao-conteudo">
+      <h3>Quilombo</h3>
+      <p>Conheça histórias de resistência.</p>
+      
+    </div>
+  </button>
+
+  <button type="button" class="explorar-cartao" data-localidade="trilha-semente-peregrina">
+    <img
+      class="explorar-foto"
+      src="/explore-its/imagem/trilha/inicio_trilha.webp"
+      alt="Trilha da Semente Peregrina"
+    >
+    <div class="explorar-cartao-conteudo">
+      <h3>Trilha da Semente Peregrina</h3>
+      <p>Investigue os segredos da mata.</p>
+      
+    </div>
+  </button>
+
+  <button type="button" class="explorar-cartao" data-localidade="trilha-sensorial">
+    <div class="explorar-foto explorar-foto-placeholder"><span>🍃</span></div>
+    <div class="explorar-cartao-conteudo">
+      <h3>Trilha Sensorial</h3>
+      <p>Explore a natureza com os sentidos.</p>
+      
+    </div>
+  </button>
+
+  <button type="button" class="explorar-cartao" data-localidade="vila-cenografica">
+    <div class="explorar-foto explorar-foto-placeholder"><span>🎭</span></div>
+    <div class="explorar-cartao-conteudo">
+      <h3>Vila Cenográfica</h3>
+      <p>Descubra cenários de outros tempos.</p>
+      
+    </div>
+  </button>
+
+  <button type="button" class="explorar-cartao" data-localidade="viveiro">
+    <div class="explorar-foto explorar-foto-placeholder"><span>🌱</span></div>
+    <div class="explorar-cartao-conteudo">
+      <h3>Viveiro</h3>
+      <p>Descubra como nasce uma floresta.</p>
+      
+    </div>
+  </button>
+
+</div>
+
+</section>
+
+    </main>
+  `
+
 } else if (telaAtual === 'mapa-its') {
   html += `
     <main class="tela-mapa-its">
 
 <section class="mapa-its-introducao">
-
-  <button
-    type="button"
-    id="btn-voltar-inicio-its"
-    class="mapa-its-voltar"
-    aria-label="Voltar à página inicial"
-  >
-    ←
-  </button>
 
   <img
     class="mapa-its-foto-museu"
@@ -806,7 +934,10 @@ if (telaAtual === 'inicio') {
     🌿 EXPLORE O ITS
   </div>
 
-        <h2>Explore o<br>ITS</h2>
+<h2 class="mapa-its-titulo">
+  <span>Explore o</span>
+  <strong>ITS</strong>
+</h2>
 
         <p>
   Toque em alguma localidade do<br>
@@ -842,10 +973,6 @@ if (telaAtual === 'inicio') {
 
   html += `
     <main class="tela-localidade">
-
-      <button id="btn-voltar-mapa-its" class="localidade-voltar">
-        ← Voltar ao mapa
-      </button>
 
 <section class="localidade-hero">
 
@@ -2776,9 +2903,48 @@ if (modalMensagem) {
   `
 }
 
-  app.innerHTML = html
+// NAVEGAÇÃO GERAL DO EXPLORE ITS
+// Preparação para a futura barra inferior
+
+if (
+  (
+    telaAtual === 'mapa-its' ||
+    telaAtual === 'localidade' ||
+    telaAtual === 'explorar'
+  ) &&
+  !modalMensagem
+) {
+  html += `
+    <nav class="navegacao-inferior" aria-label="Navegação principal">
+
+      <button type="button" class="nav-item" id="nav-inicio">
+        <span class="nav-icone">⌂</span>
+        <span>Início</span>
+      </button>
+
+      <button type="button" class="nav-item" id="nav-explorar">
+        <span class="nav-icone">◈</span>
+        <span>Explorar</span>
+      </button>
+
+      <button type="button" class="nav-item ativo" id="nav-mapa">
+        <span class="nav-icone">▧</span>
+        <span>Mapa</span>
+      </button>
+
+      <button type="button" class="nav-item" id="nav-percurso">
+        <span class="nav-icone">♧</span>
+        <span>Meu percurso</span>
+      </button>
+
+    </nav>
+  `
+}
+
+app.innerHTML = html
 
   if (telaAtual === 'mapa-its') {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
     carregarMapaITS()
   } else if (telaAtual === 'trilha') {
     carregarMapaInterativo()
@@ -2925,6 +3091,36 @@ function bindEvents() {
 if (telaAtual === 'inicio') {
   iniciarGaleriaInicio()
 }
+
+  // NAVEGAÇÃO INFERIOR — INÍCIO
+  document.querySelector('#nav-inicio')?.addEventListener('click', () => {
+    telaAtual = 'inicio'
+    window.scrollTo(0, 0)
+    render()
+  })
+
+// NAVEGAÇÃO INFERIOR — MAPA
+document.querySelector('#nav-mapa')?.addEventListener('click', () => {
+  telaAtual = 'mapa-its'
+  render()
+})
+
+// NAVEGAÇÃO INFERIOR — EXPLORAR
+document.querySelector('#nav-explorar')?.addEventListener('click', () => {
+  telaAtual = 'explorar'
+  window.scrollTo(0, 0)
+  render()
+})
+
+// EXPLORAR — ABRIR TRILHA DA SEMENTE PEREGRINA
+document.querySelector(
+  '[data-localidade="trilha-semente-peregrina"]'
+)?.addEventListener('click', () => {
+  localidadeAtual = 'trilha-semente-peregrina'
+  telaAtual = 'localidade'
+  window.scrollTo(0, 0)
+  render()
+})
 
   // COMO CHEGAR
   document.querySelector('#btn-como-chegar')?.addEventListener('click', () => {
