@@ -25,3 +25,5 @@ dist-ssr
 # Arquivos de teste e backup do Explore ITS
 /mapa-explore-ITS*.svg
 /src/*_backup.ts
+# Certificados HTTPS usados somente no desenvolvimento local
+/certificados/
