@@ -146,6 +146,7 @@ type TelaApp =
   | 'localidade'
   | 'cadastro'
   | 'trilha'
+  | 'meu-percurso'
 
 let telaAtual: TelaApp = 'inicio'
 let localidadeAtual: string | null = null
@@ -649,7 +650,13 @@ if (marcadorFim) {
 
 function render() {
 
-  let html = (telaAtual === 'inicio' || telaAtual === 'localidade') ? '' : `
+let html = (
+  telaAtual === 'inicio' ||
+  telaAtual === 'localidade' ||
+  telaAtual === 'cadastro' ||
+  telaAtual === 'trilha' ||
+  telaAtual === 'meu-percurso'
+) ? '' : `
     <header class="app-header">
       <div class="header-content">
       <span class="logo" id="nav-home">🍃 Explore o ITS</span>
@@ -1063,34 +1070,23 @@ ${inicioExpedicao ? `
   html += `
     <div class="tela-identificacao">
 
-      <section class="boas-vindas-expedicao">
+<section class="boas-vindas-expedicao cadastro-hero">
 
-        <div class="identificacao-selo">
-          🌿 EXPLORE ITS
-        </div>
-
-        <h2>Trilha da Semente Peregrina</h2>
-
-        <p class="identificacao-chamada">
-          A natureza está cheia de pistas.<br>
-          <strong>Vamos descobrir o que ela tem para contar?</strong>
-        </p>
-
-        <div class="identificacao-ilustracao">
-          🌱 🔎 🐜 🦜
-        </div>
-
-      </section>
+  <img
+    src="/explore-its/imagem/trilha/inicio_trilha.webp"
+    alt="Caminho de entrada da Trilha da Semente Peregrina"
+    class="cadastro-hero-imagem"
+  />
+<div class="cadastro-hero-conteudo">
+  <h2>Trilha da Semente Peregrina</h2>
+</div>
+</section>
 
       <section class="card-container identificacao-card">
 
-        <div class="identificacao-titulo">
-          <span>🧭</span>
-          <div>
-            <small>PRIMEIRO PASSO</small>
-            <h3>Prepare sua expedição</h3>
-          </div>
-        </div>
+<div class="identificacao-titulo">
+  <h3>Prepare sua expedição</h3>
+</div>
 
         <p class="identificacao-instrucao">
           Conte quem está participando da investigação e escolha
@@ -2576,45 +2572,23 @@ const totalCuriosidades = descobertasExpedicao.filter(
 
       <div class="home-exploracao">
 
-        <section class="hero-exploracao">
-          <div class="hero-selo">🌿 EXPEDIÇÃO CIENTÍFICA</div>
+<section class="trilha-hero">
+  <img
+    src="/explore-its/imagem/trilha/inicio_trilha.webp"
+    alt="Caminho da Trilha da Semente Peregrina"
+    class="trilha-hero-imagem"
+  />
 
-          <h2>Trilha da Semente Peregrina</h2>
-
-          <p class="hero-frase">
-            A natureza deixou pistas.<br>
-            <strong>Você consegue encontrá-las?</strong>
-          </p>
-
-          <div class="ciclo-investigador">
-            <div>
-              <span>👀</span>
-              <small>Observar</small>
-            </div>
-            <div class="ciclo-seta">→</div>
-            <div>
-              <span>🔎</span>
-              <small>Investigar</small>
-            </div>
-            <div class="ciclo-seta">→</div>
-            <div>
-              <span>📝</span>
-              <small>Registrar</small>
-            </div>
-            <div class="ciclo-seta">→</div>
-            <div>
-              <span>💡</span>
-              <small>Descobrir</small>
-            </div>
-          </div>
-        </section>
+  <div class="trilha-hero-conteudo">
+    <h1>Trilha da Semente Peregrina</h1>
+  </div>
+</section>
 
         <section class="mapa-exploracao">
-          <div class="mapa-cabecalho">
-            <span>MAPA DA EXPEDIÇÃO</span>
-            <h3>Trilha da Semente Peregrina</h3>
-            <p>Siga o percurso e encontre os pontos de investigação.</p>
-          </div>
+<div class="mapa-cabecalho">
+  <h3>Mapa da expedição</h3>
+  <p>Siga o percurso e encontre os pontos de investigação.</p>
+</div>
 
           <div
             class="mapa-container"
@@ -2685,9 +2659,98 @@ const totalCuriosidades = descobertasExpedicao.filter(
           </p>
         </section>
 
-      </div>
+       </div>
     `
-  }
+
+} else if (telaAtual === 'meu-percurso') {
+
+  const trilhaRegistrada =
+    crachaSalvo !== null ||
+    inicioExpedicao !== null ||
+    respostasGerais.length > 0 ||
+    medicoesTemperatura.length > 0 ||
+    descobertasExpedicao.length > 0 ||
+    registrosPaisagem.length > 0
+
+  html += `
+    <main class="tela-meu-percurso">
+
+      <header class="percurso-cabecalho">
+        <span>🌿 MINHAS EXPERIÊNCIAS</span>
+        <h1>Meu percurso</h1>
+        <p>
+          Reviva suas experiências e consulte os registros
+          das atividades realizadas no ITS.
+        </p>
+      </header>
+
+      <section class="percurso-localidades">
+        <h2>Localidades da minha visita</h2>
+
+        ${trilhaRegistrada ? `
+          <article class="percurso-localidade">
+            <div class="percurso-localidade-icone">🌳</div>
+            <div class="percurso-localidade-texto">
+              <h3>Trilha da Semente Peregrina</h3>
+              <p>Minha expedição e descobertas</p>
+            </div>
+          </article>
+
+          <section class="percurso-atividades">
+            <h2>Registros da trilha</h2>
+
+            <button
+              type="button"
+              class="btn-primary"
+              id="btn-caderno"
+            >
+              📖 Abrir Caderno de Campo
+            </button>
+
+<button
+  type="button"
+  class="btn-primary"
+  id="btn-tabela-temp"
+  style="margin-top: 12px;"
+>
+  🌡️ Ver Temperaturas
+</button>
+
+
+<button
+  type="button"
+  class="btn-primary"
+  id="btn-conquistas"
+  style="margin-top: 12px;"
+>
+  🏅 Ver Conquistas
+</button>
+
+
+            <p>
+              Em breve, este espaço também reunirá
+              suas temperaturas e conquistas.
+            </p>
+          </section>
+        ` : `
+          <div class="percurso-vazio">
+            <p>
+              Você ainda não iniciou uma experiência
+              registrada no ITS.
+            </p>
+            <p>
+              Explore as localidades e participe
+              das atividades para construir seu percurso.
+            </p>
+          </div>
+        `}
+
+      </section>
+
+    </main>
+  `
+}
+
 
 if (paisagemAtual) {
   const registroPaisagemAtual = registrosPaisagem.find(
@@ -2910,32 +2973,53 @@ if (
   (
     telaAtual === 'mapa-its' ||
     telaAtual === 'localidade' ||
-    telaAtual === 'explorar'
+    telaAtual === 'explorar' ||
+    telaAtual === 'cadastro' ||
+    telaAtual === 'trilha' ||
+    telaAtual === 'meu-percurso'
   ) &&
   !modalMensagem
 ) {
   html += `
     <nav class="navegacao-inferior" aria-label="Navegação principal">
 
-      <button type="button" class="nav-item" id="nav-inicio">
-        <span class="nav-icone">⌂</span>
-        <span>Início</span>
-      </button>
+      
+<button
+  type="button"
+class="nav-item"
+  id="nav-inicio"
+>
+  <span class="nav-icone">⌂</span>
+  <span>Início</span>
+</button>
 
-      <button type="button" class="nav-item" id="nav-explorar">
-        <span class="nav-icone">◈</span>
-        <span>Explorar</span>
-      </button>
+<button
+  type="button"
+  class="nav-item ${telaAtual === 'explorar' ? 'ativo' : ''}"
+  id="nav-explorar"
+>
+  <span class="nav-icone">◈</span>
+  <span>Explorar</span>
+</button>
 
-      <button type="button" class="nav-item ativo" id="nav-mapa">
-        <span class="nav-icone">▧</span>
-        <span>Mapa</span>
-      </button>
+<button
+  type="button"
+  class="nav-item ${['mapa-its', 'localidade', 'cadastro', 'trilha'].includes(telaAtual) ? 'ativo' : ''}"
+  id="nav-mapa"
+>
+  <span class="nav-icone">▧</span>
+  <span>Mapa</span>
+</button>
 
-      <button type="button" class="nav-item" id="nav-percurso">
-        <span class="nav-icone">♧</span>
-        <span>Meu percurso</span>
-      </button>
+<button
+  type="button"
+  class="nav-item ${telaAtual === 'meu-percurso' ? 'ativo' : ''}"
+  id="nav-percurso"
+>
+  <span class="nav-icone">♧</span>
+  <span>Meu percurso</span>
+</button>
+
 
     </nav>
   `
@@ -3111,6 +3195,15 @@ document.querySelector('#nav-explorar')?.addEventListener('click', () => {
   window.scrollTo(0, 0)
   render()
 })
+
+
+ // NAVEGAÇÃO INFERIOR — MEU PERCURSO
+document.querySelector('#nav-percurso')?.addEventListener('click', () => {
+  telaAtual = 'meu-percurso'
+  window.scrollTo(0, 0)
+  render()
+})
+
 
 // EXPLORAR — ABRIR TRILHA DA SEMENTE PEREGRINA
 document.querySelector(
@@ -3451,19 +3544,25 @@ document.querySelector('#btn-sair')?.addEventListener('click', () => {
 })
 
 
-  document.querySelector('#btn-tabela-temp')?.addEventListener('click', () => {
-    verTabelaTemp = true
-    verCaderno = false
-    verConquistas = false
-    render()
-  })
 
-  document.querySelector('#btn-caderno')?.addEventListener('click', () => {
-    verCaderno = true
-    verTabelaTemp = false
-    verConquistas = false
-    render()
-  })
+document.querySelector('#btn-tabela-temp')?.addEventListener('click', () => {
+  telaAtual = 'trilha'
+  verTabelaTemp = true
+  verCaderno = false
+  verConquistas = false
+  window.scrollTo(0, 0)
+  render()
+})
+
+
+document.querySelector('#btn-caderno')?.addEventListener('click', () => {
+  telaAtual = 'trilha'
+  verCaderno = true
+  verTabelaTemp = false
+  verConquistas = false
+  window.scrollTo(0, 0)
+  render()
+})
 
 document.querySelector('#btn-desafios-percurso')?.addEventListener('click', () => {
   desafiosExpedicaoAberto = true

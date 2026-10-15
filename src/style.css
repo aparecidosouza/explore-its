@@ -1286,7 +1286,7 @@ select:focus-visible {
   overflow: hidden;
 
   padding: 28px 22px 24px;
-  margin-bottom: 18px;
+  margin-bottom: 0px;
 
   background:
     radial-gradient(
@@ -1716,8 +1716,10 @@ select:focus-visible {
 
 .tela-identificacao {
   width: 100%;
-  max-width: 720px;
+  max-width: 390px;
   margin: 0 auto;
+  padding: 0 0 100px;
+  box-sizing: border-box;
 }
 
 
@@ -1727,49 +1729,16 @@ select:focus-visible {
 
 .boas-vindas-expedicao {
   position: relative;
-  overflow: hidden;
+  width: 100%;
+  margin: 0 0 6px;
+  padding: 0;
 
-  padding: 32px 24px 28px;
-  margin-bottom: 16px;
-
-  background:
-    radial-gradient(
-      circle at 88% 15%,
-      rgba(242, 183, 5, 0.28),
-      transparent 30%
-    ),
-    linear-gradient(
-      145deg,
-      var(--verde-claro),
-      var(--marfim)
-    );
-
-  border: 1px solid var(--borda);
-  border-radius: 24px;
-  box-shadow: var(--sombra);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
 }
-
-
-/* linha de trilha decorativa */
-
-.boas-vindas-expedicao::after {
-  content: "";
-  position: absolute;
-
-  width: 150px;
-  height: 90px;
-
-  right: -25px;
-  bottom: -20px;
-
-  border: 2px dashed rgba(46, 93, 58, 0.22);
-  border-left: 0;
-  border-bottom: 0;
-
-  border-radius: 50%;
-  transform: rotate(-18deg);
-}
-
 
 .identificacao-selo {
   position: relative;
@@ -1851,21 +1820,80 @@ select:focus-visible {
 }
 
 
+/* ==========================================
+   CADASTRO — FOTOGRAFIA E CONTEÚDO
+   ========================================== */
+
+/* ==========================================
+   CADASTRO — TÍTULO SOBRE A FOTOGRAFIA
+   ========================================== */
+
+.cadastro-hero {
+  position: relative;
+  overflow: hidden;
+}
+
+.cadastro-hero-imagem {
+  display: block;
+  width: 100%;
+  height: 290px;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 0;
+}
+
+.cadastro-hero-conteudo {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  padding: 65px 20px 20px;
+
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.78) 0%,
+    rgba(0, 0, 0, 0.30) 55%,
+    transparent 100%
+  );
+
+  box-sizing: border-box;
+}
+
+.cadastro-hero .cadastro-hero-conteudo h2 {
+  max-width: 100%;
+  margin: 0 0 10px;
+
+  color: #ffffff;
+  font-size: 1.75rem;
+  line-height: 1.15;
+  font-weight: 800;
+}
+
+.cadastro-hero .identificacao-chamada {
+  margin: 0;
+  color: #ffffff;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.cadastro-hero .identificacao-chamada strong {
+  color: #ffffff;
+}
+
 /* ---------------------------------------------------------
    CARTÃO DE IDENTIFICAÇÃO
    --------------------------------------------------------- */
 
 .identificacao-card {
-  padding: 22px;
+  padding: 20px;
 
-  background: var(--card);
+  background: transparent;
 
-  border: 1px solid var(--borda);
-  border-top: 4px solid var(--amarelo-semente);
+  border: none;
+  border-radius: 0;
 
-  border-radius: 18px;
-
-  box-shadow: var(--sombra);
+  box-shadow: none;
 }
 
 
@@ -2171,13 +2199,9 @@ select:focus-visible {
 
 @media (max-width: 600px) {
 
-  .boas-vindas-expedicao {
-    padding: 25px 18px 22px;
-  }
-
-  .identificacao-card {
-    padding: 18px 15px;
-  }
+.identificacao-card {
+  padding: 20px;
+}
 
   .mascotes-grid {
     grid-template-columns:
@@ -2218,12 +2242,27 @@ select:focus-visible {
    MAPA — TRILHA DA SEMENTE PEREGRINA
    ========================================================= */
 
+/* =========================================================
+   MAPA — COMPOSIÇÃO INTEGRADA DA EXPEDIÇÃO
+   ========================================================= */
+
 .mapa-exploracao {
+  margin-top: 0;
   margin-bottom: 24px;
+  padding: 0 0 16px;
+
+  background: #EAE8D7;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
 }
 
+/* Cabeçalho integrado à base do mapa */
+
 .mapa-cabecalho {
-  margin: 4px 2px 12px;
+  margin: 0;
+  padding: 20px 16px 12px;
 }
 
 .mapa-cabecalho span {
@@ -2234,26 +2273,34 @@ select:focus-visible {
 }
 
 .mapa-cabecalho h3 {
-  margin: 2px 0 4px;
+  margin: 0 0 6px;
+
   color: var(--verde-mata-escuro);
   font-family: var(--fonte-titulo);
   font-size: 1.25rem;
+  line-height: 1.2;
 }
 
 .mapa-cabecalho p {
+  margin: 0;
   color: var(--texto-suave);
   font-size: 0.88rem;
+  line-height: 1.45;
 }
 
-.mapa-container {
+/* SVG original, sem moldura externa */
+
+.mapa-exploracao .mapa-container {
+  display: block;
   width: 100%;
+  margin: 0;
+  padding: 0;
+
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
   overflow: hidden;
-
-  background: var(--marfim);
-  border: 1px solid var(--borda);
-  border-radius: 18px;
-
-  box-shadow: var(--sombra-suave);
 }
 
 /* MAPA GERAL DO ITS — SEM BORDAS OU SOMBRAS */
@@ -3804,18 +3851,30 @@ body:has(.tela-mapa-its) #app {
   min-height: 0;
 }
 
-/* =========================================
-   LOCALIDADE — PADRÃO VISUAL DAS TELAS ITS
-   ========================================= */
+/* =====================================================
+   EXPLORE ITS — PADRÃO DAS PÁGINAS IMERSIVAS
+   Localidade e cadastro
+   ===================================================== */
 
-body:has(.tela-localidade) {
+/* =====================================================
+   EXPLORE ITS — PADRÃO DAS PÁGINAS IMERSIVAS
+   ===================================================== */
+
+body:has(.tela-localidade),
+body:has(.tela-identificacao),
+body:has(.home-exploracao) {
   padding: 0;
   background: #FAF8F2;
 }
 
-body:has(.tela-localidade) #app {
+body:has(.tela-localidade) #app,
+body:has(.tela-identificacao) #app,
+body:has(.home-exploracao) #app {
+  width: 100%;
   max-width: 390px;
   min-height: 0;
+  margin: 0 auto;
+  padding: 0;
 }
 
 .tela-mapa-its {
@@ -4174,15 +4233,295 @@ body:has(.tela-localidade) #app {
   font-size: 12px;
   font-weight: 700;
 }
-
-/* =========================================
-   LOCALIDADE — ALINHAMENTO SUPERIOR
-   ========================================= */
+/* =====================================================
+   EXPLORE ITS — PADRONIZAÇÃO DA LOCALIDADE
+   Fotografia de ponta a ponta e título sobre a imagem
+   ===================================================== */
 
 .tela-localidade {
   padding-top: 0;
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-bottom: 100px;
 }
 
-.app-header:has(+ .tela-localidade) {
-  display: none;
+/* Fotografia ocupando toda a largura */
+
+.tela-localidade .localidade-hero {
+  width: calc(100% + 40px);
+  margin-left: -20px;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+/* Fotografia dentro do hero */
+
+.tela-localidade .localidade-hero-imagem {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  margin-left: 0;
+  border-radius: 0;
+}
+
+/* Título sobre a fotografia */
+
+.tela-localidade .localidade-hero-conteudo {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+
+  width: 100%;
+  margin: 0;
+  padding: 65px 20px 20px;
+
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.78) 0%,
+    rgba(0, 0, 0, 0.30) 55%,
+    transparent 100%
+  );
+
+  box-sizing: border-box;
+}
+
+.tela-localidade .localidade-hero h1 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.75rem;
+  line-height: 1.15;
+  font-weight: 800;
+}
+
+.cadastro-chamada-externa {
+  margin: 0 20px 24px;
+  color: var(--texto);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.cadastro-chamada-externa strong {
+  color: var(--terracota-cultura);
+}
+
+/* =====================================================
+   EXPLORE ITS — ABERTURA DA PÁGINA DE INVESTIGAÇÃO
+   ===================================================== */
+
+
+.trilha-hero {
+  position: relative;
+  width: 100%;
+  height: 290px;
+  overflow: hidden;
+  margin: 0;
+  border-radius: 0;
+}
+
+
+.trilha-hero-imagem {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.trilha-hero-conteudo {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+
+  padding: 65px 20px 20px;
+
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.78) 0%,
+    rgba(0, 0, 0, 0.30) 55%,
+    transparent 100%
+  );
+}
+
+.trilha-hero h1 {
+  margin: 0;
+  max-width: 310px;
+
+  color: #ffffff;
+  font-family: var(--fonte-titulo);
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+/* =====================================================
+   TRILHA — UNIÃO DA FOTOGRAFIA COM O MAPA
+   ===================================================== */
+
+.home-exploracao .hero-exploracao {
+  margin-bottom: 0;
+}
+
+.home-exploracao .mapa-exploracao {
+  margin-top: 0;
+}
+
+.home-exploracao .hero-exploracao + .mapa-exploracao {
+  margin-top: 0;
+}
+
+
+/* =========================================
+   EXPLORE ITS — MEU PERCURSO
+   ========================================= */
+
+.tela-meu-percurso {
+  width: min(100%, 390px);
+  margin: 0 auto;
+  padding: 26px 18px 30px;
+  box-sizing: border-box;
+}
+
+.percurso-cabecalho {
+  margin-bottom: 30px;
+}
+
+.percurso-cabecalho > span {
+  display: block;
+  margin-bottom: 8px;
+  color: #6B8F3D;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.percurso-cabecalho h1 {
+  margin-bottom: 12px;
+  color: #2E5D3A;
+  font-size: 27px;
+  line-height: 1.2;
+}
+
+.percurso-cabecalho p {
+  color: #58635A;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.percurso-localidades > h2 {
+  margin-bottom: 15px;
+  font-size: 18px;
+  color: #2E5D3A;
+}
+
+.percurso-localidade {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 14px;
+  background: #FFFFFF;
+  border: 1px solid #E8DCC6;
+  border-radius: 15px 15px 0 0;
+}
+
+.percurso-localidade-icone {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: #EDF3E8;
+  border-radius: 12px;
+  font-size: 26px;
+}
+
+.percurso-localidade-texto {
+  min-width: 0;
+}
+
+.percurso-localidade-texto h3 {
+  margin-bottom: 5px;
+  color: #2E5D3A;
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.percurso-localidade-texto p {
+  color: #667064;
+  font-size: 13px;
+}
+
+.percurso-atividades {
+  padding: 18px 14px;
+  background: #FFFFFF;
+  border: 1px solid #E8DCC6;
+  border-top: 0;
+  border-radius: 0 0 15px 15px;
+}
+
+.percurso-atividades h2 {
+  margin-bottom: 14px;
+  font-size: 16px;
+}
+
+.percurso-atividades .btn-primary {
+  min-height: 46px;
+  border-radius: 10px;
+}
+
+.percurso-atividades > p {
+  margin-top: 14px;
+  color: #667064;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.percurso-vazio {
+  padding: 22px 18px;
+  background: #FFFFFF;
+  border: 1px solid #E8DCC6;
+  border-radius: 15px;
+}
+
+.percurso-vazio p + p {
+  margin-top: 12px;
+}
+
+/* Ocupa a altura disponível na página Meu percurso */
+
+body:has(.tela-meu-percurso) #app {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 28px);
+}
+
+body:has(.tela-meu-percurso) .tela-meu-percurso {
+  flex: 1;
+}
+
+body:has(.tela-meu-percurso) .navegacao-inferior {
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+/* Padronização da largura do Caderno de Campo */
+
+body:has(.navegacao-inferior) .caderno {
+  width: 100%;
+  max-width: 390px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Caderno de Campo — largura padronizada */
+
+body:has(.navegacao-inferior) .card-container {
+  width: 100%;
+  max-width: 390px;
+  margin-left: auto;
+  margin-right: auto;
 }
