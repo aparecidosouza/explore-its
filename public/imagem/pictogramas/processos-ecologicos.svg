@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="64"
+   height="64"
+   viewBox="0 0 64 64"
+   role="img"
+   aria-label="Processos ecológicos — Explore ITS"
+   version="1.1"
+   id="svg2"
+   sodipodi:docname="processos-ecologicos.svg"
+   inkscape:version="1.4.4 (dcaf3e7, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="namedview2"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="2.25"
+     inkscape:cx="72.444444"
+     inkscape:cy="38.888889"
+     inkscape:window-width="1920"
+     inkscape:window-height="1094"
+     inkscape:window-x="-11"
+     inkscape:window-y="-11"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg2" />
+  <title
+     id="title1">Processos ecológicos — Explore ITS</title>
+  <g
+     id="g19"
+     transform="translate(104.28011,-82.67791)">
+    <circle
+       style="fill:#29789f;fill-opacity:1;stroke:#ffffff;stroke-width:2.5;stroke-linecap:square;stroke-dasharray:none;stroke-opacity:1"
+       id="path4-0"
+       cx="-72.530113"
+       cy="114.42791"
+       r="28.5" />
+    <g
+       id="g9"
+       transform="translate(59.527326,4.1358936)">
+      <path
+         style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-linecap:square;stroke-dasharray:none;stroke-opacity:1"
+         d="m -142.48053,117.01618 c -2.93357,-3.4225 -4.50351,-9.40564 -0.65908,-15.63811 3.84443,-6.232482 14.13973,-6.436714 21.68964,-10.365488 1.07535,10.871538 1.9206,16.620748 -2.39664,23.007798 -4.31724,6.38705 -10.63293,6.476 -17.55543,3.95445 1.12258,-1.66519 2.84226,-4.3746 3.95446,-5.93169 2.83182,0.23685 6.67205,0.20863 9.287,-1.25824 -2.75179,0.37182 -5.97464,0.76605 -8.74775,0.41941 1.87137,-2.1047 3.29672,-3.73286 4.61354,-5.33253 2.5432,0.3759 4.58463,-0.34116 6.71061,-1.13841 -2.34261,0.45141 -4.6967,0.66723 -5.81187,0.41942 1.55852,-2.58457 3.26955,-4.14245 5.15279,-6.950274 -1.86893,1.980254 -3.64785,3.459284 -5.5722,5.332544 -0.17062,-1.62736 -0.41941,-2.37306 -0.0599,-4.673466 -0.97382,2.124746 -0.89874,3.473446 -0.89874,5.572196 -1.88684,1.87225 -3.56876,3.76723 -5.33254,5.69203 -0.72184,-2.66599 -0.12613,-4.98261 0.17976,-7.4296 -1.78145,3.10795 -1.41511,5.64086 -0.89875,8.38826 -1.49067,1.88091 -2.19141,3.20573 -3.77472,6.17136 z"
+         id="path8"
+         sodipodi:nodetypes="czczcccccccccccccccc" />
+      <path
+         style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-linecap:square;stroke-dasharray:none;stroke-opacity:1"
+         d="m -142.3607,116.89635 c 0.78765,0.0912 1.36256,0.48137 2.15699,0.71899 -0.88323,1.85535 -1.94728,3.95447 -2.27682,6.77052 -1.22828,0.0599 -1.25824,0.0599 -1.91731,0.0599 0.28467,-3.34719 1.19834,-5.03401 2.03714,-7.54943 z"
+         id="path9"
+         sodipodi:nodetypes="ccccc" />
+    </g>
+  </g>
+</svg>

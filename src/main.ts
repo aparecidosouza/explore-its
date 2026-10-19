@@ -1,16 +1,11 @@
+import { catalogoElementos } from './catalogo-elementos'
+
 import './style.css'
 
 import type {
   Mascote,
-  OpcaoQuiz,
-  Missao,
-  Estacao,
-  RespostaAtividade,
-  MedicaoTemp,
   Cracha
 } from './@types'
-
-import { estacoes } from './data/recantos'
 
 const mascotes: Mascote[] = [
   { id: 'guara', nome: 'Guará', emoji: '🦊' },
@@ -29,20 +24,130 @@ let crachaSalvo: Cracha | null = JSON.parse(
   localStorage.getItem('exp_cracha') || 'null'
 )
 
+// ==========================================
+// REGISTRO DE PARTIDA DA EXPEDIÇÃO
+// ==========================================
+
+// Fotografia oficial do grupo no início da trilha.
+// Uma nova fotografia substituirá a anterior.
+let fotoPartida: string | null =
+  localStorage.getItem('exp_foto_partida')
+
 let inicioExpedicao: string | null =
   localStorage.getItem('exp_inicio_expedicao')
 
 let idExpedicao: string | null =
   localStorage.getItem('exp_id_expedicao')
 
-let respostasGerais: RespostaAtividade[] = JSON.parse(
-  localStorage.getItem('exp_respostas') || '[]'
+
+// =====================================================
+// EXPLORE ITS — ELEMENTOS SORTEADOS DA EXPEDIÇÃO
+// Uma árvore, um processo ecológico,
+// uma formação natural e um elemento folclórico
+// =====================================================
+
+type CategoriaInvestigacao = 'ARV' | 'ECO' | 'FOR' | 'FOL'
+
+type ElementoSorteado = {
+  id: string
+  categoria: CategoriaInvestigacao
+  encontrado: boolean
+}
+
+let elementosSorteados: ElementoSorteado[] = JSON.parse(
+  localStorage.getItem('exp_elementos_sorteados') || '[]'
 )
 
-let medicoesTemperatura: MedicaoTemp[] = JSON.parse(
-  localStorage.getItem('exp_medicoes') || '[]'
+// Fotografias das investigações
+let fotosElementos: Record<string, string> = JSON.parse(
+  localStorage.getItem('exp_fotos_elementos') || '{}'
 )
 
+// =====================================================
+// EXPLORE ITS — SORTEIO DOS ELEMENTOS DE INVESTIGAÇÃO
+// =====================================================
+
+function sortearElementosInvestigacao(
+  svg: SVGSVGElement
+): ElementoSorteado[] {
+
+  const categorias: CategoriaInvestigacao[] = [
+    'ARV',
+    'ECO',
+    'FOR',
+    'FOL'
+  ]
+
+  return categorias.map(categoria => {
+
+const candidatos = [...svg.querySelectorAll('[id]')]
+  .map(elemento => elemento.id)
+  .filter(id =>
+    new RegExp(`^${categoria}_\\d+$`).test(id)
+  )
+  .filter(id =>
+    catalogoElementos.some(
+      item => item.id === id && item.sorteavel
+    )
+  )
+
+    if (candidatos.length === 0) {
+      throw new Error(
+        `Nenhum localizador encontrado para ${categoria}`
+      )
+    }
+
+    const indice = Math.floor(
+      Math.random() * candidatos.length
+    )
+
+    return {
+      id: candidatos[indice],
+      categoria,
+      encontrado: false
+    }
+  })
+}
+
+// =====================================================
+// EXPLORE ITS — POSIÇÃO DOS ELEMENTOS NO MAPA
+// =====================================================
+
+function obterPosicaoElemento(
+  svg: SVGSVGElement,
+  id: string
+): { x: number; y: number } | null {
+
+  const elemento = svg.querySelector<SVGGraphicsElement>(
+    `[id="${id}"]`
+  )
+
+  if (!elemento) {
+    console.warn(`Localizador ${id} não encontrado.`)
+    return null
+  }
+
+const caixa = elemento.getBBox()
+
+const matrizElemento = elemento.getScreenCTM()
+const matrizSVG = svg.getScreenCTM()
+
+if (!matrizElemento || !matrizSVG) return null
+
+const matriz = matrizSVG.inverse().multiply(matrizElemento)
+
+  const centro = svg.createSVGPoint()
+
+  centro.x = caixa.x + caixa.width / 2
+  centro.y = caixa.y + caixa.height / 2
+
+  const posicao = centro.matrixTransform(matriz)
+
+  return {
+    x: posicao.x,
+    y: posicao.y
+  }
+}
 
 // =====================================================
 // DESCOBERTAS PELO CAMINHO
@@ -66,74 +171,18 @@ let descobertasExpedicao: DescobertaExpedicao[] = JSON.parse(
 
 
 // =====================================================
-// RETRATOS DA PAISAGEM
-// Pontos de observação A, B e C
-// =====================================================
-
-type RegistroPaisagem = {
-  ponto: 'A' | 'B' | 'C'
-  foto: string | null
-  porteVegetacao: number
-  aberturaPaisagem: number
-  luzSolo: number
-  temperatura: number | null
-  dataHora: string
-}
-
-let registrosPaisagem: RegistroPaisagem[] = JSON.parse(
-  localStorage.getItem('exp_paisagens') || '[]'
-)
-
-let interpretacaoPaisagem: string =
-  localStorage.getItem('exp_interpretacao_paisagem') || ''
-
-
-// =====================================================
 // ESTADO TEMPORÁRIO DA INTERFACE
 // Não representa dados científicos permanentes
 // =====================================================
 
 let mascoteTempId = mascotes[0].id
 
-let estacaoAtual: Estacao | null = null
-let missaoAtual: Missao | null = null
-
-let paisagemAtual: 'A' | 'B' | 'C' | null = null
-
-let finalExpedicaoAberto = false
-let sinteseExpedicaoAberta = false
-
-let desafiosExpedicaoAberto = false
-
-let desafioAtual:
-  | 'pequenos-habitantes'
-  | 'quem-passou'
-  | 'vidas-conectadas'
-  | 'curiosidade'
-  | null = null
-
-let fotoDesafioTemp: string | null = null
-let fotoPaisagemTemp: string | null = null
-let fotoTemp: string | null = null
-
-let opcaoSelecionadaQuiz: string | null = null
-
-let verTabelaTemp = false
-
 let verCaderno = false
-
-let verConquistas = false
-
-let modalMensagem: string | null = null
-
 
 // =====================================================
 // ÁUDIO — ESTADO TEMPORÁRIO DE GRAVAÇÃO
 // =====================================================
 
-let audioTemp: string | null = null
-
-let mediaRecorder: MediaRecorder | null = null
 let audioChunks: Blob[] = []
 let streamAudio: MediaStream | null = null
 let gravandoAudio = false
@@ -145,11 +194,31 @@ type TelaApp =
   | 'mapa-its'
   | 'localidade'
   | 'cadastro'
+  | 'registro-partida'
   | 'trilha'
   | 'meu-percurso'
 
 let telaAtual: TelaApp = 'inicio'
 let localidadeAtual: string | null = null
+
+// =====================================================
+// EXPLORE ITS — HISTÓRICO DE NAVEGAÇÃO
+// Compatível com Android, iOS e navegadores
+// =====================================================
+
+type EstadoNavegacao = {
+  tela: TelaApp
+  caderno: boolean
+  localidade: string | null
+}
+
+function obterEstadoNavegacao(): EstadoNavegacao {
+  return {
+    tela: telaAtual,
+    caderno: verCaderno,
+    localidade: localidadeAtual
+  }
+}
 
 
 const app = document.querySelector<HTMLDivElement>('#app')!
@@ -455,32 +524,223 @@ localidadesMapa.forEach(({ id, nome, descricao }) => {
 })
 
 
-  const marcadorTrilha = svg.querySelector<SVGElement>(
-    '#marcador_trilha_semente_peregrina'
+const marcadorTrilha = svg.querySelector<SVGElement>(
+  '#marcador_trilha_semente_peregrina'
+)
+
+if (marcadorTrilha) {
+  marcadorTrilha.style.cursor = 'pointer'
+
+  marcadorTrilha.addEventListener('click', () => {
+    localidadeAtual = 'trilha-semente-peregrina'
+    navegarPara('localidade')
+  })
+} else {
+  console.warn(
+    'Marcador da Trilha da Semente Peregrina não encontrado no SVG.'
+  )
+}
+
+// Fecha o bloco if (svg)
+}
+
+// Tratamento de erros do carregamento do mapa
+} catch (erro) {
+  console.error('Erro ao carregar o mapa geral do ITS:', erro)
+
+  container.innerHTML =
+    '<p class="mapa-erro">Não foi possível carregar o mapa do ITS.</p>'
+}
+
+// Fecha a função carregarMapaITS
+}
+
+
+// =====================================================
+// EXPLORE ITS — CÂMERA DOS ELEMENTOS SORTEADOS
+// =====================================================
+
+let elementoFotografiaAtual: string | null = null
+
+// Fotografia aguardando confirmação do estudante
+let fotografiaPendente: string | null = null
+
+function abrirCameraElemento(id: string) {
+
+  elementoFotografiaAtual = id
+
+  const input = document.querySelector<HTMLInputElement>(
+    '#input-foto-elemento'
   )
 
-  if (marcadorTrilha) {
-    marcadorTrilha.style.cursor = 'pointer'
+  input?.click()
+}
 
-    marcadorTrilha.addEventListener('click', () => {
-      localidadeAtual = 'trilha-semente-peregrina'
-      telaAtual = 'localidade'
-      render()
-    })
-  } else {
-    console.warn(
-      'Marcador da Trilha da Semente Peregrina não encontrado no SVG.'
+// =====================================================
+
+function atualizarListaElementos() {
+
+  const lista = document.querySelector<HTMLElement>(
+    '.elementos-expedicao'
+  )
+
+  if (!lista) return
+
+  const categorias: Record<CategoriaInvestigacao, string> = {
+    ARV: 'Árvore ou planta',
+    ECO: 'Processo ecológico',
+    FOR: 'Formação natural',
+    FOL: 'Cultura e folclore'
+  }
+
+  const pictogramas: Record<CategoriaInvestigacao, string> = {
+    ARV: '/explore-its/imagem/pictogramas/arvores.svg',
+    ECO: '/explore-its/imagem/pictogramas/processos-ecologicos.svg',
+    FOR: '/explore-its/imagem/pictogramas/formacoes-naturais.svg',
+    FOL: '/explore-its/imagem/pictogramas/cultura-folclore.svg'
+  }
+
+  lista.innerHTML = elementosSorteados.map(elemento => {
+
+    const dados = catalogoElementos.find(
+      item => item.id === elemento.id
     )
+
+    return `
+  <article
+    class="elemento-expedicao"
+    data-cartao-elemento="${elemento.id}"
+  >
+
+        <img
+          src="${pictogramas[elemento.categoria]}"
+          alt=""
+          class="elemento-expedicao-icone"
+        >
+
+        <div class="elemento-expedicao-texto">
+
+          <small>${categorias[elemento.categoria]}</small>
+
+          <strong>${dados?.nome ?? 'Elemento não identificado'}</strong>
+
+          <span>
+            ${elemento.encontrado ? '✓ Encontrado' : 'A procurar'}
+          </span>
+
+        </div>
+
+        <button
+          type="button"
+          class="btn-registrar-elemento"
+          data-elemento-id="${elemento.id}"
+          aria-label="Registrar ${dados?.nome ?? 'descoberta'}"
+          ${elemento.encontrado ? 'disabled' : ''}
+        >
+          <span>
+            ${elemento.encontrado
+              ? '✓'
+              : elemento.categoria === 'ARV' ? '▦' : '📷'}
+          </span>
+
+          <small>
+            ${elemento.encontrado ? 'Feito' : 'Registrar'}
+          </small>
+        </button>
+
+      </article>
+    `
+  }).join('')
+
+  // Ativa os botões criados depois do sorteio
+  lista.querySelectorAll<HTMLButtonElement>(
+    '.btn-registrar-elemento'
+  ).forEach(botao => {
+
+    botao.addEventListener('click', () => {
+
+      const id = botao.dataset.elementoId
+
+      const elemento = elementosSorteados.find(
+        item => item.id === id
+      )
+
+      if (!elemento) return
+
+      const dados = catalogoElementos.find(
+        item => item.id === elemento.id
+      )
+
+// ÁRVORES — ABRIR PAINEL DE DUAS ATIVIDADES
+if (elemento.categoria === 'ARV') {
+
+  elementoFotografiaAtual = elemento.id
+
+  const painel = document.querySelector<HTMLElement>(
+    '#painel-registro-arvore'
+  )
+
+  if (!painel) {
+    alert('Painel de registro da árvore ainda não disponível.')
+    return
   }
+
+painel.hidden = false
+painel.style.display = 'block'
+  return
 }
 
-  } catch (erro) {
-    console.error('Erro ao carregar o mapa geral do ITS:', erro)
+// DEMAIS ELEMENTOS — REGISTRO FOTOGRÁFICO
+abrirCameraElemento(elemento.id)
 
-    container.innerHTML =
-      '<p class="mapa-erro">Não foi possível carregar o mapa do ITS.</p>'
-  }
+    })
+
+  })
+
 }
+
+// ==========================================
+// CONTROLES DO PAINEL DE REGISTRO DA ÁRVORE
+// ==========================================
+
+document.addEventListener('click', (evento) => {
+
+  const alvo = evento.target
+
+  if (!(alvo instanceof Element)) return
+
+  // FECHAR
+  if (alvo.closest('#btn-fechar-registro-arvore')) {
+
+    const painel = document.querySelector<HTMLElement>(
+      '#painel-registro-arvore'
+    )
+
+    if (painel) {
+      painel.hidden = true
+      painel.style.display = 'none'
+    }
+
+    return
+  }
+
+  // FOTOGRAFAR
+  if (alvo.closest('#btn-foto-arvore')) {
+
+    const inputFoto = document.querySelector<HTMLInputElement>(
+      '#input-foto-elemento'
+    )
+
+    if (!inputFoto) {
+      alert('Câmera não encontrada.')
+      return
+    }
+
+    inputFoto.click()
+    return
+  }
+
+})
 
 // MAPA DA TRILHA DA SEMENTE PEREGRINA
 async function carregarMapaInterativo() {
@@ -517,6 +777,155 @@ const svg = container.querySelector('svg')
     'Mapa da Trilha da Semente Peregrina'
   )
 
+// =====================================================
+// EXPLORE ITS — SORTEIO E SALVAMENTO DA EXPEDIÇÃO
+// =====================================================
+
+if (crachaSalvo && elementosSorteados.length === 0) {
+
+  elementosSorteados = sortearElementosInvestigacao(svg)
+
+  localStorage.setItem(
+    'exp_elementos_sorteados',
+    JSON.stringify(elementosSorteados)
+  )
+
+  console.log(
+    'NOVO SORTEIO DA EXPEDIÇÃO:',
+    elementosSorteados
+  )
+
+} else {
+
+  console.log(
+    'ELEMENTOS DA EXPEDIÇÃO:',
+    elementosSorteados
+  )
+
+}
+
+
+// Atualiza os quatro cartões após o sorteio
+atualizarListaElementos()
+
+// =====================================================
+// EXPLORE ITS — TESTE DAS POSIÇÕES DOS 4 ELEMENTOS
+// =====================================================
+
+elementosSorteados.forEach(elemento => {
+  const posicao = obterPosicaoElemento(svg, elemento.id)
+
+  console.log(
+    `POSIÇÃO ${elemento.id}:`,
+    posicao
+  )
+})
+
+// =====================================================
+// EXPLORE ITS — MARCADORES DOS ELEMENTOS SORTEADOS
+// =====================================================
+
+// Pictogramas correspondentes às quatro categorias
+const pictogramasElementos: Record<CategoriaInvestigacao, string> = {
+  ARV: '/explore-its/imagem/pictogramas/arvores.svg',
+  ECO: '/explore-its/imagem/pictogramas/processos-ecologicos.svg',
+  FOR: '/explore-its/imagem/pictogramas/formacoes-naturais.svg',
+  FOL: '/explore-its/imagem/pictogramas/cultura-folclore.svg'
+}
+
+const namespaceSVG = 'http://www.w3.org/2000/svg'
+
+const camadaSorteados = document.createElementNS(
+  namespaceSVG,
+  'g'
+)
+
+camadaSorteados.setAttribute(
+  'id',
+  'marcadores-elementos-sorteados'
+)
+
+// Tamanho inicial dos pictogramas nas unidades do mapa SVG
+const tamanhoPictograma = 15
+
+elementosSorteados.forEach((elemento, indice) => {
+
+  const posicao = obterPosicaoElemento(svg, elemento.id)
+
+  if (!posicao) return
+
+  const grupo = document.createElementNS(namespaceSVG, 'g')
+
+  // Imagem SVG do pictograma
+  const pictograma = document.createElementNS(
+    namespaceSVG,
+    'image'
+  )
+
+  pictograma.setAttribute(
+    'href',
+    pictogramasElementos[elemento.categoria]
+  )
+
+  pictograma.setAttribute(
+    'x',
+    String(posicao.x - tamanhoPictograma / 2)
+  )
+
+  pictograma.setAttribute(
+    'y',
+    String(posicao.y - tamanhoPictograma / 2)
+  )
+
+  pictograma.setAttribute(
+    'width',
+    String(tamanhoPictograma)
+  )
+
+  pictograma.setAttribute(
+    'height',
+    String(tamanhoPictograma)
+  )
+
+  pictograma.setAttribute('pointer-events', 'none')
+
+  // Adiciona somente o pictograma, sem número
+  grupo.appendChild(pictograma)
+
+  camadaSorteados.appendChild(grupo)
+})
+
+svg.appendChild(camadaSorteados)
+
+
+// =====================================================
+// EXPLORE ITS — TESTE DOS 68 LOCALIZADORES
+// =====================================================
+
+const categoriasLocalizadores = {
+  ARV: 48,
+  ECO: 12,
+  FOR: 2,
+  FOL: 6
+}
+
+Object.entries(categoriasLocalizadores).forEach(([categoria, esperado]) => {
+  const encontrados = svg
+    ? [...svg.querySelectorAll('[id]')].filter(elemento =>
+        new RegExp(`^${categoria}_\\d+$`).test(elemento.id)
+      )
+    : []
+
+  console.log(
+    `LOCALIZADORES ${categoria}: ${encontrados.length} de ${esperado}`
+  )
+
+  console.log(
+    `IDs ${categoria}:`,
+    encontrados.map(elemento => elemento.id)
+  )
+})
+
   // TESTE DAS COORDENADAS GPS GRAVADAS NO SVG
   const idsMarcadoresGPS = [
     'marcador_inicio',
@@ -550,93 +959,6 @@ const svg = container.querySelector('svg')
 
 obterLocalizacaoAtual(svg)
 
-// ESTAÇÕES DE INVESTIGAÇÃO DO MAPA
-const estacoesMapa = [
-  { mapa: 'marcador_inicio', estacao: 'inicio-trilha' },
-  { mapa: 'marcador_saci_perere', estacao: 'recanto-saci-perere' },
-  { mapa: 'marcador_caipora', estacao: 'caipora' }
-]
-
-estacoesMapa.forEach(({ mapa, estacao }) => {
-  const marcador = svg.querySelector<SVGElement>(`#${mapa}`)
-
-  if (!marcador) {
-    console.warn(`Marcador ${mapa} não encontrado no SVG.`)
-    return
-  }
-
-  marcador.style.cursor = 'pointer'
-
-  marcador.addEventListener('click', () => {
-    const encontrada = estacoes.find(
-      item => item.id === estacao
-    )
-
-    if (!encontrada) {
-      console.warn(`Estação ${estacao} não encontrada.`)
-      return
-    }
-
-    paisagemAtual = null
-    fotoPaisagemTemp = null
-    estacaoAtual = encontrada
-    missaoAtual = null
-
-    render()
-  })
-})
-
-  // PONTOS DE OBSERVAÇÃO DA PAISAGEM
-  const paisagensMapa = [
-    { mapa: 'marcador_paisagemA', paisagem: 'A' },
-    { mapa: 'marcador_paisagemB', paisagem: 'B' },
-    { mapa: 'marcador_paisagemC', paisagem: 'C' }
-  ]
-
-  paisagensMapa.forEach(({ mapa, paisagem }) => {
-    const marcador = svg.querySelector<SVGElement>(`#${mapa}`)
-
-    if (!marcador) {
-      console.warn(`Marcador da Paisagem ${paisagem} não encontrado no SVG.`)
-      return
-    }
-
-    marcador.style.cursor = 'pointer'
-
-marcador.addEventListener('click', () => {
-  paisagemAtual = paisagem as 'A' | 'B' | 'C'
-
-  const registroExistente = registrosPaisagem.find(
-    registro => registro.ponto === paisagemAtual
-  )
-
-  fotoPaisagemTemp = registroExistente?.foto || null
-
-  estacaoAtual = null
-  missaoAtual = null
-
-  render()
-})
- })
-
-// FINAL DA EXPEDIÇÃO
-const marcadorFim = svg.querySelector<SVGElement>('#marcador_fim')
-
-if (marcadorFim) {
-  marcadorFim.style.cursor = 'pointer'
-
-  marcadorFim.addEventListener('click', () => {
-    estacaoAtual = null
-    missaoAtual = null
-    paisagemAtual = null
-    desafioAtual = null
-    desafiosExpedicaoAberto = false
-
-    finalExpedicaoAberto = true
-
-    render()
-  })
-}
 
 } // fecha if (svg)
 
@@ -650,27 +972,9 @@ if (marcadorFim) {
 
 function render() {
 
-let html = (
-  telaAtual === 'inicio' ||
-  telaAtual === 'localidade' ||
-  telaAtual === 'cadastro' ||
-  telaAtual === 'trilha' ||
-  telaAtual === 'meu-percurso'
-) ? '' : `
-    <header class="app-header">
-      <div class="header-content">
-      <span class="logo" id="nav-home">🍃 Explore o ITS</span>
-        ${crachaSalvo && telaAtual === 'trilha' ? `
-          <div class="user-badge">
-            <small><strong>${crachaSalvo.mascote.emoji}${crachaSalvo.nome}</strong></small>
-            <button id="btn-tabela-temp" class="btn-secondary">📊 Temperaturas</button>
-            <button id="btn-caderno" class="btn-secondary">📜 Caderno</button>
-            <button id="btn-sair" class="btn-danger">Sair</button>
-        </div>
-      ` : ''}
-      </div>
-    </header>
-  `
+
+let html = ''
+
 
 if (telaAtual === 'inicio') {
   html += `
@@ -680,7 +984,7 @@ if (telaAtual === 'inicio') {
 
         <img
           class="inicio-figma-lago"
-          src="/explore-its/imagens-inicio/represe-its 1.png"
+          src="/explore-its/imagem/inicio/represe-its 1.png"
           alt="Paisagem do lago do Instituto do Trópico Subúmido"
         >
 
@@ -689,7 +993,7 @@ if (telaAtual === 'inicio') {
 
 <img
   class="inicio-figma-curva"
-  src="/explore-its/imagens-inicio/curva-marfim.svg"
+  src="/explore-its/imagem/inicio/curva-marfim.svg"
   alt=""
   aria-hidden="true"
 >
@@ -697,7 +1001,7 @@ if (telaAtual === 'inicio') {
 <img
   class="inicio-figma-logos"
 
-          src="/explore-its/imagens-inicio/Logo ITS + PUC Goiás g 1.png"
+          src="/explore-its/imagem/inicio/Logo ITS + PUC Goiás g 1.png"
           alt="Logotipos do ITS e da PUC Goiás"
         >
 
@@ -709,23 +1013,21 @@ if (telaAtual === 'inicio') {
   <p>Natureza, ciência e cultura<br>em um só lugar</p>
 </div>
 
-
-
 <div class="inicio-figma-fotos">
 
   <div class="inicio-quadro">
-    <img id="foto-quadro-1" src="/explore-its/imagens-inicio/galeria/quadro1_01.webp" alt="Fotografia do ITS">
-    <img id="foto-proxima-1" class="inicio-foto-proxima" src="/explore-its/imagens-inicio/galeria/quadro1_02.webp" alt="">
+    <img id="foto-quadro-1" src="/explore-its/imagem/inicio/galeria/quadro1_01.webp" alt="Fotografia do ITS">
+    <img id="foto-proxima-1" class="inicio-foto-proxima" src="/explore-its/imagem/inicio/galeria/quadro1_02.webp" alt="">
   </div>
 
   <div class="inicio-quadro">
-    <img id="foto-quadro-2" src="/explore-its/imagens-inicio/galeria/quadro2_01.webp" alt="Fotografia do ITS">
-    <img id="foto-proxima-2" class="inicio-foto-proxima" src="/explore-its/imagens-inicio/galeria/quadro2_02.webp" alt="">
+    <img id="foto-quadro-2" src="/explore-its/imagem/inicio/galeria/quadro2_01.webp" alt="Fotografia do ITS">
+    <img id="foto-proxima-2" class="inicio-foto-proxima" src="/explore-its/imagem/inicio/galeria/quadro2_02.webp" alt="">
   </div>
 
   <div class="inicio-quadro">
-    <img id="foto-quadro-3" src="/explore-its/imagens-inicio/galeria/quadro3_01.webp" alt="Fotografia do ITS">
-    <img id="foto-proxima-3" class="inicio-foto-proxima" src="/explore-its/imagens-inicio/galeria/quadro3_02.webp" alt="">
+    <img id="foto-quadro-3" src="/explore-its/imagem/inicio/galeria/quadro3_01.webp" alt="Fotografia do ITS">
+    <img id="foto-proxima-3" class="inicio-foto-proxima" src="/explore-its/imagem/inicio/galeria/quadro3_02.webp" alt="">
   </div>
 
 </div>
@@ -738,22 +1040,22 @@ if (telaAtual === 'inicio') {
         <div class="inicio-figma-temas">
 
   <button type="button" class="inicio-tema-item" data-tema="natureza">
-    <img src="/explore-its/imagens-inicio/natureza.svg" alt="">
+    <img src="/explore-its/imagem/inicio/natureza.svg" alt="">
     <span>Natureza</span>
   </button>
 
   <button type="button" class="inicio-tema-item" data-tema="cultura">
-    <img src="/explore-its/imagens-inicio/cultura.svg" alt="">
+    <img src="/explore-its/imagem/inicio/cultura.svg" alt="">
     <span>Cultura</span>
   </button>
 
   <button type="button" class="inicio-tema-item" data-tema="educacao">
-    <img src="/explore-its/imagens-inicio/ciencia.svg" alt="">
+    <img src="/explore-its/imagem/inicio/ciencia.svg" alt="">
     <span>Educação</span>
   </button>
 
   <button type="button" class="inicio-tema-item" data-tema="extensao">
-    <img src="/explore-its/imagens-inicio/historia.svg" alt="">
+    <img src="/explore-its/imagem/inicio/historia.svg" alt="">
     <span>Extensão</span>
   </button>
 
@@ -768,17 +1070,17 @@ if (telaAtual === 'inicio') {
   <div>
 
     <button type="button" class="inicio-rodape-item" id="btn-como-chegar">
-      <img src="/explore-its/imagens-inicio/como_chegar.svg" alt="">
+      <img src="/explore-its/imagem/inicio/como_chegar.svg" alt="">
       <span>Como chegar</span>
     </button>
 
     <button type="button" class="inicio-rodape-item" id="btn-instagram">
-      <img src="/explore-its/imagens-inicio/instagram.svg" alt="">
+      <img src="/explore-its/imagem/inicio/instagram.svg" alt="">
       <span>Instagram</span>
     </button>
 
     <button type="button" class="inicio-rodape-item" id="btn-contato">
-      <img src="/explore-its/imagens-inicio/contato.svg" alt="">
+      <img src="/explore-its/imagem/inicio/contato.svg" alt="">
       <span>Contato</span>
     </button>
 
@@ -795,7 +1097,6 @@ if (telaAtual === 'inicio') {
     <main class="tela-explorar">
 
       <section class="explorar-introducao">
-        <span>🌿 EXPLORE O ITS</span>
 
         <h1>Explore os espaços do ITS</h1>
 
@@ -807,7 +1108,6 @@ if (telaAtual === 'inicio') {
 
 <section class="explorar-localidades">
 
-  <h2>O que você deseja explorar?</h2>
 
 <div class="explorar-grade">
 
@@ -850,7 +1150,7 @@ if (telaAtual === 'inicio') {
   <button type="button" class="explorar-cartao" data-localidade="museu">
     <img
       class="explorar-foto"
-      src="/explore-its/imagem/museu-its.webp"
+      src="/explore-its/imagem/localidades/museu-its.webp"
       alt="Museu do ITS"
     >
     <div class="explorar-cartao-conteudo">
@@ -881,7 +1181,7 @@ if (telaAtual === 'inicio') {
   <button type="button" class="explorar-cartao" data-localidade="trilha-semente-peregrina">
     <img
       class="explorar-foto"
-      src="/explore-its/imagem/trilha/inicio_trilha.webp"
+      src="/explore-its/imagem/localidades/inicio_trilha.webp"
       alt="Trilha da Semente Peregrina"
     >
     <div class="explorar-cartao-conteudo">
@@ -933,7 +1233,7 @@ if (telaAtual === 'inicio') {
 
   <img
     class="mapa-its-foto-museu"
-    src="/explore-its/imagem/museu-its.webp"
+    src="/explore-its/imagem/localidades/museu-its.webp"
     alt="Museu do Instituto do Trópico Subúmido"
   >
 
@@ -947,9 +1247,7 @@ if (telaAtual === 'inicio') {
 </h2>
 
         <p>
-  Toque em alguma localidade do<br>
-  mapa para conhecer esse espaço<br>
-  e descobrir o que existe por lá.
+  Toque em alguma localidade do mapa para conhecer esse espaço e descobrir o que existe por lá.
 </p>
       </section>
 
@@ -976,122 +1274,112 @@ if (telaAtual === 'inicio') {
 
     </main>
   `
+
 } else if (telaAtual === 'localidade') {
 
   html += `
     <main class="tela-localidade">
 
-<section class="localidade-hero">
+      <section class="localidade-hero">
+        <img
+          src="/explore-its/imagem/localidades/inicio_trilha.webp"
+          alt="Entrada da Trilha da Semente Peregrina"
+          class="localidade-hero-imagem"
+        >
 
-  <img
-    src="/explore-its/imagem/trilha/inicio_trilha.webp"
-    alt="Entrada da Trilha da Semente Peregrina"
-    class="localidade-hero-imagem"
-  >
-
-  <div class="localidade-hero-conteudo">
-    
-    <h1>Trilha da<br>Semente Peregrina</h1>
-  </div>
-
-</section>
+        <div class="localidade-hero-conteudo">
+          <h1>Trilha da<br>Semente Peregrina</h1>
+        </div>
+      </section>
 
       <section class="localidade-conteudo">
 
-        <div class="localidade-chamada">
-          
-          <p>
-            Ao longo do percurso, a natureza revela pistas sobre
-            o Cerrado, seus organismos, a água e as transformações
-            da paisagem.
+        <section class="localidade-apresentacao">
+
+          <p class="localidade-percurso-texto">
+            Uma caminhada por um pedaço do Cerrado
+            preservado em meio à cidade, entre árvores,
+            caminhos e histórias do nosso folclore. A
+            cada recanto, novas descobertas sobre a
+            natureza e a cultura desse lugar.
           </p>
-        </div>
 
-        <div class="localidade-dados">
+          <div class="localidade-dados">
 
-          <div class="localidade-dado">
-            <span>🥾</span>
-            <strong>~1,4 km</strong>
-            <small>de percurso</small>
+            <div class="localidade-dado">
+              <span aria-hidden="true">🥾</span>
+              <strong>1,4 km</strong>
+              <small>de percurso</small>
+            </div>
+
+            <div class="localidade-dado">
+              <span aria-hidden="true">📍</span>
+              <strong>6 recantos</strong>
+              <small>para descobrir</small>
+            </div>
+
           </div>
-
-          <div class="localidade-dado">
-            <span>🔎</span>
-            <strong>6</strong>
-            <small>recantos</small>
-          </div>
-
-          <div class="localidade-dado">
-            <span>🌡️</span>
-            <strong>3</strong>
-            <small>medições</small>
-          </div>
-
-        </div>
-
-        <section class="localidade-missao">
-
-          <span class="localidade-secao-label">
-            SUA MISSÃO
-          </span>
-
-          <h2>Investigue a trilha como um cientista</h2>
-
-<div class="localidade-acoes">
-  <span><b>👀</b>Observar</span>
-  <span><b>❓</b>Questionar</span>
-  <span><b>🔎</b>Investigar</span>
-  <span><b>💡</b>Explicar</span>
-</div>
 
         </section>
 
-${inicioExpedicao ? `
-  <button id="btn-continuar-expedicao" class="btn-primary localidade-iniciar">
-    Continuar a expedição →
-  </button>
+        <section class="localidade-missao">
 
-  <button id="btn-nova-expedicao" class="localidade-nova-expedicao">
-    ↻ Iniciar uma nova expedição
-  </button>
-` : `
-  <button id="btn-iniciar-expedicao" class="btn-primary localidade-iniciar">
-    Iniciar a expedição →
-  </button>
-`}
+          <h2 class="localidade-missao-titulo">
+            <span aria-hidden="true">🧭</span>
+            SUA MISSÃO
+          </h2>
+
+          <h3>Explore, investigue e descubra!</h3>
+
+          <p>
+            Observe os detalhes, faça perguntas,
+            registre suas descobertas no Caderno
+            de Campo e use suas observações para
+            buscar explicações.
+          </p>
+
+          ${inicioExpedicao ? `
+            <button
+              id="btn-continuar-expedicao"
+              class="btn-primary localidade-iniciar"
+            >
+              Continuar a expedição →
+            </button>
+
+            <button
+              id="btn-nova-expedicao"
+              class="localidade-nova-expedicao"
+            >
+              ↻ Iniciar uma nova expedição
+            </button>
+          ` : `
+            <button
+              id="btn-iniciar-expedicao"
+              class="btn-primary localidade-iniciar"
+            >
+              Começar expedição →
+            </button>
+          `}
+
+        </section>
 
       </section>
 
     </main>
   `
 
+
 } else if (telaAtual === 'cadastro') {
 
   html += `
     <div class="tela-identificacao">
 
-<section class="boas-vindas-expedicao cadastro-hero">
-
-  <img
-    src="/explore-its/imagem/trilha/inicio_trilha.webp"
-    alt="Caminho de entrada da Trilha da Semente Peregrina"
-    class="cadastro-hero-imagem"
-  />
-<div class="cadastro-hero-conteudo">
-  <h2>Trilha da Semente Peregrina</h2>
-</div>
-</section>
-
       <section class="card-container identificacao-card">
+
 
 <div class="identificacao-titulo">
   <h3>Prepare sua expedição</h3>
 </div>
-
-        <p class="identificacao-instrucao">
-          Conte quem está participando da investigação e escolha
-          seu companheiro de expedição.
-        </p>
 
         <form id="form-cadastro">
 
@@ -1154,100 +1442,68 @@ ${inicioExpedicao ? `
 
     </div>
   `
-
-} else if (telaAtual === 'trilha' && verTabelaTemp) {
-
-  const temperaturaInicial = medicoesTemperatura.find(
-    m => m.estacaoId === 'inicio-trilha'
-  )
-
-  const paisagemA = registrosPaisagem.find(r => r.ponto === 'A')
-  const paisagemB = registrosPaisagem.find(r => r.ponto === 'B')
-  const paisagemC = registrosPaisagem.find(r => r.ponto === 'C')
-
-  const pontosTemperatura = [
-    {
-      nome: 'Início da Trilha',
-      temperatura: temperaturaInicial?.valorTemp ?? null,
-      horario: temperaturaInicial?.horarioMedicao ?? null
-    },
-    {
-      nome: 'Paisagem A',
-      temperatura: paisagemA?.temperatura ?? null,
-      horario: paisagemA ? formatarHorarioRegistro(paisagemA.dataHora) : null
-    },
-    {
-      nome: 'Paisagem B',
-      temperatura: paisagemB?.temperatura ?? null,
-      horario: paisagemB ? formatarHorarioRegistro(paisagemB.dataHora) : null
-    },
-    {
-      nome: 'Paisagem C',
-      temperatura: paisagemC?.temperatura ?? null,
-      horario: paisagemC ? formatarHorarioRegistro(paisagemC.dataHora) : null
-    }
-  ]
+} else if (telaAtual === 'registro-partida') {
 
   html += `
-    <div class="card-container">
+    <div class="tela-identificacao">
 
-      <button id="btn-voltar-estacoes" class="btn-back">
-        ⬅ Voltar para a expedição
-      </button>
+      <section class="card-container identificacao-card">
 
-      <h2>🌡️ Temperaturas ao longo da trilha</h2>
+        <div class="identificacao-titulo">
+          <h3>📸 Registro de Partida</h3>
+        </div>
 
-      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:15px;">
-        Compare as temperaturas registradas em diferentes ambientes
-        durante a expedição.
-      </p>
+        <p>
+          A expedição está começando!
+          Reúna seu grupo no portal de entrada da
+          Trilha da Semente Peregrina.
+        </p>
 
-      <table style="width:100%; border-collapse:collapse; text-align:left; font-size:0.9rem;">
-        <thead>
-          <tr style="border-bottom:2px solid var(--border); background:#f1f5f9;">
-            <th style="padding:8px;">Ponto</th>
-            <th style="padding:8px;">Temp. (°C)</th>
-            <th style="padding:8px;">Horário</th>
-          </tr>
-        </thead>
+        <p>
+          Registre uma fotografia para marcar
+          o início dessa experiência.
+        </p>
 
-        <tbody>
-          ${pontosTemperatura.map(ponto => `
-            <tr style="border-bottom:1px solid var(--border);">
+<!-- CÂMERA EXCLUSIVA DO REGISTRO DE PARTIDA -->
+<input
+  type="file"
+  id="input-foto-partida"
+  accept="image/*"
+  capture="environment"
+  style="display:none;"
+>
 
-              <td style="padding:10px 8px;">
-                <strong>${ponto.nome}</strong>
-              </td>
+        <div class="registro-partida-foto">
+          ${fotoPartida
+            ? `<img src="${fotoPartida}" alt="Fotografia do grupo">`
+            : `<p>📷 Nenhuma fotografia registrada</p>`
+          }
+        </div>
 
-              <td style="padding:10px 8px; color:var(--primary-dark); font-weight:bold;">
-                ${
-                  ponto.temperatura !== null
-                    ? `${ponto.temperatura} °C`
-                    : '<span style="color:#d97706;">—</span>'
-                }
-              </td>
+        <button
+          type="button"
+          id="btn-foto-partida"
+          class="btn-primary"
+        >
+          📷 ${fotoPartida ? 'Refazer fotografia' : 'Tirar fotografia'}
+        </button>
 
-              <td style="padding:10px 8px; color:var(--text-muted);">
-                ${ponto.horario ?? '—'}
-              </td>
+        <button
+          type="button"
+          id="btn-continuar-partida"
+          class="btn-primary"
+          ${!fotoPartida ? 'disabled' : ''}
+        >
+          Continuar expedição →
+        </button>
 
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
+      </section>
 
     </div>
   `
+
 } else if (telaAtual === 'trilha' && verCaderno) {
 
-  const paisagensCompletas =
-    registrosPaisagem.some(r => r.ponto === 'A') &&
-    registrosPaisagem.some(r => r.ponto === 'B') &&
-    registrosPaisagem.some(r => r.ponto === 'C')
-
-const registroA = registrosPaisagem.find(r => r.ponto === 'A')
-const registroB = registrosPaisagem.find(r => r.ponto === 'B')
-const registroC = registrosPaisagem.find(r => r.ponto === 'C')
 
 let tempoExpedicao = ''
 
@@ -1272,15 +1528,15 @@ if (inicioExpedicao) {
 html += `
     <div class="card-container">
       <button id="btn-voltar-estacoes" class="btn-back">
-        ⬅ Voltar às Estações
+      ⬅ Voltar ao mapa
       </button>
 
       <h2>📜 Caderno de Campo</h2>
 
       <p>
         <small>
-          Estudante/Grupo: ${crachaSalvo.nome} |
-          Turma: ${crachaSalvo.turma}
+          Estudante/Grupo: ${crachaSalvo?.nome ?? 'Não informado'} |
+          Turma: ${crachaSalvo?.turma ?? 'Não informada'}
         </small>
       </p>
 
@@ -1304,1285 +1560,104 @@ ${inicioExpedicao ? `
   </div>
 ` : ''}
 
-${respostasGerais.length === 0 &&
-  registrosPaisagem.length === 0 &&
-  descobertasExpedicao.length === 0
-    ? '<p>Nenhum registro gravado ainda.</p>'
-    : ''
-}
-
-      ${registrosPaisagem.length > 0 ? `
-        <h3 style="margin-top:18px;">🌿 Retratos da Paisagem</h3>
-
-        ${registrosPaisagem
-          .sort((a, b) => a.ponto.localeCompare(b.ponto))
-          .map(r => `
-            <div class="resposta-card">
-
-              <h4>📍 Ponto ${r.ponto} — Retrato da Paisagem</h4>
-
-              ${r.foto ? `
-                <div class="preview-box">
-                  <img
-                    src="${r.foto}"
-                    class="img-preview"
-                    alt="Paisagem registrada no Ponto ${r.ponto}"
-                  />
-                </div>
-              ` : ''}
-
-<div class="caderno-escala">
-  <strong>Porte da vegetação</strong>
-
-  <div class="caderno-escala-extremos">
-    <span>Baixa</span>
-    <span>Alta</span>
-  </div>
-
-  <div class="caderno-escala-linha">
-    <span
-      class="caderno-escala-marcador"
-      style="left:${r.porteVegetacao}%"
-    ></span>
-  </div>
-</div>
-
-<div class="caderno-escala">
-  <strong>Abertura da paisagem</strong>
-
-  <div class="caderno-escala-extremos">
-    <span>Aberta</span>
-    <span>Fechada</span>
-  </div>
-
-  <div class="caderno-escala-linha">
-    <span
-      class="caderno-escala-marcador"
-      style="left:${r.aberturaPaisagem}%"
-    ></span>
-  </div>
-</div>
-
-<div class="caderno-escala">
-  <strong>Luz chegando ao solo</strong>
-
-  <div class="caderno-escala-extremos">
-    <span>Muita</span>
-    <span>Pouca</span>
-  </div>
-
-  <div class="caderno-escala-linha">
-    <span
-      class="caderno-escala-marcador"
-      style="left:${r.luzSolo}%"
-    ></span>
-  </div>
-</div>
-
-              ${r.temperatura !== null ? `
-                <p style="font-size:0.9rem;">
-                  <strong>🌡️ Temperatura:</strong>
-                  ${r.temperatura} °C
-                </p>
-              ` : ''}
-
-              <small style="color:var(--text-muted); font-size:0.75rem;">
-              🕒 ${formatarHorarioRegistro(r.dataHora)}
-              </small>
-
-            </div>
-          `).join('')}
-      ` : ''}
-
-${paisagensCompletas && registroA && registroB && registroC ? `
-  <div class="comparacao-paisagens">
-
-    <h3>🔎 Compare as paisagens</h3>
-
-    <p>
-      Você já registrou os três pontos de observação.
-      Agora compare as evidências coletadas ao longo da trilha.
-    </p>
-
-    <div class="comparacao-variavel">
-      <strong>Porte da vegetação</strong>
-
-      <div class="comparacao-extremos">
-        <span>Baixa</span>
-        <span>Alta</span>
-      </div>
-
-      <div class="comparacao-linha">
-        <span
-          class="comparacao-ponto comparacao-a"
-          style="left:${registroA.porteVegetacao}%"
-        >A</span>
-
-        <span
-          class="comparacao-ponto comparacao-b"
-          style="left:${registroB.porteVegetacao}%"
-        >B</span>
-
-        <span
-          class="comparacao-ponto comparacao-c"
-          style="left:${registroC.porteVegetacao}%"
-        >C</span>
-      </div>
-    </div>
-
-    <div class="comparacao-variavel">
-      <strong>Abertura da paisagem</strong>
-
-      <div class="comparacao-extremos">
-        <span>Aberta</span>
-        <span>Fechada</span>
-      </div>
-
-      <div class="comparacao-linha">
-        <span
-          class="comparacao-ponto comparacao-a"
-          style="left:${registroA.aberturaPaisagem}%"
-        >A</span>
-
-        <span
-          class="comparacao-ponto comparacao-b"
-          style="left:${registroB.aberturaPaisagem}%"
-        >B</span>
-
-        <span
-          class="comparacao-ponto comparacao-c"
-          style="left:${registroC.aberturaPaisagem}%"
-        >C</span>
-      </div>
-    </div>
-
-    <div class="comparacao-variavel">
-      <strong>Luz chegando ao solo</strong>
-
-      <div class="comparacao-extremos">
-        <span>Muita</span>
-        <span>Pouca</span>
-      </div>
-
-      <div class="comparacao-linha">
-        <span
-          class="comparacao-ponto comparacao-a"
-          style="left:${registroA.luzSolo}%"
-        >A</span>
-
-        <span
-          class="comparacao-ponto comparacao-b"
-          style="left:${registroB.luzSolo}%"
-        >B</span>
-
-        <span
-          class="comparacao-ponto comparacao-c"
-          style="left:${registroC.luzSolo}%"
-        >C</span>
-      </div>
-    </div>
-
-    <div class="comparacao-temperatura">
-
-      <strong>🌡️ Temperatura registrada</strong>
-
-      <div class="comparacao-temperatura-valores">
-
-        <div>
-          <span class="temperatura-ponto">A</span>
-          <strong>
-            ${registroA.temperatura !== null
-              ? `${registroA.temperatura} °C`
-              : '—'}
-          </strong>
-        </div>
-
-        <div>
-          <span class="temperatura-ponto">B</span>
-          <strong>
-            ${registroB.temperatura !== null
-              ? `${registroB.temperatura} °C`
-              : '—'}
-          </strong>
-        </div>
-
-        <div>
-          <span class="temperatura-ponto">C</span>
-          <strong>
-            ${registroC.temperatura !== null
-              ? `${registroC.temperatura} °C`
-              : '—'}
-          </strong>
-        </div>
-
-      </div>
-
-    </div>
-
-    <div class="interpretacao-paisagem">
-
-      <h4>🧭 O que mudou ao longo da trilha?</h4>
-
-      <p>
-        Compare os pontos A, B e C. Descreva uma diferença
-        ou um padrão que chamou sua atenção e indique quais
-        evidências sustentam sua observação.
-      </p>
-
-      <label for="texto-interpretacao-paisagem">
-        <strong>Minha interpretação</strong>
-      </label>
-
-      <textarea
-        id="texto-interpretacao-paisagem"
-        rows="4"
-        placeholder="Ex.: Observei que..."
-      >${interpretacaoPaisagem}</textarea>
-
-      <button
-        type="button"
-        class="btn-primary"
-        id="btn-salvar-interpretacao-paisagem"
-      >
-        Salvar interpretação
-      </button>
-
-    </div>
-
-  </div>
-` : ''}
-
-${descobertasExpedicao.length > 0 ? `
-  <div class="descobertas-caderno">
-
-    <h3 style="margin-top:18px;">🌿 Descobertas pelo Caminho</h3>
-
-    <p style="font-size:0.9rem; color:var(--text-muted);">
-      Evidências e descobertas registradas durante a caminhada.
-    </p>
-
-    ${[
-      {
-        tipo: 'pequenos-habitantes',
-        titulo: '🔎 Pequenos habitantes'
-      },
-      {
-        tipo: 'quem-passou',
-        titulo: '🐾 Quem passou por aqui?'
-      },
-      {
-        tipo: 'vidas-conectadas',
-        titulo: '🔗 Vidas conectadas'
-      },
-      {
-        tipo: 'curiosidade',
-        titulo: '❓ Isso me deixou curioso'
-      }
-    ].map(grupo => {
-
-      const registrosDoGrupo = descobertasExpedicao.filter(
-        descoberta => descoberta.tipo === grupo.tipo
-      )
-
-      if (registrosDoGrupo.length === 0) return ''
-
-      return `
-        <div class="grupo-descobertas ${
-          grupo.tipo === 'curiosidade'
-              ? 'grupo-curiosidades'
-              : 'grupo-fotos'
-          }">
-
-          <h4 style="margin:18px 0 8px;">
-            ${grupo.titulo}
-            <span style="
-              font-size:0.75rem;
-              font-weight:500;
-              color:var(--text-muted);
-            ">
-              (${registrosDoGrupo.length})
-            </span>
-          </h4>
-
-          ${registrosDoGrupo.map(descoberta => `
-            <div class="resposta-card descoberta-caderno-card">
-
-              <div class="preview-box">
-                <img
-                  src="${descoberta.foto}"
-                  class="img-preview"
-                  alt="Descoberta registrada durante a expedição"
-                />
-              </div>
-
-              ${descoberta.tipo === 'curiosidade' && descoberta.pergunta ? `
-                <div class="pergunta-descoberta">
-                  <strong>❓ Minha pergunta</strong>
-                  <p>${descoberta.pergunta}</p>
-                </div>
-              ` : ''}
-
-              <small style="color:var(--text-muted); font-size:0.75rem;">
-                🕒 ${formatarHorarioRegistro(descoberta.dataHora)}
-              </small>
-
-            </div>
-          `).join('')}
-
-        </div>
-      `
-    }).join('')}
-
-  </div>
-` : ''}
-
-      ${respostasGerais.length > 0 ? `
-        <h3 style="margin-top:18px;">🔎 Registros das Investigações</h3>
-
-        ${respostasGerais.map(r => `
-          <div class="resposta-card">
-            <h4>${r.titulo}</h4>
-
-            <p style="font-size:0.9rem; margin-top:4px; white-space:pre-line;">
-              ${r.conteudo}
-            </p>
-
-            ${r.midiaUrl ? `
-              <div class="preview-box">
-                <img src="${r.midiaUrl}" class="img-preview"/>
-              </div>
-            ` : ''}
-
-            <small style="color:var(--text-muted); font-size:0.75rem;">
-              🕒 ${formatarHorarioRegistro(r.dataHora)}
-            </small>
-          </div>
-        `).join('')}
-      ` : ''}
-
-    </div>
-  `
-  } else if (telaAtual === 'trilha' && missaoAtual && estacaoAtual) {
-    const medExistente = medicoesTemperatura.find(m => m.estacaoId === estacaoAtual!.id)
-    const horaPadrao = medExistente ? medExistente.horarioMedicao : obterHoraAtual()
-
-    html += `
-      <div class="card-container">
-        <button id="btn-voltar-estacao" class="btn-back">⬅ Voltar para ${estacaoAtual.nome}</button>
-        <h3>${missaoAtual.titulo}</h3>
-        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:12px;">${missaoAtual.descricao}</p>
-
-        ${missaoAtual.instrucoesHtml ? missaoAtual.instrucoesHtml : ''}
-
-        <form id="form-missao">
-
-          ${missaoAtual.tipo === 'quiz' && missaoAtual.opcoesQuiz ? `
-            <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px;">
-              ${missaoAtual.opcoesQuiz.map(opt => `
-                <label style="display:flex; align-items:flex-start; gap:10px; background:#f8fafc; border:2px solid ${opcaoSelecionadaQuiz === opt.id ? 'var(--primary)' : 'var(--border)'}; padding:12px; border-radius:8px; cursor:pointer;">
-                  <input type="radio" name="opcao-quiz" value="${opt.id}" ${opcaoSelecionadaQuiz === opt.id ? 'checked' : ''} style="margin-top:3px;" />
-                  <span style="font-size:0.9rem; color:var(--text);">${opt.texto}</span>
-                </label>
-              `).join('')}
-            </div>
-          ` : ''}
-
-          ${missaoAtual.tipo === 'temperatura' ? `
-            <div class="form-group">
-              <label>Temperatura lida no Termômetro Digital (°C):</label>
-              <input type="number" step="0.1" id="inp-temp" required placeholder="Ex: 26.5" value="${medExistente ? medExistente.valorTemp : ''}" style="font-size:1.2rem; padding:10px;" />
-            </div>
-            <div class="form-group">
-              <label>${missaoAtual.requerHorario ? 'Horário de Início da Trilha:' : 'Horário da Medição:'}</label>
-              <input type="time" id="inp-hora" required value="${horaPadrao}" style="font-size:1.1rem; padding:8px;" />
-            </div>
-          ` : ''}
-
-          ${missaoAtual.tipo === 'foto' ? `
-            <input type="file" id="input-foto" accept="image/*" capture="environment" style="display:none" />
-            <button type="button" id="btn-foto" class="btn-secondary">📷 Capturar Foto do Organismo</button>
-            <div class="preview-box">
-              ${fotoTemp ? `<img src="${fotoTemp}" class="img-preview"/>` : '<small>Nenhuma foto tirada</small>'}
-            </div>
-          ` : ''}
-
-          ${missaoAtual.tipo === 'texto' ? `
-            <div class="form-group">
-              <textarea id="inp-texto" rows="3" required placeholder="Digite suas observações..."></textarea>
-            </div>
-          ` : ''}
-
-          ${missaoAtual.tipo === 'audio' ? `
-            <button type="button" id="btn-audio" class="btn-secondary">
-              ${gravandoAudio ? '⏹️ Parar gravação' : '🎙️ Iniciar gravação'}
-            </button>
-
-          <div class="preview-box">
-          ${gravandoAudio
-            ? '<p>🔴 Gravando... observe os sons ao seu redor.</p>'
-             : audioTemp
-              ? `
-                <p>✅ Gravação concluída</p>
-                <audio controls src="${audioTemp}" style="width:100%; margin-top:8px;"></audio>
-                <small>Ouça o registro antes de salvar a atividade.</small>
-        `
-        : '<small>Gravação pendente</small>'
+<section class="caderno-registro-partida">
+
+  <h3>📷 Registro de Partida</h3>
+
+  <p>
+    Nossa equipe no início da expedição pela
+    Trilha da Semente Peregrina.
+  </p>
+
+  ${fotoPartida ? `
+    <img
+      src="${fotoPartida}"
+      alt="Fotografia do grupo no início da expedição"
+      style="
+        display: block;
+        width: 100%;
+        max-width: 600px;
+        height: auto;
+        margin: 12px auto;
+        border-radius: 12px;
+      "
+    >
+  ` : `
+    <p>Nenhuma fotografia de partida registrada.</p>
+  `}
+
+</section>
+
+<section class="caderno-investigacoes">
+
+  <h3>🔎 Nossas investigações</h3>
+
+  <p>
+    Estes são os quatro elementos selecionados
+    para nossa expedição.
+  </p>
+
+  ${elementosSorteados.map(elemento => {
+
+    const dados = catalogoElementos.find(
+      item => item.id === elemento.id
+    )
+
+    const categorias: Record<CategoriaInvestigacao, string> = {
+      ARV: 'Árvore ou planta',
+      ECO: 'Processo ecológico',
+      FOR: 'Formação natural',
+      FOL: 'Cultura e folclore'
     }
 
-  </div>
-` : ''}
+    return `
+      <article class="caderno-investigacao">
 
-          <button type="submit" class="btn-primary" style="margin-top:14px;">Salvar Atividade</button>
-        </form>
-      </div>
-    `
-  } else if (telaAtual === 'trilha' && estacaoAtual) {
-    const totalMissoesEstacao = estacaoAtual.missoes.length
-    const concluidasEstacao = estacaoAtual.missoes.filter(m => respostasGerais.some(r => r.missaoId === m.id)).length
-    const estacaoConclvida = concluidasEstacao === totalMissoesEstacao
-
-    html += `
-      <div class="card-container">
-        <button id="btn-voltar-home" class="btn-back">⬅ Voltar às Etapas</button>
-        <h2>${estacaoAtual.icone} ${estacaoAtual.nome}</h2>
-        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:15px;">${estacaoAtual.descricao}</p>
-
-${estacaoConclvida ? `
-  <div style="
-    background:#f0fdf4;
-    border:2px solid var(--primary);
-    padding:14px;
-    border-radius:10px;
-    margin-bottom:15px;
-    text-align:center;
-  ">
-    <h4 style="color:var(--primary-dark);">
-      🌿 Registro concluído!
-    </h4>
-
-    <p style="
-      font-size:0.85rem;
-      color:var(--text-muted);
-      margin:4px 0 10px 0;
-    ">
-      Seu registro foi guardado no Caderno da Expedição.
-    </p>
-
-    <button
-      type="button"
-      id="btn-voltar-mapa-estacao"
-      class="btn-primary"
-    >
-      🗺️ Voltar ao mapa e continuar a expedição
-    </button>
-  </div>
-` : ''}
-
-        <h3>Atividades desta etapa:</h3>
-        <div style="margin-top:10px; display:flex; flex-direction:column; gap:10px;">
-          ${estacaoAtual.missoes.map(m => {
-            const feita = respostasGerais.some(r => r.missaoId === m.id)
-            return `
-              <div class="missao-card">
-                <h4>${m.titulo}${feita ? '✅' : ''}</h4>
-                <p style="font-size:0.85rem; color:var(--text-muted); margin:4px 0 10px 0;">${m.descricao}</p>
-                <button class="btn-primary btn-abrir-missao" data-id="${m.id}">
-                  ${feita ? 'Editar Registro' : 'Fazer Atividade'}
-                </button>
-              </div>
-            `
-          }).join('')}
-        </div>
-      </div>
-    `
-} else if (telaAtual === 'trilha' && finalExpedicaoAberto) {
-
-  html += `
-    <div class="card-container">
-
-      <button
-        type="button"
-        id="btn-voltar-mapa-final"
-        class="btn-back"
-      >
-        ⬅ Voltar ao mapa
-      </button>
-
-      <div style="text-align:center; padding:10px 0 20px 0;">
-
-        <div style="font-size:2.8rem; margin-bottom:10px;">
-          🌿
-        </div>
-
-        <span style="
-          display:inline-block;
-          font-size:0.75rem;
-          font-weight:700;
-          letter-spacing:0.08em;
-          color:var(--primary);
-          margin-bottom:8px;
-        ">
-          FIM DO PERCURSO
-        </span>
-
-        <h2 style="margin-bottom:10px;">
-          A trilha terminou. A investigação ainda não.
-        </h2>
-
-        <p style="
-          color:var(--text-muted);
-          line-height:1.6;
-          margin-bottom:20px;
-        ">
-          Ao longo do caminho, vocês observaram diferentes paisagens,
-          fizeram medições e reuniram pistas sobre o ambiente.
-        </p>
-
-        <div style="
-          background:#f0fdf4;
-          border:1px solid #bbf7d0;
-          border-radius:12px;
-          padding:16px;
-          margin-bottom:20px;
-          text-align:left;
-        ">
-          <strong style="color:var(--primary-dark);">
-            🔎 Agora vamos olhar para o conjunto.
-          </strong>
-
-          <p style="
-            margin:6px 0 0 0;
-            color:var(--text-muted);
-            font-size:0.9rem;
-            line-height:1.5;
-          ">
-            Compare os registros feitos nos três pontos de observação
-            e descubra o que mudou ao longo da trilha.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          id="btn-reunir-pistas"
-          class="btn-primary"
-          style="width:100%;"
-        >
-          Reunir as pistas →
-        </button>
-
-      </div>
-
-    </div>
-  `
-
-} else if (telaAtual === 'trilha' && sinteseExpedicaoAberta) {
-
-  const paisagemA = registrosPaisagem.find(registro => registro.ponto === 'A')
-  const paisagemB = registrosPaisagem.find(registro => registro.ponto === 'B')
-  const paisagemC = registrosPaisagem.find(registro => registro.ponto === 'C')
-
-  const paisagensSintese = [
-    { ponto: 'A', registro: paisagemA },
-    { ponto: 'B', registro: paisagemB },
-    { ponto: 'C', registro: paisagemC }
-  ]
-
-  html += `
-    <div class="card-container">
-
-      <button
-        type="button"
-        id="btn-voltar-final"
-        class="btn-back"
-      >
-        ⬅ Voltar
-      </button>
-
-      <div style="margin-bottom:22px;">
-
-        <span style="
-          display:inline-block;
-          font-size:0.75rem;
-          font-weight:700;
-          letter-spacing:0.08em;
-          color:var(--primary);
-          margin-bottom:6px;
-        ">
-          🔎 SÍNTESE DA EXPEDIÇÃO
-        </span>
-
-        <h2 style="margin-bottom:8px;">
-          Vamos reunir as pistas
-        </h2>
-
-        <p style="
-          color:var(--text-muted);
-          line-height:1.5;
-        ">
-          Observe os registros feitos nos três pontos e compare
-          como a paisagem mudou ao longo da trilha.
-        </p>
-
-      </div>
-
-      <div style="
-        background:#f0fdf4;
-        border:1px solid #bbf7d0;
-        border-radius:12px;
-        padding:14px;
-        margin-bottom:24px;
-      ">
-        <strong style="color:var(--primary-dark);">
-          💡 A investigação ainda não terminou
+        <strong>
+          ${categorias[elemento.categoria]}
         </strong>
 
-        <p style="
-          margin:5px 0 0 0;
-          font-size:0.88rem;
-          color:var(--text-muted);
-          line-height:1.5;
-        ">
-          Agora as pistas coletadas em diferentes lugares podem ser
-          observadas lado a lado.
-        </p>
-      </div>
-
-      <h3 style="margin-bottom:14px;">
-        1. COMPARE OS LUGARES
-      </h3>
-
-      <div style="
-        display:grid;
-        grid-template-columns:repeat(3, 1fr);
-        gap:8px;
-        margin-bottom:24px;
-      ">
-
-        ${paisagensSintese.map(item => `
-          <div style="
-            border:1px solid var(--border);
-            border-radius:10px;
-            overflow:hidden;
-            background:#fff;
-          ">
-
-            <div style="
-              text-align:center;
-              font-weight:700;
-              padding:7px;
-              color:var(--primary-dark);
-            ">
-              Ponto ${item.ponto}
-            </div>
-
-            ${item.registro?.foto ? `
-              <img
-                src="${item.registro.foto}"
-                alt="Paisagem do Ponto ${item.ponto}"
-                style="
-                  width:100%;
-                  aspect-ratio:1/1;
-                  object-fit:cover;
-                  display:block;
-                "
-              >
-            ` : `
-              <div style="
-                aspect-ratio:1/1;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                background:#f8fafc;
-                color:var(--text-muted);
-                font-size:0.75rem;
-                text-align:center;
-                padding:6px;
-              ">
-                Sem registro neste ponto
-              </div>
-            `}
-
-            <div style="
-              text-align:center;
-              padding:7px 4px;
-              font-size:0.8rem;
-            ">
-              🌡️ ${
-                item.registro?.temperatura !== null &&
-                item.registro?.temperatura !== undefined
-                  ? `${item.registro.temperatura} °C`
-                  : '—'
-              }
-            </div>
-
-          </div>
-        `).join('')}
-
-      </div>
-
-      ${[
-        {
-          titulo: '🌿 Porte da vegetação',
-          esquerda: 'Baixa',
-          direita: 'Alta',
-          campo: 'porteVegetacao'
-        },
-        {
-          titulo: '🌳 Abertura da paisagem',
-          esquerda: 'Aberta',
-          direita: 'Fechada',
-          campo: 'aberturaPaisagem'
-        },
-        {
-          titulo: '☀️ Luz chegando ao solo',
-          esquerda: 'Muita',
-          direita: 'Pouca',
-          campo: 'luzSolo'
-        }
-      ].map(variavel => `
-
-        <div style="margin-bottom:22px;">
-
-          <strong style="font-size:0.9rem;">
-            ${variavel.titulo}
-          </strong>
-
-          <div style="
-            display:flex;
-            justify-content:space-between;
-            font-size:0.72rem;
-            color:var(--text-muted);
-            margin-top:5px;
-          ">
-            <span>${variavel.esquerda}</span>
-            <span>${variavel.direita}</span>
-          </div>
-
-          ${paisagensSintese.map(item => {
-
-            const valor = item.registro
-              ? item.registro[
-                  variavel.campo as
-                    'porteVegetacao' |
-                    'aberturaPaisagem' |
-                    'luzSolo'
-                ]
-              : null
-
-            return `
-              <div style="
-                display:grid;
-                grid-template-columns:20px 1fr;
-                gap:7px;
-                align-items:center;
-                margin-top:8px;
-              ">
-
-                <strong style="font-size:0.75rem;">
-                  ${item.ponto}
-                </strong>
-
-                <div style="
-                  position:relative;
-                  height:6px;
-                  background:#e2e8f0;
-                  border-radius:999px;
-                ">
-
-                  ${valor !== null ? `
-                    <span style="
-                      position:absolute;
-                      left:${valor}%;
-                      top:50%;
-                      width:14px;
-                      height:14px;
-                      border-radius:50%;
-                      background:var(--primary);
-                      transform:translate(-50%, -50%);
-                      border:2px solid white;
-                      box-shadow:0 0 0 1px var(--primary);
-                    "></span>
-                  ` : ''}
-
-                </div>
-
-              </div>
-            `
-          }).join('')}
-
-        </div>
-
-      `).join('')}
-
-    </div>
-  `
-
-} else if (
-  telaAtual === 'trilha' &&
-  desafiosExpedicaoAberto &&
-  desafioAtual === 'pequenos-habitantes'
-) {
-
-  html += `
-    <div class="card-container desafios-expedicao">
-
-      <button
-        type="button"
-        id="btn-voltar-lista-desafios"
-        class="btn-back"
-      >
-        ⬅ Voltar aos desafios
-      </button>
-
-      <div class="desafios-cabecalho">
-        <span>🔎 DESCOBERTA DA EXPEDIÇÃO</span>
-
-        <h2>Pequenos habitantes</h2>
-
         <p>
-          Encontrou um pequeno animal pelo caminho?
+          ${dados?.nome ?? 'Elemento não identificado'}
         </p>
-      </div>
 
-      <div class="orientacao-exploracao">
-        <div class="orientacao-icone">👀</div>
+        <small>
+          ${elemento.encontrado
+            ? '✓ Investigação registrada'
+            : '○ A investigar'}
+        </small>
 
-        <div>
-          <strong>Observe com cuidado</strong>
-
-          <p>
-            Observe sem tocar, capturar ou retirar o animal do ambiente.
-          </p>
-        </div>
-      </div>
-
-<button
-  type="button"
-  class="btn-primary"
-  id="btn-registrar-pequeno-habitante"
->
-  📷 Registrar descoberta
-</button>
-
-<input
-  type="file"
-  id="input-foto-desafio"
-  accept="image/*"
-  capture="environment"
-  style="display:none;"
->
-
-${fotoDesafioTemp ? `
-  <div class="paisagem-foto-preview">
-    <img
-      src="${fotoDesafioTemp}"
-      alt="Pequeno habitante registrado"
-    >
-    <p>✓ Foto registrada</p>
-  </div>
-
-  <button
-    type="button"
-    class="btn-primary"
-    id="btn-guardar-descoberta"
-  >
-    🌿 Guardar descoberta
-  </button>
-` : ''}
-
-    </div>
-  `
-} else if (
-  telaAtual === 'trilha' &&
-  desafiosExpedicaoAberto &&
-  desafioAtual === 'quem-passou'
-) {
-
-  html += `
-    <div class="card-container desafios-expedicao">
-
-      <button
-        type="button"
-        id="btn-voltar-lista-desafios"
-        class="btn-back"
-      >
-        ⬅ Voltar aos desafios
-      </button>
-
-      <div class="desafios-cabecalho">
-        <span>🐾 DESCOBERTA DA EXPEDIÇÃO</span>
-
-        <h2>Quem passou por aqui?</h2>
-
-        <p>
-          Encontrou uma pista de um animal que não está vendo?
-        </p>
-      </div>
-
-      <div class="orientacao-exploracao">
-        <div class="orientacao-icone">👀</div>
-
-        <div>
-          <strong>Observe sem alterar a pista</strong>
-
-          <p>
-            Pegadas, penas, ninhos, tocas, restos de alimento
-            e outras marcas podem revelar quem esteve por ali.
-          </p>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="btn-primary"
-        id="btn-registrar-quem-passou"
-      >
-        📷 Registrar pista
-      </button>
-
-      <input
-        type="file"
-        id="input-foto-quem-passou"
-        accept="image/*"
-        capture="environment"
-        style="display:none;"
-      >
-
-${fotoDesafioTemp ? `
-  <div class="paisagem-foto-preview">
-    <img
-      src="${fotoDesafioTemp}"
-      alt="Pista de animal registrada"
-    >
-    <p>✓ Pista registrada</p>
-  </div>
-
-  <button
-    type="button"
-    class="btn-primary"
-    id="btn-guardar-quem-passou"
-  >
-    🌿 Guardar descoberta
-  </button>
-` : ''}
-
-    </div>
-  `
-} else if (
-  telaAtual === 'trilha' &&
-  desafiosExpedicaoAberto &&
-  desafioAtual === 'vidas-conectadas'
-) {
-
-  html += `
-    <div class="card-container desafios-expedicao">
-
-      <button
-        type="button"
-        id="btn-voltar-lista-desafios"
-        class="btn-back"
-      >
-        ⬅ Voltar aos desafios
-      </button>
-
-      <div class="desafios-cabecalho">
-        <span>🔗 DESCOBERTA DA EXPEDIÇÃO</span>
-
-        <h2>Vidas conectadas</h2>
-
-        <p>
-          Percebeu dois seres vivos interagindo?
-        </p>
-      </div>
-
-      <div class="orientacao-exploracao">
-        <div class="orientacao-icone">👀</div>
-
-        <div>
-          <strong>Observe a relação</strong>
-
-          <p>
-            Procure situações em que um ser vivo esteja usando,
-            visitando ou interagindo com outro.
-          </p>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="btn-primary"
-        id="btn-registrar-vidas-conectadas"
-      >
-        📷 Registrar interação
-      </button>
-
-      <input
-        type="file"
-        id="input-foto-vidas-conectadas"
-        accept="image/*"
-        capture="environment"
-        style="display:none;"
-      >
-
-${fotoDesafioTemp ? `
-  <div class="paisagem-foto-preview">
-    <img
-      src="${fotoDesafioTemp}"
-      alt="Interação entre seres vivos registrada"
-    >
-    <p>✓ Interação registrada</p>
-  </div>
-
-  <button
-    type="button"
-    class="btn-primary"
-    id="btn-guardar-vidas-conectadas"
-  >
-    🌿 Guardar descoberta
-  </button>
-` : ''}
-
-    </div>
-  `
-} else if (
-  telaAtual === 'trilha' &&
-  desafiosExpedicaoAberto &&
-  desafioAtual === 'curiosidade'
-) {
-
-  html += `
-    <div class="card-container desafios-expedicao">
-
-      <button
-        type="button"
-        id="btn-voltar-lista-desafios"
-        class="btn-back"
-      >
-        ⬅ Voltar aos desafios
-      </button>
-
-      <div class="desafios-cabecalho">
-        <span>❓ DESCOBERTA DA EXPEDIÇÃO</span>
-
-        <h2>Isso me deixou curioso</h2>
-
-        <p>
-          Algo chamou sua atenção durante a caminhada?
-        </p>
-      </div>
-
-      <div class="orientacao-exploracao">
-        <div class="orientacao-icone">👀</div>
-
-        <div>
-          <strong>Observe antes de registrar</strong>
-
-          <p>
-            Fotografe algo que despertou sua curiosidade.
-            Você não precisa saber a resposta.
-          </p>
-        </div>
-      </div>
-
-<button
-  type="button"
-  class="btn-primary"
-  id="btn-registrar-curiosidade"
->
-  📷 Registrar descoberta
-</button>
-
-<input
-  type="file"
-  id="input-foto-curiosidade"
-  accept="image/*"
-  capture="environment"
-  style="display:none;"
->
-
-${fotoDesafioTemp ? `
-  <div class="paisagem-foto-preview">
-    <img
-      src="${fotoDesafioTemp}"
-      alt="Descoberta que despertou curiosidade"
-    >
-    <p>✓ Descoberta registrada</p>
-  </div>
-
-  <div class="campo-curiosidade">
-    <label for="pergunta-curiosidade">
-      <strong>Que pergunta isso despertou em você?</strong>
-    </label>
-
-    <textarea
-      id="pergunta-curiosidade"
-      rows="3"
-      maxlength="180"
-      placeholder="Ex.: Por que isso acontece?"
-    ></textarea>
-  </div>
-
-  <button
-    type="button"
-    class="btn-primary"
-    id="btn-guardar-curiosidade"
-  >
-    🌿 Guardar descoberta
-  </button>
-` : ''}
-
-    </div>
-  `
-
-} else if (telaAtual === 'trilha' && desafiosExpedicaoAberto) {
-
-  const totalPequenosHabitantes = descobertasExpedicao.filter(
-    descoberta => descoberta.tipo === 'pequenos-habitantes'
-  ).length
-
-const totalQuemPassou = descobertasExpedicao.filter(
-  descoberta => descoberta.tipo === 'quem-passou'
-).length
-
-const totalVidasConectadas = descobertasExpedicao.filter(
-  descoberta => descoberta.tipo === 'vidas-conectadas'
-).length
-
-const totalCuriosidades = descobertasExpedicao.filter(
-  descoberta => descoberta.tipo === 'curiosidade'
-).length
-
-  html += `
-      <div class="card-container desafios-expedicao">
-
-        <button
-          type="button"
-          id="btn-voltar-desafios"
-          class="btn-back"
-        >
-          ⬅ Voltar para a expedição
-        </button>
-
-        <div class="desafios-cabecalho">
-          <span>🔎 DESCOBERTAS PELO CAMINHO</span>
-
-          <h2>Desafios da Expedição</h2>
-
-          <p>
-            Algumas descobertas não têm lugar marcado.
-            Enquanto caminha, fique atento ao que a natureza revela.
-          </p>
-        </div>
-
-        <div class="desafios-lista">
-
-          <button
-            type="button"
-            class="desafio-card"
-            id="btn-pequenos-habitantes"
+        ${fotosElementos[elemento.id] ? `
+          <img
+            src="${fotosElementos[elemento.id]}"
+            alt="Fotografia de ${dados?.nome ?? 'elemento investigado'}"
+            style="
+              display: block;
+              width: 100%;
+              height: auto;
+              max-height: 350px;
+              object-fit: contain;
+              border-radius: 10px;
+              margin-top: 12px;
+            "
           >
-            <span class="desafio-icone">🔎</span>
-            <span>
-            <strong>Pequenos habitantes</strong>
+        ` : ''}
 
-            <small>
-              ${totalPequenosHabitantes > 0
-                ? `🌿 ${totalPequenosHabitantes} ${
-                    totalPequenosHabitantes === 1
-                      ? 'descoberta registrada'
-                      : 'descobertas registradas'
-                  }`
-                : 'Encontrou um pequeno animal? Registre a descoberta.'
-              }
-            </small>
-          </span>
-          </button>
-
-          <button
-            type="button"
-            class="desafio-card"
-            id="btn-quem-passou"
-          >
-            <span class="desafio-icone">🐾</span>
-            <span>
-              <strong>Quem passou por aqui?</strong>
-              <small>
-                ${totalQuemPassou > 0
-                  ? `🌿 ${totalQuemPassou} ${
-                      totalQuemPassou === 1
-                        ? 'descoberta registrada'
-                        : 'descobertas registradas'
-                    }`
-                  : 'Procure pistas de animais que você não está vendo.'
-                }
-              </small>
-            </span>
-          </button>
-
-<button
-  type="button"
-  class="desafio-card"
-  id="btn-vidas-conectadas"
->
-  <span class="desafio-icone">🔗</span>
-  <span>
-    <strong>Vidas conectadas</strong>
-    <small>
-      ${totalVidasConectadas > 0
-        ? `🌿 ${totalVidasConectadas} ${
-            totalVidasConectadas === 1
-              ? 'descoberta registrada'
-              : 'descobertas registradas'
-          }`
-        : 'Percebeu uma interação entre seres vivos? Registre.'
-      }
-    </small>
-  </span>
-</button>
-
-<button
-  type="button"
-  class="desafio-card"
-  id="btn-curiosidade"
->
-  <span class="desafio-icone">❓</span>
-  <span>
-    <strong>Isso me deixou curioso</strong>
-    <small>
-      ${totalCuriosidades > 0
-        ? `🌿 ${totalCuriosidades} ${
-            totalCuriosidades === 1
-              ? 'descoberta registrada'
-              : 'descobertas registradas'
-          }`
-        : 'Algo chamou sua atenção? Guarde essa descoberta.'
-      }
-    </small>
-  </span>
-</button>
-
-        </div>
-
-      </div>
+      </article>
     `
+
+  }).join('')}
+
+</section>
+
+    </div>
+  `
 
   } else if (telaAtual === 'trilha') {
 
     html += `
 
       <div class="home-exploracao">
-
-<section class="trilha-hero">
-  <img
-    src="/explore-its/imagem/trilha/inicio_trilha.webp"
-    alt="Caminho da Trilha da Semente Peregrina"
-    class="trilha-hero-imagem"
-  />
-
-  <div class="trilha-hero-conteudo">
-    <h1>Trilha da Semente Peregrina</h1>
-  </div>
-</section>
 
         <section class="mapa-exploracao">
 <div class="mapa-cabecalho">
@@ -2603,6 +1678,145 @@ const totalCuriosidades = descobertasExpedicao.filter(
           </div>
         </section>
 
+        <!-- EXPLORE ITS — ELEMENTOS SORTEADOS -->
+        <section class="lista-elementos-expedicao">
+
+          <h3>Sua missão de descoberta</h3>
+
+          <p>
+            Encontre estes quatro elementos durante a caminhada.
+            Procure no mapa os símbolos correspondentes.
+          </p>
+
+          <div class="elementos-expedicao">
+
+            ${elementosSorteados.map(elemento => {
+
+              const dados = catalogoElementos.find(
+                item => item.id === elemento.id
+              )
+
+              const categorias = {
+                ARV: 'Árvore ou planta',
+                ECO: 'Processo ecológico',
+                FOR: 'Formação natural',
+                FOL: 'Cultura e folclore'
+              }
+
+              const pictogramas = {
+                ARV: '/explore-its/imagem/pictogramas/arvores.svg',
+                ECO: '/explore-its/imagem/pictogramas/processos-ecologicos.svg',
+                FOR: '/explore-its/imagem/pictogramas/formacoes-naturais.svg',
+                FOL: '/explore-its/imagem/pictogramas/cultura-folclore.svg'
+              }
+
+              return `
+                <article
+  class="elemento-expedicao"
+  data-cartao-elemento="${elemento.id}"
+>
+
+                  <img
+                    src="${pictogramas[elemento.categoria]}"
+                    alt=""
+                    class="elemento-expedicao-icone"
+                  >
+
+                  <div class="elemento-expedicao-texto">
+                    <small>${categorias[elemento.categoria]}</small>
+
+                    <strong>
+                      ${dados?.nome ?? 'Elemento não identificado'}
+                    </strong>
+
+<span>
+  ${elemento.encontrado
+    ? '✓ Encontrado'
+    : 'A procurar'}
+</span>
+
+</div>
+
+<button
+  type="button"
+  class="btn-registrar-elemento"
+  data-elemento-id="${elemento.id}"
+  aria-label="Registrar ${dados?.nome ?? 'descoberta'}"
+  ${elemento.encontrado ? 'disabled' : ''}
+>
+  <span>
+    ${elemento.encontrado
+      ? '✓'
+      : elemento.categoria === 'ARV' ? '▦' : '📷'}
+  </span>
+  <small>
+    ${elemento.encontrado ? 'Feito' : 'Registrar'}
+  </small>
+</button>
+
+</article>
+              `
+            }).join('')}
+
+          </div>
+
+          <!-- CÂMERA PARA REGISTRO DOS ELEMENTOS SORTEADOS -->
+          <input
+            type="file"
+            id="input-foto-elemento"
+            accept="image/*"
+            capture="environment"
+            style="display:none;"
+          >
+
+          <!-- PRÉ-VISUALIZAÇÃO DA FOTOGRAFIA -->
+<div id="painel-confirmacao-foto" hidden>
+
+  <h3>📷 Confira sua fotografia</h3>
+
+  <img
+    id="imagem-confirmacao-foto"
+    alt="Fotografia da investigação"
+    style="width:100%; max-height:350px; object-fit:contain;"
+  >
+
+  <button type="button" id="btn-repetir-foto">
+    ↻ Tirar outra foto
+  </button>
+
+  <button type="button" id="btn-confirmar-foto">
+    ✓ Usar esta foto
+  </button>
+
+</div>
+
+          <!-- PAINEL COMPACTO DE REGISTRO DA ÁRVORE -->
+<div id="painel-registro-arvore" hidden>
+
+  <div class="registro-arvore-conteudo">
+
+    <strong>🌳 Registro da árvore</strong>
+
+    <p>Complete as duas atividades:</p>
+
+    <button type="button" id="btn-qr-arvore">
+      ▦ 1. Ler QR Code
+    </button>
+
+    <button type="button" id="btn-foto-arvore">
+      📷 2. Fotografar o grupo
+    </button>
+
+    <button type="button" id="btn-fechar-registro-arvore">
+      Fechar
+    </button>
+
+  </div>
+
+</div>
+
+        </section>
+
         <section class="orientacao-exploracao">
           <div class="orientacao-icone">🧭</div>
 
@@ -2616,40 +1830,6 @@ const totalCuriosidades = descobertasExpedicao.filter(
           </div>
         </section>
 
-        <section class="estrutura-expedicao">
-
-          <div class="estrutura-expedicao-item">
-            <span class="estrutura-expedicao-icone">📋</span>
-            <div>
-              <strong>3 Estações de Investigação</strong>
-              <small>Paradas orientadas para investigar o ambiente.</small>
-            </div>
-          </div>
-
-          <div class="estrutura-expedicao-item">
-            <span class="estrutura-expedicao-icone">📷</span>
-            <div>
-              <strong>3 Pontos de Paisagem</strong>
-              <small>Observe e registre as mudanças ao longo do caminho.</small>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            class="desafios-percurso"
-            id="btn-desafios-percurso"
-          >
-            <span class="desafios-percurso-icone">🔎</span>
-
-            <span class="desafios-percurso-texto">
-              <strong>Desafios em Percurso</strong>
-              <small>Fique atento às descobertas durante a caminhada.</small>
-            </span>
-
-            <span class="desafios-percurso-seta">→</span>
-          </button>
-
-        </section>
 
         <section class="frase-final-exploracao">
           <span>🌱</span>
@@ -2665,12 +1845,10 @@ const totalCuriosidades = descobertasExpedicao.filter(
 } else if (telaAtual === 'meu-percurso') {
 
   const trilhaRegistrada =
-    crachaSalvo !== null ||
-    inicioExpedicao !== null ||
-    respostasGerais.length > 0 ||
-    medicoesTemperatura.length > 0 ||
-    descobertasExpedicao.length > 0 ||
-    registrosPaisagem.length > 0
+  crachaSalvo !== null ||
+  inicioExpedicao !== null ||
+  fotoPartida !== null ||
+  elementosSorteados.length > 0
 
   html += `
     <main class="tela-meu-percurso">
@@ -2707,14 +1885,6 @@ const totalCuriosidades = descobertasExpedicao.filter(
               📖 Abrir Caderno de Campo
             </button>
 
-<button
-  type="button"
-  class="btn-primary"
-  id="btn-tabela-temp"
-  style="margin-top: 12px;"
->
-  🌡️ Ver Temperaturas
-</button>
 
 
 <button
@@ -2728,8 +1898,8 @@ const totalCuriosidades = descobertasExpedicao.filter(
 
 
             <p>
-              Em breve, este espaço também reunirá
-              suas temperaturas e conquistas.
+              Consulte seu Caderno de Campo
+              e acompanhe as conquistas da expedição.
             </p>
           </section>
         ` : `
@@ -2752,233 +1922,16 @@ const totalCuriosidades = descobertasExpedicao.filter(
 }
 
 
-if (paisagemAtual) {
-  const registroPaisagemAtual = registrosPaisagem.find(
-  registro => registro.ponto === paisagemAtual
-)
-  html = `
-    <div class="paisagem-tela">
-
-      <div class="paisagem-cabecalho">
-        <span>PONTO ${paisagemAtual}</span>
-        <h2>Retrato da Paisagem</h2>
-        <p>
-          Observe o ambiente ao seu redor antes de fazer o registro.
-        </p>
-      </div>
-
-      <section class="paisagem-etapa">
-        <div class="paisagem-etapa-numero">1</div>
-
-        <div>
-          <h3>👀 Observe</h3>
-          <p>
-            Tire os olhos do celular por alguns instantes.
-            Olhe ao seu redor e observe a paisagem como um todo.
-          </p>
-        </div>
-      </section>
-
-      <section class="paisagem-etapa">
-        <div class="paisagem-etapa-numero">2</div>
-
-        <div>
-          <h3>📷 Registre</h3>
-          <p>
-            Faça uma fotografia que represente a paisagem deste ponto.
-          </p>
-
-<button
-  type="button"
-  class="btn-primary"
-  id="btn-foto-paisagem"
->
-  📷 Fotografar a paisagem
-</button>
-
-<input
-  type="file"
-  id="input-foto-paisagem"
-  accept="image/*"
-  capture="environment"
-  style="display:none;"
->
-
-${fotoPaisagemTemp ? `
-  <div class="paisagem-foto-preview">
-    <img
-      src="${fotoPaisagemTemp}"
-      alt="Fotografia registrada no Ponto ${paisagemAtual}"
-    >
-    <p>✓ Paisagem registrada</p>
-  </div>
-` : ''}
-
-        </div>
-      </section>
-
-      <section class="paisagem-etapa">
-        <div class="paisagem-etapa-numero">3</div>
-
-        <div>
-          <h3>🌿 Caracterize</h3>
-          <p>
-            Depois da fotografia, registre algumas características
-            do ambiente observado.
-          </p>
-
-<div class="paisagem-escala">
-
-  <label for="escala-porte">
-    <strong>Porte da vegetação</strong>
-  </label>
-
-  <div class="paisagem-extremos">
-    <span>Baixa</span>
-    <span>Alta</span>
-  </div>
-
-    <input
-    type="range"
-    id="escala-porte"
-    min="0"
-    max="100"
-    value="${registroPaisagemAtual?.porteVegetacao ?? 50}"
-    step="1"
-  >
-
-</div>
-
-<div class="paisagem-escala">
-
-  <label for="escala-abertura">
-    <strong>Abertura da paisagem</strong>
-  </label>
-
-  <div class="paisagem-extremos">
-    <span>Aberta</span>
-    <span>Fechada</span>
-  </div>
-
-  <input
-    type="range"
-    id="escala-abertura"
-    min="0"
-    max="100"
-    value="${registroPaisagemAtual?.aberturaPaisagem ?? 50}"
-    step="1"
-  >
-
-</div>
-
-<div class="paisagem-escala">
-
-  <label for="escala-luz">
-    <strong>Luz chegando ao solo</strong>
-  </label>
-
-  <div class="paisagem-extremos">
-    <span>Muita</span>
-    <span>Pouca</span>
-  </div>
-
-
-  <input
-    type="range"
-    id="escala-luz"
-    min="0"
-    max="100"
-    value="${registroPaisagemAtual?.luzSolo ?? 50}"
-    step="1"
-  >
-
-</div>
-
-<div class="paisagem-medicao">
-  <label for="temp-paisagem">
-    <strong>🌡️ Temperatura</strong>
-  </label>
-
-  <div>
-    <input
-      type="number"
-      id="temp-paisagem"
-      inputmode="decimal"
-      step="0.1"
-      value="${registroPaisagemAtual?.temperatura ?? ''}"
-      placeholder="Ex.: 26,5"
-    >
-    <span>°C</span>
-  </div>
-</div>
-
-<button
-  type="button"
-  class="btn-primary"
-  id="btn-salvar-paisagem"
->
-  Salvar Retrato da Paisagem
-</button>
-
-        </div>
-      </section>
-
-        </div>
-      </section>
-
-      <button
-        type="button"
-        class="btn-secondary"
-        id="btn-voltar-paisagem"
-      >
-        ← Voltar ao mapa
-      </button>
-
-    </div>
-  `
-}
-
-if (modalMensagem) {
-  const etapaConcluida = estacaoAtual
-    ? estacaoAtual.missoes.every(m =>
-        respostasGerais.some(r => r.missaoId === m.id)
-      )
-    : false
-
-  html = `
-    <div class="modal-overlay">
-      <div class="modal-card">
-        <h3>
-          ${etapaConcluida
-            ? '🎉 Etapa concluída!'
-            : '✅ Atividade salva!'}
-        </h3>
-
-        <p style="margin:10px 0;">
-          ${modalMensagem}
-        </p>
-
-        <button id="btn-fechar-modal" class="btn-primary">
-          OK
-        </button>
-      </div>
-    </div>
-  `
-}
-
 // NAVEGAÇÃO GERAL DO EXPLORE ITS
 // Preparação para a futura barra inferior
 
 if (
-  (
-    telaAtual === 'mapa-its' ||
-    telaAtual === 'localidade' ||
-    telaAtual === 'explorar' ||
-    telaAtual === 'cadastro' ||
-    telaAtual === 'trilha' ||
-    telaAtual === 'meu-percurso'
-  ) &&
-  !modalMensagem
+  telaAtual === 'mapa-its' ||
+  telaAtual === 'localidade' ||
+  telaAtual === 'explorar' ||
+  telaAtual === 'cadastro' ||
+  telaAtual === 'trilha' ||
+  telaAtual === 'meu-percurso'
 ) {
   html += `
     <nav class="navegacao-inferior" aria-label="Navegação principal">
@@ -3091,7 +2044,7 @@ function iniciarGaleriaInicio() {
     const numeroFoto = String(proximoIndice).padStart(2, '0')
 
     const caminho =
-      `/explore-its/imagens-inicio/galeria/quadro${quadro.numero}_${numeroFoto}.webp`
+      `/explore-its/imagem/inicio/galeria/quadro${quadro.numero}_${numeroFoto}.webp`
 
     // Carrega a próxima fotografia antes da transição
     const imagem = new Image()
@@ -3170,49 +2123,86 @@ function iniciarGaleriaInicio() {
   }, intervalo)
 }
 
+// =====================================================
+// EXPLORE ITS — NAVEGAÇÃO COM HISTÓRICO
+// =====================================================
+
+function navegarPara(tela: TelaApp) {
+  // Atualiza a entrada atual com a tela de origem
+  history.replaceState(
+    obterEstadoNavegacao(),
+    '',
+    window.location.href
+  )
+
+  // Registra a tela de destino como uma nova entrada
+  telaAtual = tela
+  verCaderno = false
+
+  history.pushState(
+    obterEstadoNavegacao(),
+    '',
+    window.location.href
+  )
+
+  window.scrollTo(0, 0)
+  render()
+}
+
+// Registra o estado inicial somente quando necessário
+if (!history.state || !history.state.tela) {
+  history.replaceState(
+    obterEstadoNavegacao(),
+    '',
+    window.location.href
+  )
+}
+
+// Recupera a tela anterior ao usar Voltar
+window.addEventListener('popstate', (evento) => {
+  const estado = evento.state as EstadoNavegacao | null
+
+  if (!estado) return
+
+  telaAtual = estado.tela
+  verCaderno = estado.caderno
+  localidadeAtual = estado.localidade
+
+  window.scrollTo(0, 0)
+  render()
+})
 
 function bindEvents() {
-if (telaAtual === 'inicio') {
-  iniciarGaleriaInicio()
-}
+  if (telaAtual === 'inicio') {
+    iniciarGaleriaInicio()
+  }
 
   // NAVEGAÇÃO INFERIOR — INÍCIO
   document.querySelector('#nav-inicio')?.addEventListener('click', () => {
-    telaAtual = 'inicio'
-    window.scrollTo(0, 0)
-    render()
+    navegarPara('inicio')
   })
 
 // NAVEGAÇÃO INFERIOR — MAPA
 document.querySelector('#nav-mapa')?.addEventListener('click', () => {
-  telaAtual = 'mapa-its'
-  render()
+  navegarPara('mapa-its')
 })
 
 // NAVEGAÇÃO INFERIOR — EXPLORAR
 document.querySelector('#nav-explorar')?.addEventListener('click', () => {
-  telaAtual = 'explorar'
-  window.scrollTo(0, 0)
-  render()
+  navegarPara('explorar')
 })
 
-
- // NAVEGAÇÃO INFERIOR — MEU PERCURSO
+// NAVEGAÇÃO INFERIOR — MEU PERCURSO
 document.querySelector('#nav-percurso')?.addEventListener('click', () => {
-  telaAtual = 'meu-percurso'
-  window.scrollTo(0, 0)
-  render()
+  navegarPara('meu-percurso')
 })
-
 
 // EXPLORAR — ABRIR TRILHA DA SEMENTE PEREGRINA
 document.querySelector(
   '[data-localidade="trilha-semente-peregrina"]'
 )?.addEventListener('click', () => {
   localidadeAtual = 'trilha-semente-peregrina'
-  telaAtual = 'localidade'
-  window.scrollTo(0, 0)
-  render()
+  navegarPara('localidade')
 })
 
   // COMO CHEGAR
@@ -3271,11 +2261,10 @@ document.querySelector(
     })
   })
 
-  // COMEÇAR A EXPLORAR
-  document.querySelector('#btn-explorar-its')?.addEventListener('click', () => {
-    telaAtual = 'mapa-its'
-    render()
-  })
+// COMEÇAR A EXPLORAR
+document.querySelector('#btn-explorar-its')?.addEventListener('click', () => {
+  navegarPara('mapa-its')
+})
 
 document.querySelector('[data-tema="natureza"]')?.addEventListener('click', () => {
   const janela = document.createElement('div')
@@ -3288,7 +2277,7 @@ document.querySelector('[data-tema="natureza"]')?.addEventListener('click', () =
       <h2 id="inicio-modal-titulo">Natureza no ITS</h2>
 
       <img
-        src="/explore-its/imagens-inicio/represe-its 1.png"
+        src="/explore-its/imagem/inicio/represe-its 1.png"
         alt="Paisagem natural do ITS"
       >
 
@@ -3321,7 +2310,7 @@ document.querySelector('[data-tema="cultura"]')?.addEventListener('click', () =>
       <h2 id="inicio-modal-titulo">Cultura no ITS</h2>
 
       <img
-        src="/explore-its/imagens-inicio/vila_cenografica_1 1.png"
+        src="/explore-its/imagem/inicio/vila_cenografica_1 1.png"
         alt="Vila Cenográfica do ITS"
       >
 
@@ -3356,7 +2345,7 @@ document.querySelector('[data-tema="educacao"]')?.addEventListener('click', () =
       <h2 id="inicio-modal-titulo">Educação no ITS</h2>
 
       <img
-        src="/explore-its/imagens-inicio/caminho_represa 1.png"
+        src="/explore-its/imagem/inicio/caminho_represa 1.png"
         alt="Ambiente utilizado em atividades educativas no ITS"
       >
 
@@ -3391,7 +2380,7 @@ document.querySelector('[data-tema="extensao"]')?.addEventListener('click', () =
       <h2 id="inicio-modal-titulo">Extensão no ITS</h2>
 
       <img
-        src="/explore-its/imagens-inicio/vila_cenografica_1 1.png"
+        src="/explore-its/imagem/inicio/vila_cenografica_1 1.png"
         alt="Espaço do ITS utilizado em atividades de extensão"
       >
 
@@ -3434,59 +2423,45 @@ document.querySelector('[data-tema="extensao"]')?.addEventListener('click', () =
   })
 
 document.querySelector('#btn-continuar-expedicao')?.addEventListener('click', () => {
-  telaAtual = 'trilha'
-  render()
+  navegarPara('trilha')
 })
 
 // INICIAR UMA NOVA EXPEDIÇÃO
 document.querySelector('#btn-nova-expedicao')?.addEventListener('click', () => {
+  
   const confirmar = confirm(
     'Deseja iniciar uma nova expedição? Os registros da expedição anterior serão apagados.'
   )
 
   if (!confirmar) return
 
-  // Apaga somente os registros conhecidos da expedição
-  localStorage.removeItem('exp_cracha')
-  localStorage.removeItem('exp_inicio_expedicao')
-  localStorage.removeItem('exp_id_expedicao')
-  localStorage.removeItem('exp_respostas')
-  localStorage.removeItem('exp_medicoes')
+// Apaga somente os registros conhecidos da expedição
+localStorage.removeItem('exp_cracha')
+localStorage.removeItem('exp_inicio_expedicao')
+localStorage.removeItem('exp_id_expedicao')
+localStorage.removeItem('exp_respostas')
+localStorage.removeItem('exp_medicoes')
+localStorage.removeItem('exp_elementos_sorteados')
+localStorage.removeItem('exp_foto_partida')
 
-  // Reinicia os dados mantidos na memória
-  crachaSalvo = null
-  inicioExpedicao = null
-  idExpedicao = null
-  respostasGerais = []
-  medicoesTemperatura = []
+// Reinicia os dados mantidos na memória
+crachaSalvo = null
+inicioExpedicao = null
+idExpedicao = null
+elementosSorteados = []
+fotoPartida = null
 
   // Reinicia a navegação e os estados temporários conhecidos
-  estacaoAtual = null
-  missaoAtual = null
-  paisagemAtual = null
-  desafioAtual = null
-  desafiosExpedicaoAberto = false
 
-  verTabelaTemp = false
   verCaderno = false
-  verConquistas = false
-
+  
   localidadeAtual = null
   telaAtual = 'localidade'
 
   render()
 })
 
-document.querySelector('#btn-reunir-pistas')?.addEventListener('click', () => {
-  finalExpedicaoAberto = false
-  sinteseExpedicaoAberta = true
-  render()
-})
-
 document.querySelector('#nav-home')?.addEventListener('click', () => {
-    estacaoAtual = null
-    missaoAtual = null
-    verTabelaTemp = false
     verCaderno = false
     localidadeAtual = null
     telaAtual = 'inicio'
@@ -3498,6 +2473,275 @@ document.querySelector('#nav-home')?.addEventListener('click', () => {
       mascoteTempId = el.getAttribute('data-id') || mascotes[0].id
       render()
     })
+  })
+
+// REGISTRO DE PARTIDA — ABRIR CÂMERA
+
+document.querySelector('#btn-foto-partida')?.addEventListener('click', () => {
+  const inputFoto = document.querySelector<HTMLInputElement>(
+    '#input-foto-partida'
+  )
+
+  if (!inputFoto) {
+    alert('Campo da fotografia não encontrado.')
+    return
+  }
+
+  inputFoto.click()
+})
+
+// INVESTIGAÇÕES — RECEBER E SALVAR FOTOGRAFIA
+
+document.querySelector<HTMLInputElement>('#input-foto-elemento')
+  ?.addEventListener('change', async (evento) => {
+
+    const input = evento.currentTarget as HTMLInputElement
+    const arquivo = input.files?.[0]
+    const id = elementoFotografiaAtual
+
+    if (!arquivo || !id) return
+
+    const urlTemporaria = URL.createObjectURL(arquivo)
+
+    try {
+      const imagem = new Image()
+      imagem.src = urlTemporaria
+      await imagem.decode()
+
+      const limite = 800
+      const escala = Math.min(
+        1,
+        limite / Math.max(imagem.width, imagem.height)
+      )
+
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(imagem.width * escala)
+      canvas.height = Math.round(imagem.height * escala)
+
+      const contexto = canvas.getContext('2d')
+      if (!contexto) {
+        throw new Error('Não foi possível processar a fotografia.')
+      }
+
+      contexto.drawImage(
+        imagem, 0, 0, canvas.width, canvas.height
+      )
+
+const fotografiaReduzida = canvas.toDataURL('image/jpeg', 0.65)
+
+fotografiaPendente = fotografiaReduzida
+
+// Mostra a fotografia para conferência
+const painelConfirmacao = document.querySelector<HTMLElement>(
+  '#painel-confirmacao-foto'
+)
+
+const imagemConfirmacao = document.querySelector<HTMLImageElement>(
+  '#imagem-confirmacao-foto'
+)
+
+if (painelConfirmacao && imagemConfirmacao) {
+
+  const cartao = document.querySelector<HTMLElement>(
+    `[data-cartao-elemento="${id}"]`
+  )
+
+console.log('Elemento fotografado:', id)
+console.log('Cartão encontrado:', cartao)
+
+if (cartao) {
+  cartao.appendChild(painelConfirmacao)
+
+  const botaoRegistrar = cartao.querySelector<HTMLElement>(
+    '.btn-registrar-elemento'
+  )
+
+  if (botaoRegistrar) {
+    botaoRegistrar.style.display = 'none'
+  }
+}
+
+  imagemConfirmacao.src = fotografiaPendente
+  painelConfirmacao.hidden = false
+  painelConfirmacao.style.display = 'block'
+}
+
+// A fotografia será salva somente após a confirmação do estudante.
+
+// Mantém o elemento identificado até a confirmação
+input.value = ''
+
+// Não reconstruir a tela enquanto a fotografia é conferida
+
+    } catch (erro) {
+      console.error('Erro ao salvar fotografia da investigação:', erro)
+      alert('Não foi possível salvar a fotografia da investigação.')
+    } finally {
+      URL.revokeObjectURL(urlTemporaria)
+    }
+  })
+
+// INVESTIGAÇÕES — REPETIR FOTOGRAFIA
+
+document.querySelector('#btn-repetir-foto')
+  ?.addEventListener('click', () => {
+
+    const id = elementoFotografiaAtual
+
+    if (!id) return
+
+    fotografiaPendente = null
+
+    abrirCameraElemento(id)
+  })
+
+// INVESTIGAÇÕES — CONFIRMAR FOTOGRAFIA
+
+document.querySelector('#btn-confirmar-foto')
+  ?.addEventListener('click', () => {
+
+    const id = elementoFotografiaAtual
+    const foto = fotografiaPendente
+
+    if (!id || !foto) {
+      alert('Nenhuma fotografia disponível para confirmação.')
+      return
+    }
+
+    try {
+      const fotosAtualizadas = {
+        ...fotosElementos,
+        [id]: foto
+      }
+
+      localStorage.setItem(
+        'exp_fotos_elementos',
+        JSON.stringify(fotosAtualizadas)
+      )
+
+      fotosElementos = fotosAtualizadas
+
+      const elemento = elementosSorteados.find(
+        item => item.id === id
+      )
+
+      if (elemento) {
+        elemento.encontrado = true
+
+        localStorage.setItem(
+          'exp_elementos_sorteados',
+          JSON.stringify(elementosSorteados)
+        )
+      }
+
+      fotografiaPendente = null
+      elementoFotografiaAtual = null
+
+      verCaderno = false
+      render()
+
+    } catch (erro) {
+      console.error('Erro ao confirmar fotografia:', erro)
+      alert('Não foi possível salvar a fotografia.')
+    }
+  })
+
+// REGISTRO DE PARTIDA — RECEBER E SALVAR FOTOGRAFIA
+
+document.querySelector<HTMLInputElement>('#input-foto-partida')
+  ?.addEventListener('change', async (evento) => {
+
+    const input = evento.currentTarget as HTMLInputElement
+    const arquivo = input.files?.[0]
+
+    if (!arquivo) return
+
+    try {
+      // Lê a fotografia selecionada
+      const imagemOriginal = new Image()
+      const urlTemporaria = URL.createObjectURL(arquivo)
+
+      try {
+        imagemOriginal.src = urlTemporaria
+        await imagemOriginal.decode()
+
+        // Reduz a imagem mantendo suas proporções
+        const limite = 1200
+
+        const escala = Math.min(
+          1,
+          limite / Math.max(
+            imagemOriginal.width,
+            imagemOriginal.height
+          )
+        )
+
+        const largura = Math.round(imagemOriginal.width * escala)
+        const altura = Math.round(imagemOriginal.height * escala)
+
+        // Cria uma versão reduzida da fotografia
+        const canvas = document.createElement('canvas')
+
+        canvas.width = largura
+        canvas.height = altura
+
+        const contexto = canvas.getContext('2d')
+
+        if (!contexto) {
+          throw new Error('Não foi possível processar a fotografia.')
+        }
+
+        contexto.drawImage(
+          imagemOriginal,
+          0,
+          0,
+          largura,
+          altura
+        )
+
+        // Converte para JPEG com qualidade de 80%
+        const fotografiaReduzida = canvas.toDataURL(
+          'image/jpeg',
+          0.8
+        )
+
+        // Salva a fotografia da expedição
+        localStorage.setItem(
+          'exp_foto_partida',
+          fotografiaReduzida
+        )
+
+        fotoPartida = fotografiaReduzida
+
+        // Permanece no Registro de Partida
+        telaAtual = 'registro-partida'
+
+        render()
+
+      } finally {
+        URL.revokeObjectURL(urlTemporaria)
+      }
+
+    } catch (erro) {
+      console.error('Erro no Registro de Partida:', erro)
+
+      alert(
+        'Não foi possível registrar a fotografia. Tente novamente.'
+      )
+    }
+  })
+
+// REGISTRO DE PARTIDA — CONTINUAR EXPEDIÇÃO
+
+document.querySelector('#btn-continuar-partida')
+  ?.addEventListener('click', () => {
+
+    if (!fotoPartida) {
+      alert('Registre a fotografia do grupo antes de continuar.')
+      return
+    }
+
+    navegarPara('trilha')
   })
 
 document.querySelector('#form-cadastro')?.addEventListener('submit', (e) => {
@@ -3516,7 +2760,7 @@ document.querySelector('#form-cadastro')?.addEventListener('submit', (e) => {
   localStorage.setItem('exp_inicio_expedicao', inicioExpedicao)
 }
 
-  telaAtual = 'trilha'
+ telaAtual = 'registro-partida'
   render()
 })
 
@@ -3527,662 +2771,45 @@ document.querySelector('#btn-sair')?.addEventListener('click', () => {
 
   if (!confirmarSaida) return
 
-  estacaoAtual = null
-  missaoAtual = null
-  paisagemAtual = null
-  desafioAtual = null
-  desafiosExpedicaoAberto = false
-
-  verTabelaTemp = false
   verCaderno = false
-  verConquistas = false
-
+  
   localidadeAtual = null
   telaAtual = 'inicio'
 
   render()
 })
 
-
-
-document.querySelector('#btn-tabela-temp')?.addEventListener('click', () => {
-  telaAtual = 'trilha'
-  verTabelaTemp = true
-  verCaderno = false
-  verConquistas = false
-  window.scrollTo(0, 0)
-  render()
-})
-
-
 document.querySelector('#btn-caderno')?.addEventListener('click', () => {
+  // Registra o mapa da trilha como tela de origem
+  history.replaceState(
+    {
+      tela: 'trilha',
+      caderno: false,
+      localidade: localidadeAtual
+    },
+    '',
+    window.location.href
+  )
+
+  // Abre o Caderno e registra sua entrada no histórico
   telaAtual = 'trilha'
   verCaderno = true
-  verTabelaTemp = false
-  verConquistas = false
+
+  history.pushState(
+    obterEstadoNavegacao(),
+    '',
+    window.location.href
+  )
+
   window.scrollTo(0, 0)
-  render()
-})
-
-document.querySelector('#btn-desafios-percurso')?.addEventListener('click', () => {
-  desafiosExpedicaoAberto = true
-  render()
-})
-
-document.querySelector('#btn-pequenos-habitantes')?.addEventListener('click', () => {
-  desafioAtual = 'pequenos-habitantes'
-  render()
-})
-
-document.querySelector('#btn-quem-passou')?.addEventListener('click', () => {
-  desafioAtual = 'quem-passou'
-  render()
-})
-
-document.querySelector('#btn-vidas-conectadas')?.addEventListener('click', () => {
-  desafioAtual = 'vidas-conectadas'
-  render()
-})
-
-document.querySelector('#btn-curiosidade')?.addEventListener('click', () => {
-  desafioAtual = 'curiosidade'
-  render()
-})
-
-document.querySelector('#btn-voltar-lista-desafios')?.addEventListener('click', () => {
-  desafioAtual = null
-  render()
-})
-
-const btnFotoDesafio =
-  document.querySelector('#btn-registrar-pequeno-habitante')
-
-const inputFotoDesafio =
-  document.querySelector('#input-foto-desafio') as HTMLInputElement | null
-
-if (btnFotoDesafio && inputFotoDesafio) {
-
-  btnFotoDesafio.addEventListener('click', () => {
-    inputFotoDesafio.click()
-  })
-
-  inputFotoDesafio.addEventListener('change', () => {
-
-    const file = inputFotoDesafio.files?.[0]
-
-    if (file) {
-
-      const r = new FileReader()
-
-      r.onload = (e) => {
-        fotoDesafioTemp = e.target?.result as string
-        render()
-      }
-
-      r.readAsDataURL(file)
-    }
-  })
-}
-
-const btnFotoQuemPassou =
-  document.querySelector('#btn-registrar-quem-passou')
-
-const inputFotoQuemPassou =
-  document.querySelector('#input-foto-quem-passou') as HTMLInputElement | null
-
-if (btnFotoQuemPassou && inputFotoQuemPassou) {
-
-  btnFotoQuemPassou.addEventListener('click', () => {
-    inputFotoQuemPassou.click()
-  })
-
-  inputFotoQuemPassou.addEventListener('change', () => {
-
-    const file = inputFotoQuemPassou.files?.[0]
-
-    if (file) {
-
-      const r = new FileReader()
-
-      r.onload = (e) => {
-        fotoDesafioTemp = e.target?.result as string
-        render()
-      }
-
-      r.readAsDataURL(file)
-    }
-  })
-}
-
-/* FOTO — VIDAS CONECTADAS */
-
-const btnFotoVidasConectadas =
-  document.querySelector('#btn-registrar-vidas-conectadas')
-
-const inputFotoVidasConectadas =
-  document.querySelector('#input-foto-vidas-conectadas') as HTMLInputElement | null
-
-if (btnFotoVidasConectadas && inputFotoVidasConectadas) {
-
-  btnFotoVidasConectadas.addEventListener('click', () => {
-    inputFotoVidasConectadas.click()
-  })
-
-  inputFotoVidasConectadas.addEventListener('change', () => {
-
-    const file = inputFotoVidasConectadas.files?.[0]
-
-    if (file) {
-
-      const r = new FileReader()
-
-      r.onload = (e) => {
-        fotoDesafioTemp = e.target?.result as string
-        render()
-      }
-
-      r.readAsDataURL(file)
-    }
-  })
-}
-
-/* FOTO — CURIOSIDADE */
-
-const btnFotoCuriosidade =
-  document.querySelector('#btn-registrar-curiosidade')
-
-const inputFotoCuriosidade =
-  document.querySelector('#input-foto-curiosidade') as HTMLInputElement | null
-
-if (btnFotoCuriosidade && inputFotoCuriosidade) {
-
-  btnFotoCuriosidade.addEventListener('click', () => {
-    inputFotoCuriosidade.click()
-  })
-
-  inputFotoCuriosidade.addEventListener('change', () => {
-
-    const file = inputFotoCuriosidade.files?.[0]
-
-    if (file) {
-
-      const r = new FileReader()
-
-      r.onload = (e) => {
-        fotoDesafioTemp = e.target?.result as string
-        render()
-      }
-
-      r.readAsDataURL(file)
-    }
-  })
-}
-
-document.querySelector('#btn-guardar-descoberta')?.addEventListener('click', () => {
-
-  if (!fotoDesafioTemp) return
-
-  const novaDescoberta: DescobertaExpedicao = {
-    id: `desc-${Date.now()}`,
-    tipo: 'pequenos-habitantes',
-    foto: fotoDesafioTemp,
-    dataHora: obterDataHoraISO()
-  }
-
-  descobertasExpedicao.push(novaDescoberta)
-
-  localStorage.setItem(
-    'exp_descobertas',
-    JSON.stringify(descobertasExpedicao)
-  )
-
-  fotoDesafioTemp = null
-  desafioAtual = null
-
-  render()
-})
-
-document.querySelector('#btn-guardar-quem-passou')?.addEventListener('click', () => {
-
-  if (!fotoDesafioTemp) return
-
-  const novaDescoberta: DescobertaExpedicao = {
-    id: `desc-${Date.now()}`,
-    tipo: 'quem-passou',
-    foto: fotoDesafioTemp,
-    dataHora: obterDataHoraISO()
-  }
-
-  descobertasExpedicao.push(novaDescoberta)
-
-  localStorage.setItem(
-    'exp_descobertas',
-    JSON.stringify(descobertasExpedicao)
-  )
-
-  fotoDesafioTemp = null
-  desafioAtual = null
-
-  render()
-})
-
-document.querySelector('#btn-guardar-vidas-conectadas')?.addEventListener('click', () => {
-
-  if (!fotoDesafioTemp) return
-
-  const novaDescoberta: DescobertaExpedicao = {
-    id: `desc-${Date.now()}`,
-    tipo: 'vidas-conectadas',
-    foto: fotoDesafioTemp,
-    dataHora: obterDataHoraISO()
-  }
-
-  descobertasExpedicao.push(novaDescoberta)
-
-  localStorage.setItem(
-    'exp_descobertas',
-    JSON.stringify(descobertasExpedicao)
-  )
-
-  fotoDesafioTemp = null
-  desafioAtual = null
-
-  render()
-})
-
-document.querySelector('#btn-guardar-curiosidade')?.addEventListener('click', () => {
-
-  if (!fotoDesafioTemp) return
-
-  const campoPergunta =
-    document.querySelector('#pergunta-curiosidade') as HTMLTextAreaElement | null
-
-  const pergunta = campoPergunta?.value.trim() || ''
-
-  if (!pergunta) {
-    alert('Escreva uma pergunta sobre o que despertou sua curiosidade.')
-    return
-  }
-
-  const novaDescoberta: DescobertaExpedicao = {
-    id: `desc-${Date.now()}`,
-    tipo: 'curiosidade',
-    foto: fotoDesafioTemp,
-    pergunta: pergunta,
-    dataHora: obterDataHoraISO()
-  }
-
-  descobertasExpedicao.push(novaDescoberta)
-
-  localStorage.setItem(
-    'exp_descobertas',
-    JSON.stringify(descobertasExpedicao)
-  )
-
-  fotoDesafioTemp = null
-  desafioAtual = null
-
-  render()
-})
-
-document.querySelector('#btn-voltar-desafios')?.addEventListener('click', () => {
-  desafiosExpedicaoAberto = false
   render()
 })
   
-  document.querySelector('#btn-voltar-estacoes')?.addEventListener('click', () => {
-    verTabelaTemp = false
-    verCaderno = false
-    verConquistas = false
+document.querySelector('#btn-voltar-estacoes')?.addEventListener('click', () => {
+  verCaderno = false
   render()
 })
 
-document.querySelector('#btn-salvar-paisagem')?.addEventListener('click', () => {
-  if (!paisagemAtual) return
-
-  const porte = document.querySelector('#escala-porte') as HTMLInputElement | null
-  const abertura = document.querySelector('#escala-abertura') as HTMLInputElement | null
-  const luz = document.querySelector('#escala-luz') as HTMLInputElement | null
-  const temperatura = document.querySelector('#temp-paisagem') as HTMLInputElement | null
-
-  if (!porte || !abertura || !luz || !temperatura) return
-
-  if (!fotoPaisagemTemp) {
-    alert('Fotografe a paisagem antes de salvar o registro.')
-    return
-  }
-
-  const temperaturaValor =
-    temperatura.value.trim() === ''
-      ? null
-      : Number(temperatura.value.replace(',', '.'))
-
-const novoRegistro: RegistroPaisagem = {
-  ponto: paisagemAtual,
-  foto: fotoPaisagemTemp,
-  porteVegetacao: Number(porte.value),
-  aberturaPaisagem: Number(abertura.value),
-  luzSolo: Number(luz.value),
-  temperatura: temperaturaValor,
-  dataHora: obterDataHoraISO()
-}
-
-registrosPaisagem = registrosPaisagem.filter(
-  registro => registro.ponto !== paisagemAtual
-)
-
-registrosPaisagem.push(novoRegistro)
-
-localStorage.setItem(
-  'exp_paisagens',
-  JSON.stringify(registrosPaisagem)
-)
-
-alert(`Retrato da Paisagem ${paisagemAtual} salvo!`)
-
-paisagemAtual = null
-fotoPaisagemTemp = null
-render()
-})
-
-document
-  .querySelector('#btn-salvar-interpretacao-paisagem')
-  ?.addEventListener('click', () => {
-
-    const campo = document.querySelector(
-      '#texto-interpretacao-paisagem'
-    ) as HTMLTextAreaElement | null
-
-    if (!campo) return
-
-    const texto = campo.value.trim()
-
-    if (!texto) {
-      alert('Escreva sua interpretação antes de salvar.')
-      return
-    }
-
-    interpretacaoPaisagem = texto
-
-    localStorage.setItem(
-      'exp_interpretacao_paisagem',
-      interpretacaoPaisagem
-    )
-
-    alert('Interpretação salva no Caderno de Campo!')
-  })
-
-document.querySelector('#btn-voltar-paisagem')?.addEventListener('click', () => {
-  paisagemAtual = null
-  render()
-})
-
-  document.querySelectorAll('.btn-abrir-estacao').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.getAttribute('data-id')
-      estacaoAtual = estacoes.find(e => e.id === id) || null
-      render()
-    })
-  })
-
-
-document.querySelector('#btn-voltar-home')?.addEventListener('click', () => {
-  estacaoAtual = null
-  missaoAtual = null
-  render()
-})
-
-document.querySelector('#btn-voltar-mapa-estacao')?.addEventListener('click', () => {
-  estacaoAtual = null
-  missaoAtual = null
-  render()
-})
-
-  document.querySelectorAll('.btn-abrir-missao').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.getAttribute('data-id')
-      
-      console.log('MISSÃO CLICADA:', id)
-
-      fotoTemp = null
-      audioTemp = null
-      opcaoSelecionadaQuiz = null
-      missaoAtual = estacaoAtual?.missoes.find(m => m.id === id) || null
-      render()
-    })
-  })
-
-  document.querySelector('#btn-voltar-estacao')?.addEventListener('click', () => {
-    missaoAtual = null
-    render()
-  })
-
-  document.querySelectorAll('input[name="opcao-quiz"]').forEach(radio => {
-    radio.addEventListener('change', (e) => {
-      opcaoSelecionadaQuiz = (e.target as HTMLInputElement).value
-    })
-  })
-
-
-  const btnFoto = document.querySelector('#btn-foto')
-  const inputFoto = document.querySelector('#input-foto') as HTMLInputElement | null
-
-  if (btnFoto && inputFoto) {
-    btnFoto.addEventListener('click', () => inputFoto.click())
-
-    inputFoto.addEventListener('change', () => {
-      const file = inputFoto.files?.[0]
-
-      if (file) {
-        const r = new FileReader()
-        r.onload = (e) => {
-          fotoTemp = e.target?.result as string
-          render()
-        }
-        r.readAsDataURL(file)
-      }
-    })
-  }
-
-const btnFotoPaisagem = document.querySelector('#btn-foto-paisagem')
-const inputFotoPaisagem =
-  document.querySelector('#input-foto-paisagem') as HTMLInputElement | null
-
-if (btnFotoPaisagem && inputFotoPaisagem) {
-  btnFotoPaisagem.addEventListener('click', () => {
-    inputFotoPaisagem.click()
-  })
-
-  inputFotoPaisagem.addEventListener('change', () => {
-    const file = inputFotoPaisagem.files?.[0]
-
-    if (file) {
-      const r = new FileReader()
-
-      r.onload = (e) => {
-        fotoPaisagemTemp = e.target?.result as string
-        render()
-      }
-
-      r.readAsDataURL(file)
-    }
-  })
-}
-
-document.querySelector('#btn-audio')?.addEventListener('click', async () => {
-
-  // INICIAR GRAVAÇÃO
-  if (!gravandoAudio) {
-    try {
-      streamAudio = await navigator.mediaDevices.getUserMedia({
-        audio: true
-      })
-
-      audioChunks = []
-
-      mediaRecorder = new MediaRecorder(streamAudio)
-
-      mediaRecorder.addEventListener('dataavailable', (event) => {
-        if (event.data.size > 0) {
-          audioChunks.push(event.data)
-        }
-      })
-
-      mediaRecorder.addEventListener('stop', () => {
-        const audioBlob = new Blob(audioChunks, {
-          type: mediaRecorder?.mimeType || 'audio/webm'
-        })
-
-        if (audioTemp) {
-          URL.revokeObjectURL(audioTemp)
-        }
-
-        audioTemp = URL.createObjectURL(audioBlob)
-
-        streamAudio?.getTracks().forEach(track => track.stop())
-
-        streamAudio = null
-        mediaRecorder = null
-        gravandoAudio = false
-
-        render()
-      })
-
-      mediaRecorder.start()
-      gravandoAudio = true
-
-      render()
-
-    } catch (erro) {
-      console.error('Erro ao acessar o microfone:', erro)
-
-      alert(
-        'Não foi possível acessar o microfone. Verifique se o navegador tem permissão para usá-lo.'
-      )
-    }
-
-    return
-  }
-
-  // PARAR GRAVAÇÃO
-  if (mediaRecorder && mediaRecorder.state === 'recording') {
-    mediaRecorder.stop()
-  }
-})
-
-  document.querySelector('#form-missao')?.addEventListener('submit', (e) => {
-    e.preventDefault()
-
-    if (!missaoAtual || !estacaoAtual) return
-
-    let conteudo = ''
-    let midiaUrl: string | undefined = undefined
-
-    if (missaoAtual.tipo === 'quiz') {
-      if (!opcaoSelecionadaQuiz) {
-        return alert('Por favor, escolha uma das opções!')
-      }
-
-      const opt = missaoAtual.opcoesQuiz?.find(o => o.id === opcaoSelecionadaQuiz)
-      if (!opt) return
-
-      if (!opt.correta) {
-        return alert(`❌ Resposta incorreta!\n\n${opt.explicacao}\n\nTente novamente!`)
-      }
-
-      conteudo = `Resposta Correta: ${opt.texto}`
-
-    } else if (missaoAtual.tipo === 'temperatura') {
-      const tempVal = parseFloat(
-        (document.querySelector('#inp-temp') as HTMLInputElement).value
-      )
-      const horaVal = (document.querySelector('#inp-hora') as HTMLInputElement).value
-
-      if (isNaN(tempVal)) {
-        return alert('Por favor, digite um valor de temperatura válido!')
-      }
-
-      medicoesTemperatura = medicoesTemperatura.filter(
-        m => m.estacaoId !== estacaoAtual!.id
-      )
-
-      medicoesTemperatura.push({
-        estacaoId: estacaoAtual.id,
-        estacaoNome: estacaoAtual.nome,
-        valorTemp: tempVal,
-        horarioMedicao: horaVal
-      })
-
-      localStorage.setItem('exp_medicoes', JSON.stringify(medicoesTemperatura))
-
-      conteudo = `Temperatura: ${tempVal} °C às ${horaVal}`
-
-    } else if (missaoAtual.tipo === 'foto') {
-      if (!fotoTemp) {
-        return alert('Por favor, tire uma foto!')
-      }
-
-      conteudo = 'Foto registrada no local'
-      midiaUrl = fotoTemp
-
-    } else if (missaoAtual.tipo === 'texto') {
-      conteudo = (document.querySelector('#inp-texto') as HTMLTextAreaElement).value
-
-    } else if (missaoAtual.tipo === 'audio') {
-      if (!audioTemp) {
-        return alert('Por favor, grave o áudio!')
-      }
-
-      conteudo = 'Áudio gravado no local'
-    }
-
-    const novaResp: RespostaAtividade = {
-      estacaoId: estacaoAtual.id,
-      missaoId: missaoAtual.id,
-      titulo: `${estacaoAtual.nome} - ${missaoAtual.titulo}`,
-      conteudo,
-      midiaUrl,
-      dataHora: obterDataHoraISO()
-    }
-
-    respostasGerais = respostasGerais.filter(
-      r => r.missaoId !== missaoAtual!.id
-    )
-
-    respostasGerais.push(novaResp)
-    localStorage.setItem('exp_respostas', JSON.stringify(respostasGerais))
-
-    const totalMissoes = estacaoAtual.missoes.length
-    const concluidas = estacaoAtual.missoes.filter(
-      m => respostasGerais.some(r => r.missaoId === m.id)
-    ).length
-
-    if (concluidas === totalMissoes) {
-      modalMensagem = `Você concluiu as atividades de ${estacaoAtual.nome}. Seus registros foram salvos no Caderno do Investigador.`
-    } else {
-      modalMensagem = 'Atividade salva com sucesso!'
-    }
-
-    render()
-  })
-
-  document.querySelector('#btn-fechar-modal')?.addEventListener('click', () => {
-    modalMensagem = null
-
-    if (estacaoAtual) {
-      const totalMissoes = estacaoAtual.missoes.length
-      const concluidas = estacaoAtual.missoes.filter(
-        m => respostasGerais.some(r => r.missaoId === m.id)
-      ).length
-
-      if (concluidas === totalMissoes) {
-        estacaoAtual = null
-      }
-    }
-
-    missaoAtual = null
-    render()
-  })
 }
 
 render()
