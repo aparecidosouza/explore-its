@@ -1938,14 +1938,14 @@ select:focus-visible {
 
 
 .identificacao-titulo h3 {
-  margin: 0;
+  margin: 0 0 10px;
 
-  color: var(--verde-mata-escuro);
-
-  font-family: var(--fonte-titulo);
-  font-size: 1.25rem;
+  color: #2E5D3A;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.15;
 }
-
 
 .identificacao-instrucao {
   margin-bottom: 20px;

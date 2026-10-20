@@ -292,6 +292,91 @@ function calcularDistanciaMetros(
   return raioTerra * c
 }
 
+// =====================================================
+// EXPLORE ITS — POSIÇÃO GPS ENTRE REFERÊNCIAS
+// =====================================================
+
+function calcularTrechoGPS(
+  latitude: number,
+  longitude: number,
+  svg: SVGSVGElement
+) {
+  const referencias = [
+    ...svg.querySelectorAll<SVGGraphicsElement>(
+      '[id^="referencia_"]'
+    )
+  ]
+
+  const pontos = referencias
+    .map(elemento => ({
+      id: elemento.id,
+      lat: Number(elemento.getAttribute('data-lat')),
+      lon: Number(elemento.getAttribute('data-lon'))
+    }))
+    .filter(ponto =>
+      Number.isFinite(ponto.lat) &&
+      Number.isFinite(ponto.lon) &&
+      ponto.lat !== 0 &&
+      ponto.lon !== 0
+    )
+
+  if (pontos.length < 2) return null
+
+  const rad = Math.PI / 180
+  const metrosLatitude = 111320
+  const metrosLongitude =
+    111320 * Math.cos(latitude * rad)
+
+  let melhorTrecho = null as null | {
+    inicio: string
+    fim: string
+    proporcao: number
+    distancia: number
+  }
+
+  for (let i = 0; i < pontos.length - 1; i++) {
+    const a = pontos[i]
+    const b = pontos[i + 1]
+
+    const ax = (a.lon - longitude) * metrosLongitude
+    const ay = (a.lat - latitude) * metrosLatitude
+
+    const bx = (b.lon - longitude) * metrosLongitude
+    const by = (b.lat - latitude) * metrosLatitude
+
+    const dx = bx - ax
+    const dy = by - ay
+
+    const comprimentoQuadrado = dx * dx + dy * dy
+
+    if (comprimentoQuadrado === 0) continue
+
+    const proporcao = Math.max(
+      0,
+      Math.min(
+        1,
+        -(ax * dx + ay * dy) / comprimentoQuadrado
+      )
+    )
+
+    const px = ax + proporcao * dx
+    const py = ay + proporcao * dy
+
+    const distancia = Math.hypot(px, py)
+
+    if (!melhorTrecho || distancia < melhorTrecho.distancia) {
+      melhorTrecho = {
+        inicio: a.id,
+        fim: b.id,
+        proporcao,
+        distancia
+      }
+    }
+  }
+
+  return melhorTrecho
+}
+
 function obterLocalizacaoAtual(svg: SVGSVGElement) {
   if (!navigator.geolocation) {
     console.warn('GPS: geolocalização não disponível neste dispositivo.')
@@ -314,13 +399,225 @@ function obterLocalizacaoAtual(svg: SVGSVGElement) {
       console.log('Longitude:', longitude)
       console.log('Precisão:', `± ${Math.round(precisao)} m`)
 
-            const idsMarcadoresGPS = [
+      // =====================================================
+      // EXPLORE ITS — PREPARAÇÃO DO MARCADOR GPS
+      // =====================================================
+
+      const camadaGPS = svg.querySelector<SVGGElement>(
+        '#camada-gps'
+      )
+
+      const marcadorGPS = svg.querySelector<SVGCircleElement>(
+        '#marcador-gps-visitante'
+      )
+
+      if (camadaGPS && marcadorGPS) {
+        marcadorGPS.setAttribute('data-lat', String(latitude))
+        marcadorGPS.setAttribute('data-lon', String(longitude))
+        marcadorGPS.setAttribute('data-precisao', String(precisao))
+
+        console.log(
+          'GPS: coordenadas recebidas pelo marcador azul.'
+        )
+      }
+
+// =====================================================
+// EXPLORE ITS — REFERÊNCIA GPS MAIS PRÓXIMA
+// =====================================================
+
+const referencias = svg.querySelectorAll<SVGGraphicsElement>(
+  '[id^="referencia_"]'
+)
+
+let referenciaMaisProxima = ''
+let distanciaReferencia = Infinity
+
+referencias.forEach(referencia => {
+  const lat = Number(referencia.getAttribute('data-lat'))
+  const lon = Number(referencia.getAttribute('data-lon'))
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return
+
+  const distancia = calcularDistanciaMetros(
+    latitude,
+    longitude,
+    lat,
+    lon
+  )
+
+  if (distancia < distanciaReferencia) {
+    distanciaReferencia = distancia
+    referenciaMaisProxima = referencia.id
+  }
+})
+
+console.log(
+  'GPS — Referência mais próxima:',
+  referenciaMaisProxima,
+  '| Distância:',
+  Math.round(distanciaReferencia),
+  'm'
+)
+
+// =====================================================
+// EXPLORE ITS — IDENTIFICAÇÃO DO TRECHO GPS
+// =====================================================
+
+const trechoGPS = calcularTrechoGPS(
+  latitude,
+  longitude,
+  svg
+)
+
+// =====================================================
+// EXPLORE ITS — POSIÇÃO DAS REFERÊNCIAS NO CAMINHO
+// =====================================================
+
+if (trechoGPS) {
+  const referenciaInicio = svg.querySelector<SVGGraphicsElement>(
+    `#${trechoGPS.inicio}`
+  )
+
+  const referenciaFim = svg.querySelector<SVGGraphicsElement>(
+    `#${trechoGPS.fim}`
+  )
+
+  console.log(
+    'GPS — Referências do trecho encontradas:',
+    Boolean(referenciaInicio),
+    Boolean(referenciaFim)
+  )
+
+  if (referenciaInicio && referenciaFim) {
+    const textoInicio = referenciaInicio.getAttribute(
+      'data-posicao-trilha'
+    )
+
+    const textoFim = referenciaFim.getAttribute(
+      'data-posicao-trilha'
+    )
+
+    if (textoInicio !== null && textoFim !== null) {
+      const posicaoInicio = Number(textoInicio)
+      const posicaoFim = Number(textoFim)
+
+      if (
+        Number.isFinite(posicaoInicio) &&
+        Number.isFinite(posicaoFim)
+      ) {
+        const posicaoEstimada =
+          posicaoInicio +
+          trechoGPS.proporcao * (posicaoFim - posicaoInicio)
+
+        console.log(
+          'GPS — Posição estimada no caminho:',
+          posicaoEstimada.toFixed(2),
+          'unidades SVG'
+        )
+
+        // Verifica se o caminho da trilha está disponível
+const caminhoGPS = svg.querySelector<SVGPathElement>(
+  '#trilha_semente_peregrina'
+)
+
+if (caminhoGPS) {
+  const comprimento = caminhoGPS.getTotalLength()
+
+  const posicaoSegura = Math.max(
+    0,
+    Math.min(posicaoEstimada, comprimento)
+  )
+
+  const ponto = caminhoGPS.getPointAtLength(posicaoSegura)
+  const matriz = caminhoGPS.getCTM()
+
+  if (matriz) {
+    const pontoNoMapa = ponto.matrixTransform(matriz)
+
+const marcadorVisitante = svg.querySelector<SVGCircleElement>(
+  '#marcador-gps-visitante'
+)
+
+console.log(
+  'GPS — Marcador azul encontrado:',
+  Boolean(marcadorVisitante)
+)
+
+if (marcadorVisitante) {
+  marcadorVisitante.setAttribute(
+    'cx',
+    String(pontoNoMapa.x)
+  )
+
+  marcadorVisitante.setAttribute(
+    'cy',
+    String(pontoNoMapa.y)
+  )
+
+  console.log(
+    'GPS — Coordenadas aplicadas ao marcador azul:',
+    pontoNoMapa.x.toFixed(2),
+    pontoNoMapa.y.toFixed(2)
+  )
+const camadaGPS = svg.querySelector<SVGGElement>(
+  '#camada-gps'
+)
+
+const gpsConfiavel =
+  trechoGPS.distancia <= 40 &&
+  precisao <= 30
+
+if (camadaGPS) {
+  camadaGPS.setAttribute(
+    'visibility',
+    gpsConfiavel ? 'visible' : 'hidden'
+  )
+}
+
+console.log(
+  'GPS — Marcador azul visível:',
+  gpsConfiavel
+)
+}
+
+    console.log(
+      'GPS — Coordenadas do visitante no mapa:',
+      'X:', pontoNoMapa.x.toFixed(2),
+      'Y:', pontoNoMapa.y.toFixed(2)
+    )
+  }
+} else {
+  console.warn(
+    'GPS — Caminho não encontrado para posicionar visitante.'
+  )
+}
+      }
+    }
+  }
+}
+
+// =====================================================
+// EXPLORE ITS — VERIFICAÇÃO DA ÁREA DA TRILHA
+// =====================================================
+
+const distanciaLimiteGPS = 100 // metros
+
+const visitanteNaAreaDaTrilha =
+  distanciaReferencia <= distanciaLimiteGPS
+
+if (visitanteNaAreaDaTrilha) {
+  console.log(
+    'GPS — Dispositivo próximo da área da trilha.'
+  )
+} else {
+  console.log(
+    'GPS — Dispositivo fora da área da trilha.',
+    'Marcador azul permanecerá oculto.'
+  )
+}
+
+      const idsMarcadoresGPS = [
         'marcador_inicio',
-        'marcador_saci_perere',
-        'marcador_paisagemA',
-        'marcador_paisagemB',
-        'marcador_caipora',
-        'marcador_paisagemC',
         'marcador_fim'
       ]
 
@@ -366,12 +663,41 @@ if (distancia < menorDistancia) {
 const gpsDiagnostico = document.querySelector<HTMLDivElement>('#gps-diagnostico')
 
 if (gpsDiagnostico) {
+
+if (!trechoGPS || trechoGPS.distancia > 40) {
+
+    gpsDiagnostico.innerHTML = `
+      <strong>📍 Você está fora da área da trilha</strong>
+      <p>
+        O Explore ITS ainda não consegue localizar você
+        no percurso. Ao se aproximar da trilha,
+        sua posição poderá aparecer no mapa.
+      </p>
+    `
+
+  } else if (precisao > 30) {
+
+    gpsDiagnostico.innerHTML = `
+      <strong>📡 Localização com baixa precisão</strong>
+      <p>
+        Aguarde alguns instantes para que o GPS
+        obtenha uma localização mais precisa.
+      </p>
+    `
+
+} else {
+
   gpsDiagnostico.innerHTML = `
-    📍 <strong>GPS — teste de campo</strong><br>
-    Ponto mais próximo: <strong>${pontoMaisProximo}</strong><br>
-    Distância: <strong>${Math.round(menorDistancia)} m</strong><br>
-    Precisão: <strong>± ${Math.round(precisao)} m</strong>
+    <strong>📍 Você está localizado na trilha!</strong>
+    <p>
+      O ponto azul indica sua posição estimada
+      no percurso e será atualizado conforme
+      você se movimentar.
+    </p>
   `
+
+  }
+
 }
 
     },
@@ -957,6 +1283,196 @@ Object.entries(categoriasLocalizadores).forEach(([categoria, esperado]) => {
     )
   })
 
+// =====================================================
+// EXPLORE ITS — CAMADA VISUAL DO GPS
+// =====================================================
+
+const camadaGPS = document.createElementNS(
+  'http://www.w3.org/2000/svg',
+  'g'
+)
+
+camadaGPS.setAttribute('id', 'camada-gps')
+
+// Círculo azul que representará o visitante
+const marcadorGPS = document.createElementNS(
+  'http://www.w3.org/2000/svg',
+  'circle'
+)
+
+marcadorGPS.setAttribute('id', 'marcador-gps-visitante')
+marcadorGPS.setAttribute('r', '3')
+marcadorGPS.setAttribute('fill', '#1976D2')
+marcadorGPS.setAttribute('stroke', '#FFFFFF')
+marcadorGPS.setAttribute('stroke-width', '1')
+marcadorGPS.setAttribute('pointer-events', 'none')
+
+// Inicialmente oculto, até receber uma posição válida
+camadaGPS.setAttribute('visibility', 'hidden')
+
+camadaGPS.appendChild(marcadorGPS)
+svg.appendChild(camadaGPS)
+
+// =====================================================
+// EXPLORE ITS — TESTE DO TRAÇADO VETORIAL DA TRILHA
+// =====================================================
+
+const caminhoTrilha = svg.querySelector<SVGPathElement>(
+  '#trilha_semente_peregrina'
+)
+
+if (caminhoTrilha) {
+  const comprimentoTrilha = caminhoTrilha.getTotalLength()
+
+  console.log(
+    'GPS — Traçado da trilha reconhecido:',
+    comprimentoTrilha.toFixed(2),
+    'unidades SVG'
+  )
+} else {
+  console.warn('GPS: traçado da trilha não encontrado.')
+}
+
+// =====================================================
+// EXPLORE ITS — COORDENADAS DAS REFERÊNCIAS GPS
+// =====================================================
+
+const coordenadasReferenciasGPS: Record<
+  string,
+  { lat: number; lon: number }
+> = {
+  referencia_recanto_do_saci_perere: { lat: -16.735721, lon: -49.216120 },
+  referencia_canela_de_velho: { lat: -16.735691, lon: -49.217029 },
+  referencia_serrapilheira: { lat: -16.735363, lon: -49.217300 },
+  referencia_ciclo_da_mata: { lat: -16.735138, lon: -49.217738 },
+  referencia_recanto_do_jatoba: { lat: -16.734970, lon: -49.218060 },
+  referencia_genipapo: { lat: -16.734585, lon: -49.218341 },
+  referencia_cipo_de_jabuti: { lat: -16.734031, lon: -49.218315 },
+  referencia_recanto_das_pioneiras: { lat: -16.733445, lon: -49.218621 },
+  referencia_louro_branco: { lat: -16.733120, lon: -49.218301 },
+  referencia_orelha_de_onca: { lat: -16.732803, lon: -49.217735 },
+  referencia_taruma: { lat: -16.732907, lon: -49.217117 },
+  referencia_cipo_imbe: { lat: -16.732884, lon: -49.216820 },
+  referencia_recanto_do_caipora: { lat: -16.733627, lon: -49.216817 },
+  referencia_negramina: { lat: -16.733616, lon: -49.215610 },
+  referencia_aroeira: { lat: -16.734177, lon: -49.215082 },
+  referencia_buriti: { lat: -16.734893, lon: -49.215086 },
+  referencia_recanto_do_nego_dagua: { lat: -16.735514, lon: -49.215102 }
+}
+
+console.log(
+  'GPS — Coordenadas cadastradas:',
+  Object.keys(coordenadasReferenciasGPS).length
+)
+
+// =====================================================
+// EXPLORE ITS — VERIFICAÇÃO DAS REFERÊNCIAS GPS
+// =====================================================
+
+const referenciasGPS = svg.querySelectorAll(
+  '[id^="referencia_"]'
+)
+
+console.log(
+  'GPS — Quantidade de referências encontradas:',
+  referenciasGPS.length
+)
+
+referenciasGPS.forEach(referencia => {
+
+  const coordenadas = coordenadasReferenciasGPS[referencia.id]
+
+  if (!coordenadas) {
+    console.warn(
+      'GPS — Coordenadas não encontradas:',
+      referencia.id
+    )
+    return
+  }
+
+  referencia.setAttribute('data-lat', String(coordenadas.lat))
+  referencia.setAttribute('data-lon', String(coordenadas.lon))
+
+const caixa = (referencia as SVGGraphicsElement).getBBox()
+
+const centro = svg.createSVGPoint()
+centro.x = caixa.x + caixa.width / 2
+centro.y = caixa.y + caixa.height / 2
+
+const matriz = (referencia as SVGGraphicsElement).getCTM()
+
+if (matriz) {
+  const posicao = centro.matrixTransform(matriz)
+
+  console.log(
+    'GPS — Posição no desenho:',
+    referencia.id,
+    'X:', posicao.x.toFixed(2),
+    'Y:', posicao.y.toFixed(2)
+  )
+
+  if (caminhoTrilha) {
+    const matrizCaminho = caminhoTrilha.getCTM()
+
+    if (matrizCaminho) {
+      const comprimento = caminhoTrilha.getTotalLength()
+
+      let menorDistancia = Infinity
+      let distanciaAoLongo = 0
+
+      const totalAmostras = 1000
+
+      for (let i = 0; i <= totalAmostras; i++) {
+        const distanciaPercorrida =
+          (i / totalAmostras) * comprimento
+
+        const ponto = caminhoTrilha.getPointAtLength(
+          distanciaPercorrida
+        )
+
+        const pontoTransformado = ponto.matrixTransform(
+          matrizCaminho
+        )
+
+        const distancia = Math.hypot(
+          posicao.x - pontoTransformado.x,
+          posicao.y - pontoTransformado.y
+        )
+
+        if (distancia < menorDistancia) {
+          menorDistancia = distancia
+          distanciaAoLongo = distanciaPercorrida
+        }
+      }
+
+      // Guarda a posição da referência ao longo da trilha
+      referencia.setAttribute(
+        'data-posicao-trilha',
+        String(distanciaAoLongo)
+      )
+
+      console.log(
+        'GPS — Distância da referência ao caminho:',
+        referencia.id,
+        menorDistancia.toFixed(2),
+        'unidades SVG',
+        '| posição no percurso:',
+        distanciaAoLongo.toFixed(2)
+      )
+    }
+  }
+}
+
+  console.log(
+    'GPS — Referência geográfica associada:',
+    referencia.id,
+    coordenadas.lat,
+    coordenadas.lon
+  )
+
+})
+
+// Inicia o acompanhamento da localização
 obterLocalizacaoAtual(svg)
 
 
@@ -1926,10 +2442,12 @@ ${inicioExpedicao ? `
 // Preparação para a futura barra inferior
 
 if (
+  telaAtual === 'inicio' ||
   telaAtual === 'mapa-its' ||
   telaAtual === 'localidade' ||
   telaAtual === 'explorar' ||
   telaAtual === 'cadastro' ||
+  telaAtual === 'registro-partida' ||
   telaAtual === 'trilha' ||
   telaAtual === 'meu-percurso'
 ) {
@@ -1980,14 +2498,20 @@ class="nav-item"
 
 app.innerHTML = html
 
-  if (telaAtual === 'mapa-its') {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
-    carregarMapaITS()
-  } else if (telaAtual === 'trilha') {
-    carregarMapaInterativo()
-  }
+// Toda tela renderizada começa no topo da página
+window.scrollTo({
+  top: 0,
+  left: 0,
+  behavior: 'instant'
+})
 
-  bindEvents()
+if (telaAtual === 'mapa-its') {
+  carregarMapaITS()
+} else if (telaAtual === 'trilha') {
+  carregarMapaInterativo()
+}
+
+bindEvents()
 }
 
 
