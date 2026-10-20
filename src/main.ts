@@ -1,5 +1,9 @@
 import { catalogoElementos } from './catalogo-elementos'
 
+import { Html5Qrcode } from 'html5-qrcode'
+
+import { curiosidadesArvores } from './curiosidades-arvores'
+
 import './style.css'
 
 import type {
@@ -997,7 +1001,10 @@ function atualizarListaElementos() {
         item => item.id === elemento.id
       )
 
-// ÁRVORES — ABRIR PAINEL DE DUAS ATIVIDADES
+// ==========================================
+// ÁRVORES — REGISTRO E CURIOSIDADE CIENTÍFICA
+// ==========================================
+
 if (elemento.categoria === 'ARV') {
 
   elementoFotografiaAtual = elemento.id
@@ -1011,8 +1018,52 @@ if (elemento.categoria === 'ARV') {
     return
   }
 
-painel.hidden = false
-painel.style.display = 'block'
+  // Localizar a árvore pelo número da placa
+  console.log('ÁRVORE SELECIONADA:', elemento.id, elemento)
+  
+  const numeroPlaca = String(elemento.id)
+    .match(/\d+/)?.[0]
+    .padStart(2, '0')
+
+  const arvore = numeroPlaca
+    ? curiosidadesArvores[numeroPlaca]
+    : undefined
+
+    console.log('CURIOSIDADE ENCONTRADA:', numeroPlaca, arvore)
+
+  // Identificação da árvore
+  const identificacao = painel.querySelector<HTMLElement>(
+    '#registro-arvore-identificacao'
+  )
+
+  if (identificacao) {
+
+    identificacao.replaceChildren()
+
+    const nome = document.createElement('strong')
+    nome.textContent = arvore?.nome ?? 'Árvore da trilha'
+
+    const cientifico = document.createElement('p')
+    cientifico.textContent = arvore?.cientifico ?? ''
+
+    identificacao.append(nome, cientifico)
+  }
+
+  // Curiosidade científica
+  const textoCuriosidade = painel.querySelector<HTMLElement>(
+    '#texto-curiosidade-arvore'
+  )
+
+  if (textoCuriosidade) {
+    textoCuriosidade.textContent =
+      arvore?.curiosidade ??
+      'Observe as características desta árvore e registre sua descoberta.'
+  }
+
+  // Abrir painel
+  painel.hidden = false
+  painel.style.display = 'block'
+
   return
 }
 
@@ -1029,6 +1080,150 @@ abrirCameraElemento(elemento.id)
 // CONTROLES DO PAINEL DE REGISTRO DA ÁRVORE
 // ==========================================
 
+// ==========================================
+// EXPLORE ITS — LEITOR DE QR CODE DAS ÁRVORES
+// ==========================================
+
+let leitorQrArvore: Html5Qrcode | null = null
+let leituraQrEmAndamento = false
+
+async function fecharLeitorQrArvore() {
+
+  if (leitorQrArvore) {
+    try {
+      if (leitorQrArvore.isScanning) {
+        await leitorQrArvore.stop()
+      }
+
+      leitorQrArvore.clear()
+
+    } catch (erro) {
+      console.error('Erro ao encerrar leitor QR:', erro)
+    }
+
+    leitorQrArvore = null
+  }
+
+  leituraQrEmAndamento = false
+
+  const painel = document.querySelector<HTMLElement>(
+    '#painel-leitor-qr'
+  )
+
+  if (painel) {
+    painel.hidden = true
+    painel.style.display = 'none'
+  }
+}
+
+async function abrirLeitorQrArvore() {
+
+  if (leituraQrEmAndamento) return
+
+  const idArvore = elementoFotografiaAtual
+
+  if (!idArvore) {
+    alert('Nenhuma árvore selecionada.')
+    return
+  }
+
+  const painel = document.querySelector<HTMLElement>(
+    '#painel-leitor-qr'
+  )
+
+  const mensagem = document.querySelector<HTMLElement>(
+    '#mensagem-leitor-qr'
+  )
+
+  if (!painel) return
+
+  painel.hidden = false
+  painel.style.display = 'block'
+
+  if (mensagem) {
+    mensagem.textContent =
+      'Aponte a câmera para o QR Code da placa.'
+  }
+
+  leituraQrEmAndamento = true
+
+  try {
+
+leitorQrArvore = new Html5Qrcode('leitor-qr-arvore', {
+  verbose: false,
+  useBarCodeDetectorIfSupported: true
+})
+
+await leitorQrArvore.start(
+  { facingMode: 'environment' },
+  {
+    fps: 10,
+    qrbox: (largura, altura) => {
+      const tamanho = Math.floor(Math.min(largura, altura) * 0.8)
+      return { width: tamanho, height: tamanho }
+    }
+  },
+
+      (textoQr) => {
+
+        if (!leituraQrEmAndamento) return
+
+        let endereco: URL
+
+        try {
+          endereco = new URL(textoQr)
+
+          if (!['https:', 'http:'].includes(endereco.protocol)) {
+            throw new Error('Protocolo inválido')
+          }
+
+        } catch {
+          if (mensagem) {
+            mensagem.textContent =
+              'O código não contém um endereço web válido.'
+          }
+          return
+        }
+
+        leituraQrEmAndamento = false
+
+        const linksSalvos: Record<string, string> =
+          JSON.parse(
+            localStorage.getItem('exp_links_arvores') || '{}'
+          )
+
+        linksSalvos[idArvore] = endereco.href
+
+        localStorage.setItem(
+          'exp_links_arvores',
+          JSON.stringify(linksSalvos)
+        )
+
+        if (mensagem) {
+          mensagem.textContent =
+            '✓ QR Code registrado com sucesso!'
+        }
+
+        void fecharLeitorQrArvore()
+      },
+
+      (mensagemErro) => {
+        console.debug('Leitor QR:', mensagemErro)
+      }
+    )
+
+  } catch (erro) {
+
+    console.error('Erro ao iniciar câmera QR:', erro)
+
+    await fecharLeitorQrArvore()
+
+    alert(
+      'Não foi possível abrir a câmera. Verifique a permissão de acesso.'
+    )
+  }
+}
+
 document.addEventListener('click', (evento) => {
 
   const alvo = evento.target
@@ -1037,6 +1232,8 @@ document.addEventListener('click', (evento) => {
 
   // FECHAR
   if (alvo.closest('#btn-fechar-registro-arvore')) {
+
+        void fecharLeitorQrArvore()
 
     const painel = document.querySelector<HTMLElement>(
       '#painel-registro-arvore'
@@ -1047,6 +1244,35 @@ document.addEventListener('click', (evento) => {
       painel.style.display = 'none'
     }
 
+    return
+  }
+
+  // LER QR CODE DA ÁRVORE
+  if (alvo.closest('#btn-qr-arvore')) {
+    void abrirLeitorQrArvore()
+    return
+  }
+
+  // LER QR CODE POR FOTOGRAFIA
+  if (alvo.closest('#btn-foto-qr-arvore')) {
+
+    const input = document.querySelector<HTMLInputElement>(
+      '#input-foto-qr-arvore'
+    )
+
+    if (!input) {
+      alert('Não foi possível acessar a câmera.')
+      return
+    }
+
+    input.value = ''
+    input.click()
+    return
+  }
+
+  // CANCELAR LEITURA DO QR CODE
+  if (alvo.closest('#btn-cancelar-qr')) {
+    void fecharLeitorQrArvore()
     return
   }
 
@@ -1066,6 +1292,80 @@ document.addEventListener('click', (evento) => {
     return
   }
 
+})
+
+// ==========================================
+// LER QR CODE A PARTIR DE UMA FOTOGRAFIA
+// ==========================================
+
+document.addEventListener('change', async (evento) => {
+  const alvo = evento.target
+
+  if (!(alvo instanceof HTMLInputElement)) return
+  if (alvo.id !== 'input-foto-qr-arvore') return
+
+  const arquivo = alvo.files?.[0]
+  if (!arquivo) return
+
+  const idArvore = elementoFotografiaAtual
+
+  if (!idArvore) {
+    alert('Nenhuma árvore selecionada.')
+    return
+  }
+
+  const resultado = document.querySelector<HTMLElement>(
+    '#resultado-qr-arvore'
+  )
+
+  if (resultado) {
+    resultado.hidden = false
+    resultado.textContent = 'Analisando fotografia do QR Code...'
+  }
+
+  const leitor = new Html5Qrcode('leitor-qr-arvore-foto', {
+    verbose: false
+  })
+
+  try {
+    const textoQr = await leitor.scanFile(arquivo, false)
+    const endereco = new URL(textoQr)
+
+    if (!['https:', 'http:'].includes(endereco.protocol)) {
+      throw new Error('O QR Code não contém um endereço web válido.')
+    }
+
+    const linksSalvos: Record<string, string> = JSON.parse(
+      localStorage.getItem('exp_links_arvores') || '{}'
+    )
+
+    linksSalvos[idArvore] = endereco.href
+
+    localStorage.setItem(
+      'exp_links_arvores',
+      JSON.stringify(linksSalvos)
+    )
+
+    if (resultado) {
+      resultado.textContent =
+        '✓ QR Code registrado com sucesso: ' + endereco.href
+    }
+
+  } catch (erro) {
+    console.error('Erro ao analisar QR Code:', erro)
+
+    if (resultado) {
+      resultado.textContent =
+        'Não foi possível identificar o QR Code. Tente outra fotografia.'
+    }
+
+  } finally {
+    try {
+      leitor.clear()
+    } catch (erro) {
+      console.warn('Erro ao limpar leitor QR:', erro)
+    }
+  }
 })
 
 // MAPA DA TRILHA DA SEMENTE PEREGRINA
@@ -1420,30 +1720,35 @@ if (matriz) {
       let menorDistancia = Infinity
       let distanciaAoLongo = 0
 
-      const totalAmostras = 1000
+const posicoesConhecidas: Record<string, number> = {
+  referencia_recanto_do_saci_perere: 3.18,
+  referencia_canela_de_velho: 60.33,
+  referencia_serrapilheira: 104.78,
+  referencia_ciclo_da_mata: 141.30,
+  referencia_recanto_do_jatoba: 173.84,
+  referencia_genipapo: 199.24,
+  referencia_cipo_de_jabuti: 242.90,
+  referencia_recanto_das_pioneiras: 277.83,
+  referencia_louro_branco: 318.31,
+  referencia_orelha_de_onca: 355.62,
+  referencia_taruma: 397.69,
+  referencia_cipo_imbe: 424.68,
+  referencia_recanto_do_caipora: 521.52,
+  referencia_negramina: 625.51,
+  referencia_aroeira: 654.88,
+  referencia_buriti: 699.33,
+  referencia_recanto_do_nego_dagua: 736.64
+}
 
-      for (let i = 0; i <= totalAmostras; i++) {
-        const distanciaPercorrida =
-          (i / totalAmostras) * comprimento
+distanciaAoLongo = posicoesConhecidas[referencia.id] ?? 0
 
-        const ponto = caminhoTrilha.getPointAtLength(
-          distanciaPercorrida
-        )
+const ponto = caminhoTrilha.getPointAtLength(distanciaAoLongo)
+const pontoTransformado = ponto.matrixTransform(matrizCaminho)
 
-        const pontoTransformado = ponto.matrixTransform(
-          matrizCaminho
-        )
-
-        const distancia = Math.hypot(
-          posicao.x - pontoTransformado.x,
-          posicao.y - pontoTransformado.y
-        )
-
-        if (distancia < menorDistancia) {
-          menorDistancia = distancia
-          distanciaAoLongo = distanciaPercorrida
-        }
-      }
+menorDistancia = Math.hypot(
+  posicao.x - pontoTransformado.x,
+  posicao.y - pontoTransformado.y
+)
 
       // Guarda a posição da referência ao longo da trilha
       referencia.setAttribute(
@@ -2119,6 +2424,27 @@ ${inicioExpedicao ? `
       item => item.id === elemento.id
     )
 
+    // Recuperar o endereço do QR Code da árvore
+    const linksArvores: Record<string, string> = JSON.parse(
+      localStorage.getItem('exp_links_arvores') || '{}'
+    )
+
+    const linkQrArvore = linksArvores[elemento.id]
+
+    const linkQrValido = (() => {
+      if (!linkQrArvore) return ''
+
+      try {
+        const url = new URL(linkQrArvore)
+
+        return ['https:', 'http:'].includes(url.protocol)
+          ? url.href
+          : ''
+      } catch {
+        return ''
+      }
+    })()
+
     const categorias: Record<CategoriaInvestigacao, string> = {
       ARV: 'Árvore ou planta',
       ECO: 'Processo ecológico',
@@ -2136,6 +2462,54 @@ ${inicioExpedicao ? `
         <p>
           ${dados?.nome ?? 'Elemento não identificado'}
         </p>
+
+        ${elemento.categoria === 'ARV' ? (() => {
+
+          const numeroPlaca = elemento.id
+            .match(/\d+/)?.[0]
+            .padStart(2, '0')
+
+          const arvore = numeroPlaca
+            ? curiosidadesArvores[numeroPlaca]
+            : undefined
+
+          if (!arvore) return ''
+
+          return `
+            <div class="caderno-arvore-info">
+
+              <p>
+                <strong>Nome científico:</strong>
+                <em>${arvore.cientifico}</em>
+              </p>
+
+              <div class="registro-arvore-curiosidade">
+                <strong>💡 Você sabia?</strong>
+                <p>${arvore.curiosidade}</p>
+              </div>
+
+              ${linkQrValido ? `
+                <div class="caderno-arvore-link">
+                  <p><strong>🔗 QR Code registrado</strong></p>
+
+                  <a
+                    href="${linkQrValido.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    📖 Consultar informações completas da árvore
+                  </a>
+                </div>
+              ` : `
+                <p>
+                  <small>QR Code ainda não registrado.</small>
+                </p>
+              `}
+
+            </div>
+          `
+
+        })() : ''}
 
         <small>
           ${elemento.encontrado
@@ -2306,21 +2680,66 @@ ${inicioExpedicao ? `
 
 </div>
 
-          <!-- PAINEL COMPACTO DE REGISTRO DA ÁRVORE -->
+          <!-- PAINEL DE REGISTRO DA ÁRVORE -->
 <div id="painel-registro-arvore" hidden>
 
   <div class="registro-arvore-conteudo">
 
     <strong>🌳 Registro da árvore</strong>
 
-    <p>Complete as duas atividades:</p>
+    <div id="registro-arvore-identificacao"></div>
+
+    <div class="registro-arvore-curiosidade">
+      <strong>💡 Você sabia?</strong>
+      <p id="texto-curiosidade-arvore">
+        Uma curiosidade sobre esta árvore aparecerá aqui.
+      </p>
+    </div>
+
+    <p>
+      Registre sua descoberta para consultar depois
+      no Caderno do Investigador.
+    </p>
 
     <button type="button" id="btn-qr-arvore">
-      ▦ 1. Ler QR Code
+      ▦ 1. Ler e guardar QR Code
     </button>
 
+<!-- LEITURA ALTERNATIVA DO QR CODE -->
+<button type="button" id="btn-foto-qr-arvore">
+  📷 Ler QR Code por fotografia
+</button>
+
+<input
+  type="file"
+  id="input-foto-qr-arvore"
+  accept="image/*"
+  capture="environment"
+  hidden
+/>
+
+<p id="resultado-qr-arvore" hidden></p>
+
+<!-- ÁREA AUXILIAR PARA ANALISAR A FOTO DO QR CODE -->
+<div id="leitor-qr-arvore-foto" hidden></div>
+
+    <!-- LEITOR DE QR CODE DA ÁRVORE -->
+<div id="painel-leitor-qr" hidden>
+
+  <div id="leitor-qr-arvore"></div>
+
+  <p id="mensagem-leitor-qr">
+    Aponte a câmera para o QR Code da placa.
+  </p>
+
+  <button type="button" id="btn-cancelar-qr">
+    Cancelar leitura
+  </button>
+
+</div>
+
     <button type="button" id="btn-foto-arvore">
-      📷 2. Fotografar o grupo
+      📷 2. Fotografar a árvore
     </button>
 
     <button type="button" id="btn-fechar-registro-arvore">
@@ -2330,7 +2749,6 @@ ${inicioExpedicao ? `
   </div>
 
 </div>
-
         </section>
 
         <section class="orientacao-exploracao">
