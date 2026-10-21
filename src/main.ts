@@ -666,44 +666,40 @@ if (distancia < menorDistancia) {
       console.log('PONTO MAIS PRÓXIMO DO DISPOSITIVO')
       console.log('Marcador:', pontoMaisProximo)
       console.log('Distância:', `${Math.round(menorDistancia)} m`)
+
 const gpsDiagnostico = document.querySelector<HTMLDivElement>('#gps-diagnostico')
 
 if (gpsDiagnostico) {
+  const distanciaTrilha = trechoGPS?.distancia
+  const dentroDaArea = distanciaTrilha !== undefined &&
+    distanciaTrilha <= 40
+  const precisaoAdequada = precisao <= 30
+  const pontoAzulLiberado = dentroDaArea && precisaoAdequada
 
-if (!trechoGPS || trechoGPS.distancia > 40) {
-
-    gpsDiagnostico.innerHTML = `
-      <strong>📍 Você está fora da área da trilha</strong>
-      <p>
-        O Explore ITS ainda não consegue localizar você
-        no percurso. Ao se aproximar da trilha,
-        sua posição poderá aparecer no mapa.
-      </p>
-    `
-
-  } else if (precisao > 30) {
-
-    gpsDiagnostico.innerHTML = `
-      <strong>📡 Localização com baixa precisão</strong>
-      <p>
-        Aguarde alguns instantes para que o GPS
-        obtenha uma localização mais precisa.
-      </p>
-    `
-
-} else {
+  const situacao = !trechoGPS
+    ? 'Referências da trilha indisponíveis'
+    : !dentroDaArea
+      ? 'Fora do limite de 40 m'
+      : !precisaoAdequada
+        ? 'GPS com precisão insuficiente'
+        : 'Localização adequada — ponto azul liberado'
 
   gpsDiagnostico.innerHTML = `
-    <strong>📍 Você está localizado na trilha!</strong>
-    <p>
-      O ponto azul indica sua posição estimada
-      no percurso e será atualizado conforme
-      você se movimentar.
+    <strong>📍 GPS — Diagnóstico de campo</strong>
+    <p><strong>Situação:</strong> ${situacao}</p>
+    <p><strong>Latitude:</strong> ${latitude.toFixed(6)}</p>
+    <p><strong>Longitude:</strong> ${longitude.toFixed(6)}</p>
+    <p><strong>Precisão estimada:</strong> ± ${Math.round(precisao)} m</p>
+    <p><strong>Distância estimada até a trilha:</strong>
+      ${distanciaTrilha === undefined ? 'Indisponível' : `${Math.round(distanciaTrilha)} m`}
+    </p>
+    <p><strong>Trecho de referência:</strong>
+      ${trechoGPS ? `${trechoGPS.inicio} → ${trechoGPS.fim}` : 'Indisponível'}
+    </p>
+    <p><strong>Ponto azul:</strong>
+      ${pontoAzulLiberado ? 'Liberado pelos critérios de GPS' : 'Não liberado'}
     </p>
   `
-
-  }
-
 }
 
     },
