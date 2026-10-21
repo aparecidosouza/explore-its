@@ -5134,3 +5134,10 @@ body:has(.navegacao-inferior) .card-container {
   color: #FFFFFF;
   border: 1px solid #2E5D3A;
 }
+
+/* Alinhamento do aviso de GPS abaixo do mapa */
+#gps-diagnostico {
+  padding-left: 16px;
+  padding-right: 16px;
+  box-sizing: border-box;
+}

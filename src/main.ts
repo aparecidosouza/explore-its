@@ -4,6 +4,8 @@ import { Html5Qrcode } from 'html5-qrcode'
 
 import { curiosidadesArvores } from './curiosidades-arvores'
 
+import { jsPDF } from 'jspdf'
+
 import './style.css'
 
 import type {
@@ -2540,6 +2542,17 @@ ${inicioExpedicao ? `
 
 </section>
 
+<section class="caderno-exportacao">
+  <button type="button" id="btn-gerar-pdf-caderno">
+    📄 Gerar meu Caderno em PDF
+  </button>
+
+  <p>
+    O PDF será preparado sem nomes completos,
+    dados de localização ou fotografias dos estudantes.
+  </p>
+</section>
+
     </div>
   `
 
@@ -2552,7 +2565,6 @@ ${inicioExpedicao ? `
         <section class="mapa-exploracao">
 <div class="mapa-cabecalho">
   <h3>Mapa da expedição</h3>
-  <p>Siga o percurso e encontre os pontos de investigação.</p>
 </div>
 
           <div
@@ -2701,13 +2713,9 @@ ${inicioExpedicao ? `
       no Caderno do Investigador.
     </p>
 
-    <button type="button" id="btn-qr-arvore">
-      ▦ 1. Ler e guardar QR Code
-    </button>
-
 <!-- LEITURA ALTERNATIVA DO QR CODE -->
 <button type="button" id="btn-foto-qr-arvore">
-  📷 Ler QR Code por fotografia
+📷 1. Ler e guardar QR Code
 </button>
 
 <input
@@ -2746,31 +2754,9 @@ ${inicioExpedicao ? `
       Fechar
     </button>
 
-  </div>
+    </div>
 
 </div>
-        </section>
-
-        <section class="orientacao-exploracao">
-          <div class="orientacao-icone">🧭</div>
-
-          <div>
-            <strong>Sua expedição</strong>
-
-            <p>
-              Durante o percurso, você encontrará estações de investigação
-              e pontos para observar como a paisagem muda ao longo da trilha.
-            </p>
-          </div>
-        </section>
-
-
-        <section class="frase-final-exploracao">
-          <span>🌱</span>
-          <p>
-            <strong>Observe com atenção.</strong><br>
-            Cada detalhe pode ser uma descoberta.
-          </p>
         </section>
 
        </div>
@@ -3755,3 +3741,384 @@ document.querySelector('#btn-voltar-estacoes')?.addEventListener('click', () => 
 }
 
 render()
+
+
+// GERAR PDF DO CADERNO DO INVESTIGADOR
+document.addEventListener('click', (evento) => {
+  const alvo = evento.target
+
+  if (!(alvo instanceof Element)) return
+  if (!alvo.closest('#btn-gerar-pdf-caderno')) return
+
+const pdf = new jsPDF()
+const larguraPagina = pdf.internal.pageSize.getWidth()
+const margem = 20
+let y = 30
+
+// CAPA DO CADERNO
+pdf.setFillColor(46, 93, 58)
+pdf.rect(0, 0, larguraPagina, 297, 'F')
+
+// Faixa decorativa
+pdf.setFillColor(242, 183, 5)
+pdf.rect(0, 0, larguraPagina, 8, 'F')
+
+// Identificação
+pdf.setTextColor(255, 255, 255)
+pdf.setFont('helvetica', 'bold')
+pdf.setFontSize(14)
+pdf.text('EXPLORE ITS', larguraPagina / 2, 38, {
+  align: 'center'
+})
+
+// Título principal
+pdf.setFontSize(28)
+pdf.text('Caderno do', larguraPagina / 2, 95, {
+  align: 'center'
+})
+
+pdf.text('Investigador', larguraPagina / 2, 110, {
+  align: 'center'
+})
+
+// Subtítulo
+pdf.setFont('helvetica', 'normal')
+pdf.setFontSize(15)
+pdf.text('Trilha da Semente Peregrina', larguraPagina / 2, 135, {
+  align: 'center'
+})
+
+// Elemento decorativo
+pdf.setFillColor(242, 183, 5)
+pdf.circle(larguraPagina / 2, 170, 16, 'F')
+
+pdf.setFontSize(23)
+pdf.setTextColor(46, 93, 58)
+pdf.text('ITS', larguraPagina / 2, 176, {
+  align: 'center'
+})
+
+// Data
+pdf.setTextColor(255, 255, 255)
+pdf.setFontSize(11)
+
+if (inicioExpedicao) {
+  pdf.text(
+    `Expedicao: ${new Date(inicioExpedicao).toLocaleDateString('pt-BR')}`,
+    larguraPagina / 2,
+    218,
+    { align: 'center' }
+  )
+}
+
+// Rodapé da capa
+pdf.setFontSize(11)
+pdf.text(
+  'Instituto do Tropico Subumido',
+  larguraPagina / 2,
+  260,
+  { align: 'center' }
+)
+
+pdf.text(
+  'PUC Goias',
+  larguraPagina / 2,
+  268,
+  { align: 'center' }
+)
+
+// SEGUNDA PÁGINA — NOSSA EXPEDIÇÃO
+pdf.addPage()
+
+pdf.setTextColor(46, 93, 58)
+pdf.setFont('helvetica', 'bold')
+pdf.setFontSize(18)
+pdf.text('Nossa expedicao', margem, 30)
+
+pdf.setTextColor(50, 50, 50)
+pdf.setFont('helvetica', 'normal')
+pdf.setFontSize(11)
+
+const apresentacao = pdf.splitTextToSize(
+  'Nossa equipe percorreu a Trilha da Semente Peregrina, observando a natureza, investigando elementos do Cerrado e registrando suas descobertas.',
+  larguraPagina - margem * 2
+)
+
+pdf.text(apresentacao, margem, 48)
+
+y = 48 + apresentacao.length * 6 + 10
+
+if (inicioExpedicao) {
+  const data = new Date(inicioExpedicao)
+
+  pdf.text(
+    `Data: ${data.toLocaleDateString('pt-BR')}`,
+    margem,
+    y
+  )
+
+  y += 9
+
+  pdf.text(
+    `Inicio: ${data.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    })}`,
+    margem,
+    y
+  )
+
+  y += 9
+}
+
+
+// FOTOGRAFIA DA PARTIDA
+// Incluída apenas quando houver autorização adequada.
+const incluirFotoPartidaNoPdf = false
+
+if (incluirFotoPartidaNoPdf && fotoPartida) {
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(13)
+  pdf.setTextColor(46, 93, 58)
+  pdf.text('Registro da partida', margem, y)
+
+  y += 8
+
+  try {
+    const propriedades = pdf.getImageProperties(fotoPartida)
+
+    const larguraMaxima = larguraPagina - margem * 2
+    const alturaMaxima = 110
+
+    const escala = Math.min(
+      larguraMaxima / propriedades.width,
+      alturaMaxima / propriedades.height
+    )
+
+    const larguraFoto = propriedades.width * escala
+    const alturaFoto = propriedades.height * escala
+
+    pdf.addImage(
+      fotoPartida,
+      propriedades.fileType,
+      margem + (larguraMaxima - larguraFoto) / 2,
+      y,
+      larguraFoto,
+      alturaFoto
+    )
+  } catch (erro) {
+    console.error('Erro ao inserir fotografia no PDF:', erro)
+  }
+}
+
+// TERCEIRA PÁGINA — INVESTIGAÇÕES
+pdf.addPage()
+
+pdf.setTextColor(40, 40, 40)
+y = 30
+
+  const categorias: Record<CategoriaInvestigacao, string> = {
+    ARV: 'Arvore ou planta',
+    ECO: 'Processo ecologico',
+    FOR: 'Formacao natural',
+    FOL: 'Cultura e folclore'
+  }
+
+  // Registros das quatro investigações
+  elementosSorteados.forEach((elemento, indice) => {
+    const dados = catalogoElementos.find(
+      item => item.id === elemento.id
+    )
+
+// Cada investigação começa em uma página própria
+if (indice > 0) {
+  pdf.addPage()
+}
+
+y = 30
+
+// Cabeçalho da página
+pdf.setFillColor(46, 93, 58)
+pdf.rect(0, 0, larguraPagina, 12, 'F')
+
+pdf.setTextColor(255, 255, 255)
+pdf.setFont('helvetica', 'bold')
+pdf.setFontSize(9)
+pdf.text('EXPLORE ITS | CADERNO DO INVESTIGADOR', margem, 8)
+
+pdf.setTextColor(50, 50, 50)
+
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(12)
+
+    pdf.text(
+      `${indice + 1}. ${categorias[elemento.categoria]}`,
+      margem,
+      y
+    )
+
+    y += 9
+
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(11)
+
+    const nome = dados?.nome ?? 'Elemento nao identificado'
+
+    const linhas = pdf.splitTextToSize(
+      nome,
+      larguraPagina - margem * 2
+    )
+
+    pdf.text(linhas, margem, y)
+    y += linhas.length * 6 + 5
+// INFORMAÇÕES CIENTÍFICAS DAS ÁRVORES
+if (elemento.categoria === 'ARV') {
+  const numeroPlaca = elemento.id
+    .match(/\d+/)?.[0]
+    .padStart(2, '0')
+
+  const arvore = numeroPlaca
+    ? curiosidadesArvores[numeroPlaca]
+    : undefined
+
+  if (arvore) {
+    pdf.setFont('helvetica', 'italic')
+    pdf.setFontSize(10)
+
+    const nomeCientifico = pdf.splitTextToSize(
+      arvore.cientifico,
+      larguraPagina - margem * 2
+    )
+
+    pdf.text(nomeCientifico, margem, y)
+    y += nomeCientifico.length * 6 + 5
+
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(10)
+
+    const curiosidade = pdf.splitTextToSize(
+      `Voce sabia? ${arvore.curiosidade}`,
+      larguraPagina - margem * 2
+    )
+
+    pdf.text(curiosidade, margem, y)
+    y += curiosidade.length * 6 + 8
+  }
+}
+
+    pdf.text(
+      elemento.encontrado
+        ? 'Investigacao registrada'
+        : 'A investigar',
+      margem,
+      y
+    )
+
+    y += 20
+// LINK DO QR CODE DA ÁRVORE NO PDF
+if (elemento.categoria === 'ARV') {
+  try {
+    const linksArvores: Record<string, string> = JSON.parse(
+      localStorage.getItem('exp_links_arvores') || '{}'
+    )
+
+    const endereco = linksArvores[elemento.id]
+
+    if (endereco) {
+      const url = new URL(endereco)
+
+      if (url.protocol === 'https:' || url.protocol === 'http:') {
+        // Cria uma nova página se não houver espaço
+        if (y + 18 > 270) {
+          pdf.addPage()
+          y = 25
+        }
+
+        pdf.setFont('helvetica', 'normal')
+        pdf.setFontSize(11)
+        pdf.setTextColor(30, 95, 160)
+
+        const textoLink = 'Consultar informacoes completas da arvore'
+
+        pdf.textWithLink(textoLink, margem, y, {
+          url: url.href
+        })
+
+        pdf.setDrawColor(30, 95, 160)
+        pdf.line(
+          margem,
+          y + 1,
+          margem + pdf.getTextWidth(textoLink),
+          y + 1
+        )
+
+        pdf.setTextColor(50, 50, 50)
+        y += 16
+      }
+    }
+  } catch (erro) {
+    console.warn('QR Code sem endereco valido:', erro)
+  }
+}
+
+// FOTOGRAFIA DA INVESTIGAÇÃO
+const fotoInvestigacao = fotosElementos[elemento.id]
+
+if (fotoInvestigacao) {
+  try {
+    const propriedades = pdf.getImageProperties(fotoInvestigacao)
+
+    const larguraDisponivel = larguraPagina - margem * 2
+    const alturaDisponivel = 100
+
+    const escala = Math.min(
+      larguraDisponivel / propriedades.width,
+      alturaDisponivel / propriedades.height
+    )
+
+    const larguraFoto = propriedades.width * escala
+    const alturaFoto = propriedades.height * escala
+
+    // Evita que a fotografia ultrapasse o limite da página
+    if (y + alturaFoto > 270) {
+      pdf.addPage()
+      y = 25
+    }
+
+    pdf.addImage(
+      fotoInvestigacao,
+      propriedades.fileType,
+      margem + (larguraDisponivel - larguraFoto) / 2,
+      y,
+      larguraFoto,
+      alturaFoto
+    )
+
+    y += alturaFoto + 10
+
+  } catch (erro) {
+    console.error(
+      'Erro ao inserir fotografia da investigação no PDF:',
+      erro
+    )
+  }
+}
+
+  })
+
+  // Rodapé
+  const totalPaginas = pdf.getNumberOfPages()
+
+  for (let pagina = 1; pagina <= totalPaginas; pagina++) {
+    pdf.setPage(pagina)
+    pdf.setFontSize(9)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(
+      `Explore ITS | Pagina ${pagina}`,
+      margem,
+      285
+    )
+  }
+
+  pdf.save('caderno-do-investigador.pdf')
+})
