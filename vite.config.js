@@ -1,6 +1,7 @@
 
 import { defineConfig } from 'vite'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 export default defineConfig(({ command }) => ({
   base: '/explore-its/',
@@ -14,4 +15,21 @@ export default defineConfig(({ command }) => ({
         },
       }
     : undefined,
+
+  plugins: [
+    {
+      name: 'explore-its-offline-assets',
+      closeBundle() {
+        const pasta = 'dist/assets'
+        const arquivos = readdirSync(pasta)
+          .filter(nome => /\.(js|css)$/.test(nome))
+          .map(nome => `assets/${nome}`)
+
+        writeFileSync(
+          join('dist', 'offline-assets.json'),
+          JSON.stringify(arquivos, null, 2)
+        )
+      },
+    },
+  ],
 }))

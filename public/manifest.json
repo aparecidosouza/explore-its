@@ -1,22 +1,23 @@
 {
-  "short_name": "EcoTrilha",
-  "name": "EcoTrilha Escolar",
-  "description": "Trilha científica e de investigação ambiental para alunos.",
+  "short_name": "Explore ITS",
+  "name": "Explore ITS — Trilha da Semente Peregrina",
+  "description": "Uma experiência interativa de ciência, natureza e cultura no Instituto do Trópico Subúmido da PUC Goiás.",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "icon-192.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "/icon-512.png",
+      "src": "icon-512.png",
       "type": "image/png",
       "sizes": "512x512"
     }
   ],
-  "start_url": "/",
-  "background_color": "#ffffff",
-  "theme_color": "#2e7d32",
+  "start_url": "./",
+  "scope": "./",
+  "background_color": "#FAF8F2",
+  "theme_color": "#2E5D3A",
   "display": "standalone",
   "orientation": "portrait"
 }

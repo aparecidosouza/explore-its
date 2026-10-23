@@ -22,6 +22,172 @@ const mascotes: Mascote[] = [
 
 
 // =====================================================
+// EXPLORE ITS — BANCO DE DADOS LOCAL (IndexedDB)
+// =====================================================
+
+const NOME_BANCO_EXPLORE = 'explore_its_local'
+const VERSAO_BANCO_EXPLORE = 1
+
+function abrirBancoExplore(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+
+    const requisicao = indexedDB.open(
+      NOME_BANCO_EXPLORE,
+      VERSAO_BANCO_EXPLORE
+    )
+
+    requisicao.onupgradeneeded = () => {
+      const banco = requisicao.result
+
+      if (!banco.objectStoreNames.contains('registros')) {
+        banco.createObjectStore('registros')
+      }
+
+      if (!banco.objectStoreNames.contains('fotografias')) {
+        banco.createObjectStore('fotografias')
+      }
+    }
+
+    requisicao.onsuccess = () => {
+      resolve(requisicao.result)
+    }
+
+    requisicao.onerror = () => {
+      reject(
+        requisicao.error ??
+        new Error('Não foi possível abrir o banco local.')
+      )
+    }
+
+    requisicao.onblocked = () => {
+      reject(
+        new Error('A atualização do banco local está bloqueada.')
+      )
+    }
+  })
+}
+
+// =====================================================
+// EXPLORE ITS — TESTE DE INICIALIZAÇÃO DO BANCO LOCAL
+// =====================================================
+
+void abrirBancoExplore()
+  .then(banco => {
+    console.log(
+      'EXPLORE ITS — Banco local iniciado:',
+      banco.name,
+      '| Versão:',
+      banco.version
+    )
+
+    banco.close()
+  })
+  .catch(erro => {
+    console.error(
+      'EXPLORE ITS — Falha ao iniciar o banco local:',
+      erro
+    )
+  })
+
+// =====================================================
+// EXPLORE ITS — GRAVAÇÃO NO BANCO LOCAL
+// =====================================================
+
+async function salvarNoBancoExplore(
+  area: 'registros' | 'fotografias',
+  chave: string,
+  valor: unknown
+): Promise<void> {
+
+  const banco = await abrirBancoExplore()
+
+  return new Promise<void>((resolve, reject) => {
+
+    let concluido = false
+
+    const transacao = banco.transaction(area, 'readwrite')
+
+    const armazenamento = transacao.objectStore(area)
+
+    armazenamento.put(valor, chave)
+
+    transacao.oncomplete = () => {
+      concluido = true
+      banco.close()
+      resolve()
+    }
+
+    transacao.onerror = () => {
+      if (!concluido) {
+        banco.close()
+        reject(
+          transacao.error ??
+          new Error('Falha ao salvar os dados.')
+        )
+      }
+    }
+
+    transacao.onabort = () => {
+      if (!concluido) {
+        banco.close()
+        reject(
+          transacao.error ??
+          new Error('Gravação cancelada.')
+        )
+      }
+    }
+
+  })
+}
+
+// =====================================================
+// EXPLORE ITS — LEITURA DO BANCO LOCAL
+// =====================================================
+
+async function lerDoBancoExplore<T>(
+  area: 'registros' | 'fotografias',
+  chave: string
+): Promise<T | undefined> {
+
+  const banco = await abrirBancoExplore()
+
+  return new Promise<T | undefined>((resolve, reject) => {
+
+    const transacao = banco.transaction(area, 'readonly')
+    const armazenamento = transacao.objectStore(area)
+    const requisicao = armazenamento.get(chave)
+
+    let resultado: T | undefined
+
+    requisicao.onsuccess = () => {
+      resultado = requisicao.result as T | undefined
+    }
+
+    transacao.oncomplete = () => {
+      banco.close()
+      resolve(resultado)
+    }
+
+    transacao.onerror = () => {
+      banco.close()
+      reject(
+        transacao.error ??
+        new Error('Falha ao recuperar os dados.')
+      )
+    }
+
+    transacao.onabort = () => {
+      banco.close()
+      reject(
+        transacao.error ??
+        new Error('Leitura cancelada.')
+      )
+    }
+
+  })
+}
+
+// =====================================================
 // ESTADO DA EXPEDIÇÃO
 // Dados que permanecem salvos durante a investigação
 // =====================================================
@@ -38,6 +204,30 @@ let crachaSalvo: Cracha | null = JSON.parse(
 // Uma nova fotografia substituirá a anterior.
 let fotoPartida: string | null =
   localStorage.getItem('exp_foto_partida')
+
+// Recupera a fotografia do IndexedDB ao iniciar o aplicativo.
+// Mantém a fotografia antiga do localStorage como alternativa.
+void lerDoBancoExplore<string>(
+  'fotografias',
+  'exp_foto_partida'
+)
+  .then(fotografia => {
+    if (fotografia) {
+      fotoPartida = fotografia
+
+      // Atualiza a interface somente se o estudante
+      // estiver na tela do Registro de Partida.
+      if (telaAtual === 'registro-partida') {
+        render()
+      }
+    }
+  })
+  .catch(erro => {
+    console.error(
+      'EXPLORE ITS — Erro ao recuperar fotografia:',
+      erro
+    )
+  })
 
 let inicioExpedicao: string | null =
   localStorage.getItem('exp_inicio_expedicao')
@@ -64,10 +254,89 @@ let elementosSorteados: ElementoSorteado[] = JSON.parse(
   localStorage.getItem('exp_elementos_sorteados') || '[]'
 )
 
-// Fotografias das investigações
+// =====================================================
+// EXPLORE ITS — FOTOGRAFIAS DAS INVESTIGAÇÕES
+// =====================================================
+
+// Mantém as fotografias antigas como alternativa.
 let fotosElementos: Record<string, string> = JSON.parse(
   localStorage.getItem('exp_fotos_elementos') || '{}'
 )
+
+// Identifica alterações feitas durante a sessão.
+let versaoFotosElementos = 0
+
+// Recupera as fotografias armazenadas no IndexedDB.
+async function recuperarFotosElementos(): Promise<void> {
+
+  const versaoInicial = versaoFotosElementos
+
+  try {
+
+    const fotografiasSalvas =
+      await lerDoBancoExplore<Record<string, string>>(
+        'fotografias',
+        'exp_fotos_elementos'
+      )
+
+    // Não substitui fotografias alteradas durante a leitura.
+    if (versaoFotosElementos !== versaoInicial) {
+      return
+    }
+
+    // Fotografias antigas armazenadas no localStorage.
+    const fotografiasAntigas: Record<string, string> =
+      JSON.parse(
+        localStorage.getItem('exp_fotos_elementos') || '{}'
+      )
+
+    // Reúne os registros antigos e os mais recentes.
+    // Em caso de repetição, prevalece o IndexedDB.
+    const fotografiasCompletas = {
+      ...fotografiasAntigas,
+      ...(fotografiasSalvas || {})
+    }
+
+    // Identifica fotografias antigas ainda não migradas.
+    const existemFotosParaMigrar = Object.keys(
+      fotografiasAntigas
+    ).some(id => !(id in (fotografiasSalvas || {})))
+
+    // Grava o conjunto completo antes de atualizar a interface.
+    if (existemFotosParaMigrar) {
+      await salvarNoBancoExplore(
+        'fotografias',
+        'exp_fotos_elementos',
+        fotografiasCompletas
+      )
+    }
+
+    // Evita substituir fotografias registradas
+    // enquanto a migração estava em andamento.
+    if (versaoFotosElementos !== versaoInicial) {
+      return
+    }
+
+    fotosElementos = fotografiasCompletas
+
+    console.log(
+      'EXPLORE ITS — Fotografias recuperadas e migração verificada.'
+    )
+
+    // Atualiza a interface quando necessário.
+    if (verCaderno || telaAtual === 'trilha') {
+      render()
+    }
+
+  } catch (erro) {
+
+    console.error(
+      'EXPLORE ITS — Erro ao recuperar fotografias:',
+      erro
+    )
+
+  }
+}
 
 // =====================================================
 // EXPLORE ITS — SORTEIO DOS ELEMENTOS DE INVESTIGAÇÃO
@@ -206,6 +475,48 @@ type TelaApp =
 
 let telaAtual: TelaApp = 'inicio'
 let localidadeAtual: string | null = null
+
+// Recupera as fotografias das investigações
+// armazenadas no IndexedDB.
+// Guarda a promessa para aguardar a recuperação
+// antes de confirmar novas fotografias.
+const recuperacaoFotosElementos = recuperarFotosElementos()
+
+// =====================================================
+// EXPLORE ITS — RECUPERAÇÃO DA FOTOGRAFIA DE PARTIDA
+// =====================================================
+
+// A fotografia antiga permanece disponível pelo localStorage.
+// Se existir uma fotografia mais recente no IndexedDB,
+// ela terá prioridade.
+
+void lerDoBancoExplore<string>(
+  'fotografias',
+  'exp_foto_partida'
+)
+  .then(fotografia => {
+
+    if (fotografia) {
+
+      fotoPartida = fotografia
+
+      // Atualiza a tela caso o estudante
+      // esteja visualizando o Registro de Partida.
+      if (telaAtual === 'registro-partida') {
+        render()
+      }
+
+    }
+
+  })
+  .catch(erro => {
+
+    console.error(
+      'EXPLORE ITS — Erro ao recuperar fotografia:',
+      erro
+    )
+
+  })
 
 // =====================================================
 // EXPLORE ITS — HISTÓRICO DE NAVEGAÇÃO
@@ -534,11 +845,15 @@ if (caminhoGPS) {
     Math.min(posicaoEstimada, comprimento)
   )
 
-  const ponto = caminhoGPS.getPointAtLength(posicaoSegura)
-  const matriz = caminhoGPS.getCTM()
+const ponto = caminhoGPS.getPointAtLength(posicaoSegura)
 
-  if (matriz) {
-    const pontoNoMapa = ponto.matrixTransform(matriz)
+const matrizCaminho = caminhoGPS.getScreenCTM()
+const matrizMapa = svg.getScreenCTM()
+
+if (matrizCaminho && matrizMapa) {
+  const matrizRelativa = matrizMapa.inverse().multiply(matrizCaminho)
+
+  const pontoNoMapa = ponto.matrixTransform(matrizRelativa)
 
 const marcadorVisitante = svg.querySelector<SVGCircleElement>(
   '#marcador-gps-visitante'
@@ -719,6 +1034,37 @@ if (gpsDiagnostico) {
   )
 }
 
+// =====================================================
+// EXPLORE ITS — CARREGAMENTO OTIMIZADO DO MAPA GERAL
+// =====================================================
+
+let promessaMapaITS: Promise<string> | null = null
+
+function prepararMapaITS(): Promise<string> {
+
+  if (!promessaMapaITS) {
+
+    promessaMapaITS = fetch(
+      '/explore-its/mapa-explore-its-mestre.svg'
+    ).then(async resposta => {
+
+      if (!resposta.ok) {
+        throw new Error('Não foi possível carregar o mapa geral do ITS.')
+      }
+
+      return resposta.text()
+
+    }).catch(erro => {
+
+      promessaMapaITS = null
+      throw erro
+
+    })
+  }
+
+  return promessaMapaITS
+}
+
 // MAPA GERAL DO ITS
 async function carregarMapaITS() {
   console.log('CARREGAR MAPA ITS EXECUTADO')
@@ -728,17 +1074,12 @@ async function carregarMapaITS() {
   if (!container) return
 
   try {
-    const resposta = await fetch('/explore-its/mapa-explore-its-mestre.svg')
 
-    if (!resposta.ok) {
-      throw new Error('Não foi possível carregar o mapa geral do ITS.')
-    }
-
-    const svgTexto = await resposta.text()
+    const svgTexto = await prepararMapaITS()
 
     container.innerHTML = svgTexto
 
-const svg = container.querySelector('svg')
+    const svg = container.querySelector('svg')
 
 if (svg) {
   svg.classList.add('mapa-svg')
@@ -1791,6 +2132,16 @@ obterLocalizacaoAtual(svg)
 
 function render() {
 
+  // Prepara o mapa geral enquanto o estudante
+  // visualiza a tela inicial do Explore ITS.
+  if (telaAtual === 'inicio') {
+    void prepararMapaITS().catch(erro => {
+      console.warn(
+        'Pré-carregamento do mapa ITS não concluído:',
+        erro
+      )
+    })
+  }
 
 let html = ''
 
@@ -3522,28 +3873,53 @@ document.querySelector('#btn-repetir-foto')
 // INVESTIGAÇÕES — CONFIRMAR FOTOGRAFIA
 
 document.querySelector('#btn-confirmar-foto')
-  ?.addEventListener('click', () => {
+?.addEventListener('click', async (evento) => {
+
+    const botao = evento.currentTarget as HTMLButtonElement
+
+    // Impede uma segunda confirmação enquanto
+    // a fotografia anterior está sendo gravada.
+    if (botao.disabled) return
+
+    botao.disabled = true
 
     const id = elementoFotografiaAtual
     const foto = fotografiaPendente
 
     if (!id || !foto) {
+      botao.disabled = false
       alert('Nenhuma fotografia disponível para confirmação.')
       return
     }
 
     try {
+
+      // Aguarda a recuperação e a migração
+      // das fotografias antigas.
+      await recuperacaoFotosElementos
+
+      // Reúne as fotografias existentes
+      // com a nova fotografia confirmada.
       const fotosAtualizadas = {
         ...fotosElementos,
         [id]: foto
       }
 
-      localStorage.setItem(
+      // Grava as fotografias no IndexedDB.
+      // A confirmação ocorre após a conclusão da transação.
+      await salvarNoBancoExplore(
+        'fotografias',
         'exp_fotos_elementos',
-        JSON.stringify(fotosAtualizadas)
+        fotosAtualizadas
       )
 
+      // Mantém as fotografias disponíveis na interface.
       fotosElementos = fotosAtualizadas
+
+      // Registra que as fotografias foram modificadas.
+      // Impede que uma leitura anterior substitua
+      // fotografias recém-registradas.
+      versaoFotosElementos++
 
       const elemento = elementosSorteados.find(
         item => item.id === id
@@ -3566,6 +3942,9 @@ document.querySelector('#btn-confirmar-foto')
 
     } catch (erro) {
       console.error('Erro ao confirmar fotografia:', erro)
+
+      botao.disabled = false
+
       alert('Não foi possível salvar a fotografia.')
     }
   })
@@ -3629,13 +4008,15 @@ document.querySelector<HTMLInputElement>('#input-foto-partida')
           0.8
         )
 
-        // Salva a fotografia da expedição
-        localStorage.setItem(
-          'exp_foto_partida',
-          fotografiaReduzida
-        )
+       // Salva a fotografia da expedição no IndexedDB
+await salvarNoBancoExplore(
+  'fotografias',
+  'exp_foto_partida',
+  fotografiaReduzida
+)
 
-        fotoPartida = fotografiaReduzida
+// Mantém a fotografia disponível na tela atual
+fotoPartida = fotografiaReduzida
 
         // Permanece no Registro de Partida
         telaAtual = 'registro-partida'
@@ -3658,7 +4039,7 @@ document.querySelector<HTMLInputElement>('#input-foto-partida')
 // REGISTRO DE PARTIDA — CONTINUAR EXPEDIÇÃO
 
 document.querySelector('#btn-continuar-partida')
-  ?.addEventListener('click', () => {
+?.addEventListener('click', async () => {
 
     if (!fotoPartida) {
       alert('Registre a fotografia do grupo antes de continuar.')
