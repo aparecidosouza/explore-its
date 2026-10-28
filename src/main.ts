@@ -303,10 +303,8 @@ let elementosSorteados: ElementoSorteado[] = JSON.parse(
 // EXPLORE ITS — FOTOGRAFIAS DAS INVESTIGAÇÕES
 // =====================================================
 
-// Mantém as fotografias antigas como alternativa.
-let fotosElementos: Record<string, string> = JSON.parse(
-  localStorage.getItem('exp_fotos_elementos') || '{}'
-)
+// As fotografias das investigações são recuperadas do IndexedDB.
+let fotosElementos: Record<string, string> = {}
 
 // Identifica alterações feitas durante a sessão.
 let versaoFotosElementos = 0
@@ -330,27 +328,9 @@ async function recuperarFotosElementos(): Promise<void> {
     }
 
     // Fotografias antigas armazenadas no localStorage.
-    const fotografiasAntigas: Record<string, string> =
-      JSON.parse(
-        localStorage.getItem('exp_fotos_elementos') || '{}'
-      )
-
-    // Reúne os registros antigos e os mais recentes.
-    // Em caso de repetição, prevalece o IndexedDB.
-    const fotografiasCompletas = {
-      ...fotografiasAntigas,
-      ...(fotografiasSalvas || {})
-    }
-
-    // Identifica fotografias antigas ainda não migradas.
-    const existemFotosParaMigrar = Object.keys(
-      fotografiasAntigas
-    ).some(id => !(id in (fotografiasSalvas || {})))
-
-    // Grava o conjunto completo antes de atualizar a interface.
-    if (existemFotosParaMigrar) {
-
-    }
+    // Recupera exclusivamente as fotografias do IndexedDB.
+// Não reutiliza fotografias antigas do localStorage.
+const fotografiasCompletas = fotografiasSalvas || {}
 
     // Evita substituir fotografias registradas
     // enquanto a migração estava em andamento.
