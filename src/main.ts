@@ -1397,13 +1397,12 @@ lista.innerHTML = elementosSorteados.map(elemento => {
 
       </div>
 
-      <button
-        type="button"
-        class="btn-registrar-elemento elemento-area-foto"
-        data-elemento-id="${elemento.id}"
-        aria-label="Registrar ${dados?.nome ?? 'descoberta'}"
-        ${elemento.encontrado ? 'disabled' : ''}
-      >
+<button
+  type="button"
+  class="btn-registrar-elemento elemento-area-foto"
+  data-elemento-id="${elemento.id}"
+  aria-label="${elemento.encontrado ? 'Trocar fotografia de' : 'Registrar'} ${dados?.nome ?? 'descoberta'}"
+>
 
 ${fotosElementos[elemento.id] ? `
   <img
@@ -3109,17 +3108,31 @@ ${inicioExpedicao ? `
   type="button"
   class="btn-registrar-elemento"
   data-elemento-id="${elemento.id}"
-  aria-label="Registrar ${dados?.nome ?? 'descoberta'}"
-  ${elemento.encontrado ? 'disabled' : ''}
+  aria-label="${fotosElementos[elemento.id] ? 'Trocar fotografia de' : 'Fotografar'} ${dados?.nome ?? 'descoberta'}"
 >
-  <span>
-    ${elemento.encontrado
-      ? '✓'
-      : elemento.categoria === 'ARV' ? '▦' : '📷'}
-  </span>
-  <small>
-    ${elemento.encontrado ? 'Feito' : 'Registrar'}
-  </small>
+  ${fotosElementos[elemento.id] ? `
+    <img
+      src="${fotosElementos[elemento.id]}"
+      alt="Fotografia de ${dados?.nome ?? 'elemento investigado'}"
+      class="elemento-foto-miniatura"
+    >
+  ` : `
+    <svg
+      class="elemento-camera-svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M14 4H9L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-3-3z"/>
+      <circle cx="12" cy="13" r="4"/>
+    </svg>
+
+    <small>Tocar para fotografar</small>
+  `}
 </button>
 
 </article>
