@@ -4292,6 +4292,9 @@ try {
   return
 }
 
+// Limpa também as fotografias antigas do localStorage
+localStorage.removeItem('exp_fotos_elementos')
+
 // Limpa também as fotografias das missões na memória
 fotosElementos = {}
 versaoFotosElementos++
