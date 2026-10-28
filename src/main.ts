@@ -4275,8 +4275,28 @@ document.querySelector('#btn-nova-expedicao')?.addEventListener('click', async (
 
 if (!confirmar) return
 
-// Aguarda a recuperação de fotografias antigas, caso esteja em andamento
+// Aguarda a recuperação das fotografias anteriores
 await recuperacaoDescobertasLivres
+await recuperacaoFotosElementos
+
+// Apaga as fotografias das quatro missões no IndexedDB
+try {
+  await salvarNoBancoExplore(
+    'fotografias',
+    'exp_fotos_elementos',
+    {}
+  )
+} catch (erro) {
+  console.error('Erro ao limpar fotografias das missões:', erro)
+  alert('Não foi possível apagar as fotografias das missões.')
+  return
+}
+
+// Limpa também as fotografias das missões na memória
+fotosElementos = {}
+versaoFotosElementos++
+fotografiaPendente = null
+elementoFotografiaAtual = null
 
 // Exclui as cinco fotografias livres do IndexedDB
 try {
