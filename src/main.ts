@@ -187,6 +187,51 @@ async function lerDoBancoExplore<T>(
   })
 }
 
+
+// =====================================================
+// EXPLORE ITS — LIMPAR FOTOS DAS DESCOBERTAS LIVRES
+// =====================================================
+
+async function limparFotosDescobertasLivres(): Promise<void> {
+  const banco = await abrirBancoExplore()
+
+  return new Promise<void>((resolve, reject) => {
+    const transacao = banco.transaction(
+      'fotografias',
+      'readwrite'
+    )
+
+    const armazenamento = transacao.objectStore('fotografias')
+
+    // Exclui apenas as cinco fotografias livres
+    for (let indice = 1; indice <= 5; indice++) {
+      armazenamento.delete(`exp_descoberta_livre_${indice}`)
+    }
+
+    transacao.oncomplete = () => {
+      banco.close()
+      resolve()
+    }
+
+    transacao.onerror = () => {
+      banco.close()
+      reject(
+        transacao.error ??
+        new Error('Falha ao excluir as descobertas.')
+      )
+    }
+
+    transacao.onabort = () => {
+      banco.close()
+      reject(
+        transacao.error ??
+        new Error('Exclusão das descobertas cancelada.')
+      )
+    }
+  })
+}
+
+
 // =====================================================
 // ESTADO DA EXPEDIÇÃO
 // Dados que permanecem salvos durante a investigação
@@ -1242,26 +1287,26 @@ let indiceDescobertaParaSubstituir: number | null = null
 
 // DESCOBERTAS LIVRES — FOTOGRAFIAS ARMAZENADAS
 
-let fotosDescobertasLivres: (string | null)[] = [null, null]
 
-// Recupera as duas fotografias salvas no IndexedDB
+let fotosDescobertasLivres: (string | null)[] = [
+  null, null, null, null, null
+]
+
+// Recupera até cinco fotografias salvas no IndexedDB
 async function recuperarDescobertasLivres(): Promise<void> {
   try {
-    const [foto1, foto2] = await Promise.all([
-      lerDoBancoExplore<string>(
-        'fotografias',
-        'exp_descoberta_livre_1'
-      ),
-      lerDoBancoExplore<string>(
-        'fotografias',
-        'exp_descoberta_livre_2'
+    const fotografias = await Promise.all(
+      Array.from({ length: 5 }, (_, indice) =>
+        lerDoBancoExplore<string>(
+          'fotografias',
+          `exp_descoberta_livre_${indice + 1}`
+        )
       )
-    ])
+    )
 
-    fotosDescobertasLivres = [
-      foto1 ?? null,
-      foto2 ?? null
-    ]
+    fotosDescobertasLivres = fotografias.map(
+      foto => foto ?? null
+    )
 
     console.log(
       'EXPLORE ITS — Descobertas livres recuperadas:',
@@ -1275,6 +1320,7 @@ async function recuperarDescobertasLivres(): Promise<void> {
     )
   }
 }
+
 
 const recuperacaoDescobertasLivres = recuperarDescobertasLivres()
 
@@ -1320,17 +1366,20 @@ function atualizarListaElementos() {
     FOL: '/explore-its/imagem/pictogramas/cultura-folclore.svg'
   }
 
-  lista.innerHTML = elementosSorteados.map(elemento => {
 
-    const dados = catalogoElementos.find(
-      item => item.id === elemento.id
-    )
+lista.innerHTML = elementosSorteados.map(elemento => {
 
-    return `
-  <article
-    class="elemento-expedicao"
-    data-cartao-elemento="${elemento.id}"
-  >
+  const dados = catalogoElementos.find(
+    item => item.id === elemento.id
+  )
+
+  return `
+    <article
+      class="elemento-expedicao"
+      data-cartao-elemento="${elemento.id}"
+    >
+
+      <div class="elemento-cabecalho">
 
         <img
           src="${pictogramas[elemento.categoria]}"
@@ -1339,38 +1388,55 @@ function atualizarListaElementos() {
         >
 
         <div class="elemento-expedicao-texto">
-
           <small>${categorias[elemento.categoria]}</small>
 
-          <strong>${dados?.nome ?? 'Elemento não identificado'}</strong>
-
-          <span>
-            ${elemento.encontrado ? '✓ Encontrado' : 'A procurar'}
-          </span>
-
+          <strong>
+            ${dados?.nome ?? 'Elemento não identificado'}
+          </strong>
         </div>
 
-        <button
-          type="button"
-          class="btn-registrar-elemento"
-          data-elemento-id="${elemento.id}"
-          aria-label="Registrar ${dados?.nome ?? 'descoberta'}"
-          ${elemento.encontrado ? 'disabled' : ''}
-        >
-          <span>
-            ${elemento.encontrado
-              ? '✓'
-              : elemento.categoria === 'ARV' ? '▦' : '📷'}
-          </span>
+      </div>
 
-          <small>
-            ${elemento.encontrado ? 'Feito' : 'Registrar'}
-          </small>
-        </button>
+      <button
+        type="button"
+        class="btn-registrar-elemento elemento-area-foto"
+        data-elemento-id="${elemento.id}"
+        aria-label="Registrar ${dados?.nome ?? 'descoberta'}"
+        ${elemento.encontrado ? 'disabled' : ''}
+      >
 
-      </article>
-    `
-  }).join('')
+${fotosElementos[elemento.id] ? `
+  <img
+    src="${fotosElementos[elemento.id]}"
+    alt="Fotografia de ${dados?.nome ?? 'elemento investigado'}"
+    class="elemento-foto-miniatura"
+  >
+` : `
+  <svg
+    class="elemento-camera-svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M14 4H9L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-3-3z"/>
+    <circle cx="12" cy="13" r="4"/>
+  </svg>
+
+  <small>
+    Tocar para fotografar
+  </small>
+`}
+
+      </button>
+
+    </article>
+  `
+}).join('')
+
 
   // Ativa os botões criados depois do sorteio
   lista.querySelectorAll<HTMLButtonElement>(
@@ -2978,167 +3044,17 @@ ${inicioExpedicao ? `
           </div>
         </section>
 
-        <!-- EXPLORE ITS — DESCOBERTAS LIVRES -->
-        <section class="descobertas-livres">
-
-          <h3>📷 Minhas descobertas</h3>
-
-          <p>
-            Algo chamou sua atenção durante a caminhada?
-            Registre uma fotografia e continue explorando!
-          </p>
-
-          <p>
-            Você pode registrar até duas descobertas livres.
-            As observações poderão ser escritas depois,
-            no Caderno de Campo.
-          </p>
-
-          <button
-            type="button"
-            class="btn-primary"
-            id="btn-descoberta-livre"
-          >
-            📷 Registrar descoberta
-          </button>
-
-                    <input
-            type="file"
-            id="input-descoberta-livre"
-            accept="image/*"
-            capture="environment"
-            hidden
-          />
-
-<p id="contador-descobertas">
-  ${fotosDescobertasLivres.filter(Boolean).length} de 2 descobertas registradas
-</p>
-
-<!-- MINIATURAS DAS DESCOBERTAS LIVRES -->
-<div class="miniaturas-descobertas"
-     style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:16px 0;">
-
-  ${[0, 1].map((indice) => `
-<div
-  class="miniatura-descoberta"
-  data-indice="${indice}"
-  role="button"
-  tabindex="0"
-  aria-label="Abrir descoberta ${indice + 1}"
-  style="
-    padding:10px;
-    border:1px solid #d5ddcf;
-    border-radius:12px;
-    cursor:pointer;
-  "
->
-
-      <strong>Descoberta ${indice + 1}</strong>
-
-      ${fotosDescobertasLivres[indice] ? `
-        <img
-          src="${fotosDescobertasLivres[indice]}"
-          alt="Fotografia da descoberta ${indice + 1}"
-          style="width:100%; height:110px; object-fit:cover; border-radius:8px; margin-top:8px;"
-        >
-
-      ` : `
-        <p style="font-size:0.85rem; color:#666;">
-          Nenhuma fotografia
-        </p>
-      `}
-
-    </div>
-  `).join('')}
-
-</div>
-
-<!-- VISUALIZAÇÃO DA DESCOBERTA LIVRE -->
-<div
-  id="painel-visualizacao-descoberta"
-  hidden
-  style="
-    margin:16px 0;
-    padding:12px;
-    border:1px solid #d5ddcf;
-    border-radius:12px;
-  "
->
-  <h3 id="titulo-visualizacao-descoberta">
-    Minha descoberta
-  </h3>
-
-  <img
-    id="imagem-visualizacao-descoberta"
-    alt="Fotografia ampliada da descoberta"
-    style="
-      display:block;
-      width:100%;
-      max-height:420px;
-      object-fit:contain;
-      border-radius:8px;
-    "
-  >
-
-  <div class="acoes-visualizacao-descoberta"
-     style="display:flex; gap:10px; margin:12px 0;">
-
-  <button
-    type="button"
-    id="btn-substituir-visualizacao"
-  >
-    📷 Trocar foto
-  </button>
-
-  <button
-    type="button"
-    id="btn-excluir-visualizacao"
-  >
-    🗑️ Excluir
-  </button>
-
-</div>
-
-  <button
-    type="button"
-    id="btn-fechar-visualizacao-descoberta"
-  >
-    Fechar
-  </button>
-</div>
-
-          <!-- CONFIRMAÇÃO DA DESCOBERTA LIVRE -->
-<div id="painel-confirmacao-descoberta" hidden>
-
-  <h3>📷 Confira sua descoberta</h3>
-
-  <img
-    id="imagem-confirmacao-descoberta"
-    alt="Fotografia da descoberta livre"
-    style="width:100%; max-height:350px; object-fit:contain;"
-  >
-
-  <button type="button" id="btn-repetir-descoberta">
-    ↻ Tirar outra foto
-  </button>
-
-  <button type="button" id="btn-confirmar-descoberta">
-    ✓ Usar esta foto
-  </button>
-
-</div>
-
-        </section>
 
         <!-- EXPLORE ITS — ELEMENTOS SORTEADOS -->
         <section class="lista-elementos-expedicao">
 
           <h3>Sua missão de descoberta</h3>
 
-          <p>
-            Encontre estes quatro elementos durante a caminhada.
-            Procure no mapa os símbolos correspondentes.
-          </p>
+<p>
+  Durante a caminhada, encontre os quatro elementos
+  indicados no mapa e fotografe outras descobertas
+  que chamarem sua atenção.
+</p>
 
           <div class="elementos-expedicao">
 
@@ -3309,10 +3225,120 @@ ${inicioExpedicao ? `
 </div>
         </section>
 
+        <!-- EXPLORE ITS — MINHAS DESCOBERTAS -->
+        <section class="descobertas-livres">
+
+          <h3>Minhas descobertas</h3>
+
+          <input
+            type="file"
+            id="input-descoberta-livre"
+            accept="image/*"
+            capture="environment"
+            hidden
+          >
+
+<p id="contador-descobertas">
+  ${fotosDescobertasLivres.filter(Boolean).length}/${5 - fotosDescobertasLivres.filter(Boolean).length}
+</p>
+
+
+<!-- GALERIA PROGRESSIVA — FOTOS DA CAMINHADA -->
+<div class="miniaturas-descobertas galeria-caminhada">
+
+  ${fotosDescobertasLivres
+    .map((foto, indice) => ({ foto, indice }))
+    .filter(item => Boolean(item.foto))
+    .map(({ foto, indice }) => `
+      <div
+        class="miniatura-descoberta foto-pilha"
+        data-indice="${indice}"
+        role="button"
+        tabindex="0"
+        aria-label="Ampliar descoberta ${indice + 1}"
+      >
+        <img
+          src="${foto}"
+          alt="Fotografia da descoberta ${indice + 1}"
+        >
+      </div>
+    `).join('')}
+
+${fotosDescobertasLivres.filter(Boolean).length < 5 ? `
+    <button
+      type="button"
+      class="foto-pilha foto-adicionar"
+      aria-label="Registrar nova descoberta"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M14 4H9L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-3-3z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+
+      <small>Adicionar</small>
+    </button>
+  ` : ''}
+
+</div>
+
+
+          <div id="painel-visualizacao-descoberta" hidden>
+            <h3 id="titulo-visualizacao-descoberta">
+              Minha descoberta
+            </h3>
+
+            <img
+              id="imagem-visualizacao-descoberta"
+              alt="Fotografia ampliada da descoberta"
+            >
+
+            <div class="acoes-visualizacao-descoberta">
+              <button type="button" id="btn-substituir-visualizacao">
+                📷 Trocar foto
+              </button>
+
+              <button type="button" id="btn-excluir-visualizacao">
+                🗑️ Excluir
+              </button>
+            </div>
+
+            <button type="button" id="btn-fechar-visualizacao-descoberta">
+              Fechar
+            </button>
+          </div>
+
+          <div id="painel-confirmacao-descoberta" hidden>
+            <h3>📷 Confira sua descoberta</h3>
+
+            <img
+              id="imagem-confirmacao-descoberta"
+              alt="Fotografia da descoberta livre"
+            >
+
+            <button type="button" id="btn-repetir-descoberta">
+              ↻ Tirar outra foto
+            </button>
+
+            <button type="button" id="btn-confirmar-descoberta">
+              ✓ Usar esta foto
+            </button>
+          </div>
+
+        </section>
+
        </div>
     `
 
 } else if (telaAtual === 'meu-percurso') {
+
 
   const trilhaRegistrada =
   crachaSalvo !== null ||
@@ -3356,7 +3382,6 @@ ${inicioExpedicao ? `
             </button>
 
 
-
 <button
   type="button"
   class="btn-primary"
@@ -3395,8 +3420,8 @@ ${inicioExpedicao ? `
 // NAVEGAÇÃO GERAL DO EXPLORE ITS
 // Preparação para a futura barra inferior
 
+
 if (
-  telaAtual === 'inicio' ||
   telaAtual === 'mapa-its' ||
   telaAtual === 'localidade' ||
   telaAtual === 'explorar' ||
@@ -3405,6 +3430,7 @@ if (
   telaAtual === 'trilha' ||
   telaAtual === 'meu-percurso'
 ) {
+
   html += `
     <nav class="navegacao-inferior" aria-label="Navegação principal">
 
@@ -3808,17 +3834,24 @@ document.querySelectorAll<HTMLButtonElement>(
   })
 })
 
+
   // DESCOBERTAS LIVRES — ABRIR CÂMERA
-  console.log('DIAGNÓSTICO DESCOBERTAS:', telaAtual, !!document.querySelector('#btn-descoberta-livre'))
+  const abrirCameraDescoberta = () => {
+    const input = document.querySelector<HTMLInputElement>(
+      '#input-descoberta-livre'
+    )
+
+    input?.click()
+  }
+
+  // Botão original (mantido temporariamente)
   document.querySelector('#btn-descoberta-livre')
-    ?.addEventListener('click', () => {
+    ?.addEventListener('click', abrirCameraDescoberta)
 
-      const input = document.querySelector<HTMLInputElement>(
-        '#input-descoberta-livre'
-      )
+  // Nova câmera da galeria fotográfica
+  document.querySelector('.foto-adicionar')
+    ?.addEventListener('click', abrirCameraDescoberta)
 
-      input?.click()
-    })
 
 // DESCOBERTAS LIVRES — SALVAR FOTOGRAFIA
 document.querySelector<HTMLInputElement>('#input-descoberta-livre')
@@ -3918,7 +3951,7 @@ const indiceLivre =
 
 if (indiceLivre === -1) {
   alert(
-    'As duas posições estão ocupadas. Escolha qual fotografia deseja substituir.'
+    'Você já registrou cinco descobertas. Toque em uma fotografia para substituí-la ou excluí-la.'
   )
   return
 }
@@ -3944,22 +3977,11 @@ const quantidade = fotosDescobertasLivres.filter(Boolean).length
 const contador = document.querySelector('#contador-descobertas')
 
 if (contador) {
-  contador.textContent =
-    `${quantidade} de 2 descobertas registradas`
+  contador.textContent = `${quantidade}/${5 - quantidade}`
 }
 
-// Atualiza a miniatura da posição escolhida
-const miniatura = document.querySelectorAll<HTMLElement>(
-  '.miniatura-descoberta'
-)[indiceLivre]
-
-if (miniatura) {
-  const imagem = miniatura.querySelector<HTMLImageElement>('img')
-
-  if (imagem) {
-    imagem.src = fotografia
-  }
-}
+// Reconstrói a galeria com a fotografia recém-confirmada
+render()
 
       const painel = document.querySelector<HTMLElement>(
         '#painel-confirmacao-descoberta'
@@ -4230,15 +4252,34 @@ document.querySelector('#btn-continuar-expedicao')?.addEventListener('click', ()
 })
 
 // INICIAR UMA NOVA EXPEDIÇÃO
-document.querySelector('#btn-nova-expedicao')?.addEventListener('click', () => {
+document.querySelector('#btn-nova-expedicao')?.addEventListener('click', async () => {
   
   const confirmar = confirm(
     'Deseja iniciar uma nova expedição? Os registros da expedição anterior serão apagados.'
   )
 
-  if (!confirmar) return
+
+if (!confirmar) return
+
+// Aguarda a recuperação de fotografias antigas, caso esteja em andamento
+await recuperacaoDescobertasLivres
+
+// Exclui as cinco fotografias livres do IndexedDB
+try {
+  await limparFotosDescobertasLivres()
+} catch (erro) {
+  console.error('Erro ao limpar as descobertas:', erro)
+  alert('Não foi possível limpar as fotografias. Tente novamente.')
+  return
+}
+
+// Limpa também as fotografias mantidas na memória
+fotosDescobertasLivres = Array(5).fill(null)
+fotografiaDescobertaPendente = null
+indiceDescobertaParaSubstituir = null
 
 // Apaga somente os registros conhecidos da expedição
+
 localStorage.removeItem('exp_cracha')
 localStorage.removeItem('exp_inicio_expedicao')
 localStorage.removeItem('exp_id_expedicao')
