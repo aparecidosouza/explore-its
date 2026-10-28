@@ -3687,9 +3687,10 @@ document.querySelectorAll<HTMLElement>(
 ).forEach(cartao => {
 
   const abrirFotografia = () => {
-    const indice = Number(cartao.dataset.indice)
+const indice = Number(cartao.dataset.indice)
 
-    if (indice !== 0 && indice !== 1) return
+// Permite visualizar qualquer uma das cinco descobertas
+if (!Number.isInteger(indice) || indice < 0 || indice >= 5) return
 
     const fotografia = fotosDescobertasLivres[indice]
 
@@ -4394,7 +4395,8 @@ console.log('Elemento fotografado:', id)
 console.log('Cartão encontrado:', cartao)
 
 if (cartao) {
-  cartao.appendChild(painelConfirmacao)
+document.querySelector('.lista-elementos-expedicao')
+  ?.appendChild(painelConfirmacao)
 
   const botaoRegistrar = cartao.querySelector<HTMLElement>(
     '.btn-registrar-elemento'

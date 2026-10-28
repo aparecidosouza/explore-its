@@ -5655,3 +5655,55 @@ height: 96px;
   color: #705B40;
   text-align: center;
 }
+
+/* VISUALIZAÇÃO AMPLIADA — MINHAS DESCOBERTAS */
+
+#painel-visualizacao-descoberta:not([hidden]) {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+
+  padding: 24px;
+  box-sizing: border-box;
+
+  background: rgba(0, 0, 0, 0.88);
+  color: white;
+
+  overflow-y: auto;
+}
+
+#painel-visualizacao-descoberta[hidden] {
+  display: none !important;
+}
+
+#imagem-visualizacao-descoberta {
+  display: block;
+  max-width: 100%;
+  max-height: 65vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+.acoes-visualizacao-descoberta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* EXPLORE ITS — GARANTIR OCULTAÇÃO DOS PAINÉIS */
+
+#painel-confirmacao-foto[hidden],
+#painel-confirmacao-descoberta[hidden],
+#painel-registro-arvore[hidden],
+#painel-visualizacao-descoberta[hidden] {
+  display: none !important;
+}
