@@ -1319,13 +1319,24 @@ void recuperacaoDescobertasLivres.then(() => {
 
 function abrirCameraElemento(id: string) {
 
-  elementoFotografiaAtual = id
-
   const input = document.querySelector<HTMLInputElement>(
     '#input-foto-elemento'
   )
 
-  input?.click()
+  if (!input) {
+    alert('Não foi possível acessar a câmera.')
+    return
+  }
+
+  // Identifica qual cartão receberá a fotografia.
+  elementoFotografiaAtual = id
+
+  // Limpa a seleção anterior para permitir
+  // substituir uma foto, inclusive pelo mesmo arquivo.
+  input.value = ''
+
+  // Abre a câmera ou o seletor de fotografias.
+  input.click()
 }
 
 // =====================================================
@@ -1511,6 +1522,15 @@ if (textoDesafio) {
 }
 
 // DEMAIS ELEMENTOS — REGISTRO FOTOGRÁFICO
+
+if (fotosElementos[elemento.id]) {
+  const desejaSubstituir = window.confirm(
+    'Esta descoberta já possui uma fotografia.\n\nDeseja substituir esta foto?'
+  )
+
+  if (!desejaSubstituir) return
+}
+
 abrirCameraElemento(elemento.id)
 
     })
@@ -4520,6 +4540,53 @@ document.querySelector('#btn-foto-partida')?.addEventListener('click', () => {
   inputFoto.click()
 })
 
+// INVESTIGAÇÕES — SALVAR FOTOGRAFIA AUTOMATICAMENTE
+
+async function salvarFotografiaElemento(
+  id: string,
+  foto: string
+): Promise<void> {
+
+  // Aguarda a recuperação das fotografias anteriores.
+  await recuperacaoFotosElementos
+
+  // Preserva as fotos existentes e acrescenta a nova.
+  const fotosAtualizadas = {
+    ...fotosElementos,
+    [id]: foto
+  }
+
+  // Salva no IndexedDB.
+  await salvarNoBancoExplore(
+    'fotografias',
+    'exp_fotos_elementos',
+    fotosAtualizadas
+  )
+
+  fotosElementos = fotosAtualizadas
+  versaoFotosElementos++
+
+  // Marca a investigação como realizada.
+  const elemento = elementosSorteados.find(
+    item => item.id === id
+  )
+
+  if (elemento) {
+    elemento.encontrado = true
+
+    localStorage.setItem(
+      'exp_elementos_sorteados',
+      JSON.stringify(elementosSorteados)
+    )
+  }
+
+  fotografiaPendente = null
+  elementoFotografiaAtual = null
+
+  verCaderno = false
+  render()
+}
+
 // INVESTIGAÇÕES — RECEBER E SALVAR FOTOGRAFIA
 
 document.querySelector<HTMLInputElement>('#input-foto-elemento')
@@ -4529,16 +4596,23 @@ document.querySelector<HTMLInputElement>('#input-foto-elemento')
     const arquivo = input.files?.[0]
     const id = elementoFotografiaAtual
 
-    if (!arquivo || !id) return
+    // Se o estudante cancelar a câmera, não altera nada.
+    if (!arquivo || !id) {
+      input.value = ''
+      return
+    }
 
     const urlTemporaria = URL.createObjectURL(arquivo)
 
     try {
+      // Carrega a fotografia capturada.
       const imagem = new Image()
       imagem.src = urlTemporaria
       await imagem.decode()
 
+      // Reduz a fotografia para até 800 pixels.
       const limite = 800
+
       const escala = Math.min(
         1,
         limite / Math.max(imagem.width, imagem.height)
@@ -4549,64 +4623,46 @@ document.querySelector<HTMLInputElement>('#input-foto-elemento')
       canvas.height = Math.round(imagem.height * escala)
 
       const contexto = canvas.getContext('2d')
+
       if (!contexto) {
         throw new Error('Não foi possível processar a fotografia.')
       }
 
+      // Desenha a fotografia reduzida.
       contexto.drawImage(
-        imagem, 0, 0, canvas.width, canvas.height
+        imagem,
+        0,
+        0,
+        canvas.width,
+        canvas.height
       )
 
-const fotografiaReduzida = canvas.toDataURL('image/jpeg', 0.65)
+      // Converte para JPEG com qualidade de 65%.
+      const fotografiaReduzida = canvas.toDataURL(
+        'image/jpeg',
+        0.65
+      )
 
-fotografiaPendente = fotografiaReduzida
+      // Libera o campo para futuras fotografias.
+      input.value = ''
 
-// Mostra a fotografia para conferência
-const painelConfirmacao = document.querySelector<HTMLElement>(
-  '#painel-confirmacao-foto'
-)
-
-const imagemConfirmacao = document.querySelector<HTMLImageElement>(
-  '#imagem-confirmacao-foto'
-)
-
-if (painelConfirmacao && imagemConfirmacao) {
-
-  const cartao = document.querySelector<HTMLElement>(
-    `[data-cartao-elemento="${id}"]`
-  )
-
-console.log('Elemento fotografado:', id)
-console.log('Cartão encontrado:', cartao)
-
-if (cartao) {
-document.querySelector('.lista-elementos-expedicao')
-  ?.appendChild(painelConfirmacao)
-
-  const botaoRegistrar = cartao.querySelector<HTMLElement>(
-    '.btn-registrar-elemento'
-  )
-
-  if (botaoRegistrar) {
-    botaoRegistrar.style.display = 'none'
-  }
-}
-
-  imagemConfirmacao.src = fotografiaPendente
-  painelConfirmacao.hidden = false
-  painelConfirmacao.style.display = 'block'
-}
-
-// A fotografia será salva somente após a confirmação do estudante.
-
-// Mantém o elemento identificado até a confirmação
-input.value = ''
-
-// Não reconstruir a tela enquanto a fotografia é conferida
+      // Salva automaticamente no IndexedDB.
+      // A fotografia aparece no cartão após o salvamento.
+      await salvarFotografiaElemento(
+        id,
+        fotografiaReduzida
+      )
 
     } catch (erro) {
-      console.error('Erro ao salvar fotografia da investigação:', erro)
-      alert('Não foi possível salvar a fotografia da investigação.')
+      console.error(
+        'Erro ao salvar fotografia da investigação:',
+        erro
+      )
+
+      alert(
+        'Não foi possível salvar a fotografia da investigação.'
+      )
+
     } finally {
       URL.revokeObjectURL(urlTemporaria)
     }
