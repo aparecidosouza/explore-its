@@ -2,7 +2,7 @@ import { catalogoElementos } from './catalogo-elementos'
 
 import { Html5Qrcode } from 'html5-qrcode'
 
-import { curiosidadesArvores } from './curiosidades-arvores'
+import { dadosCaderno } from './dados-caderno'
 
 import { jsPDF } from 'jspdf'
 
@@ -345,9 +345,14 @@ const fotografiasCompletas = fotografiasSalvas || {}
     )
 
     // Atualiza a interface quando necessário.
-    if (verCaderno || telaAtual === 'trilha') {
-      render()
-    }
+if (
+  verCaderno ||
+  telaAtual === 'trilha' ||
+  telaAtual === 'meu-percurso' ||
+  telaAtual === 'galeria'
+) {
+  render()
+}
 
   } catch (erro) {
 
@@ -471,7 +476,7 @@ let descobertasExpedicao: DescobertaExpedicao[] = JSON.parse(
 // Não representa dados científicos permanentes
 // =====================================================
 
-let mascoteTempId = mascotes[0].id
+let mascoteTempId: string | null = null
 
 let verCaderno = false
 
@@ -493,6 +498,7 @@ type TelaApp =
   | 'registro-partida'
   | 'trilha'
   | 'meu-percurso'
+  | 'galeria'
 
 let telaAtual: TelaApp = 'inicio'
 let localidadeAtual: string | null = null
@@ -1456,15 +1462,9 @@ if (elemento.categoria === 'ARV') {
   // Localizar a árvore pelo número da placa
   console.log('ÁRVORE SELECIONADA:', elemento.id, elemento)
   
-  const numeroPlaca = String(elemento.id)
-    .match(/\d+/)?.[0]
-    .padStart(2, '0')
+const arvore = dadosCaderno[elemento.id]
 
-  const arvore = numeroPlaca
-    ? curiosidadesArvores[numeroPlaca]
-    : undefined
-
-    console.log('CURIOSIDADE ENCONTRADA:', numeroPlaca, arvore)
+console.log('CONTEÚDO DO CADERNO:', elemento.id, arvore)
 
   // Identificação da árvore
   const identificacao = painel.querySelector<HTMLElement>(
@@ -1494,6 +1494,14 @@ if (elemento.categoria === 'ARV') {
       arvore?.curiosidade ??
       'Observe as características desta árvore e registre sua descoberta.'
   }
+
+  const textoDesafio = painel.querySelector<HTMLElement>(
+  '#texto-desafio-arvore'
+)
+
+if (textoDesafio) {
+  textoDesafio.textContent = arvore?.desafio ?? ''
+}
 
   // Abrir painel
   painel.hidden = false
@@ -2328,7 +2336,7 @@ if (telaAtual === 'inicio') {
 </div>
 
         <button id="btn-explorar-its" class="inicio-figma-botao">
-          COMEÇAR A EXPLORAR <span class="inicio-seta">→</span>
+          COMEÇAR A EXPLORAR</span>
         </button>
 
         <div class="inicio-figma-rodape">
@@ -2609,7 +2617,7 @@ if (telaAtual === 'inicio') {
               id="btn-continuar-expedicao"
               class="btn-primary localidade-iniciar"
             >
-              Continuar a expedição →
+              Continuar a expedição
             </button>
 
             <button
@@ -2649,25 +2657,46 @@ if (telaAtual === 'inicio') {
 
         <form id="form-cadastro">
 
-          <div class="form-group">
-            <label>Nome do Estudante / Grupo</label>
-            <input
-              type="text"
-              id="inp-nome"
-              required
-              placeholder="Ex: Grupo Alpha ou Maria Silva"
-            />
-          </div>
 
-          <div class="form-group">
-            <label>Turma / Escola</label>
-            <input
-              type="text"
-              id="inp-turma"
-              required
-              placeholder="Ex: 6º Ano B"
-            />
-          </div>
+<div class="form-group">
+  <label>Nome do grupo</label>
+  <input
+    type="text"
+    id="inp-grupo"
+    required
+    placeholder="Ex.: Exploradores do Cerrado"
+  />
+</div>
+
+<div class="form-group">
+  <label>Integrantes</label>
+  <textarea
+    id="inp-integrantes"
+    required
+    rows="3"
+    placeholder="Digite os nomes dos participantes"
+  ></textarea>
+</div>
+
+<div class="form-group">
+  <label>Série / Turma</label>
+  <input
+    type="text"
+    id="inp-turma"
+    required
+    placeholder="Ex.: 6º ano B"
+  />
+</div>
+
+<div class="form-group">
+  <label>Escola</label>
+  <input
+    type="text"
+    id="inp-escola"
+    required
+    placeholder="Nome da escola"
+  />
+</div>
 
           <div class="form-group">
             <label>Escolha seu companheiro de expedição</label>
@@ -2690,21 +2719,13 @@ if (telaAtual === 'inicio') {
             type="submit"
             class="btn-primary btn-iniciar-expedicao"
           >
-            Começar a investigação →
+            Começar a investigação
           </button>
 
         </form>
 
       </section>
 
-      <section class="identificacao-mensagem">
-        <span>👀</span>
-        <p>
-          <strong>Observe.</strong>
-          <strong>Investigue.</strong>
-          <strong>Descubra.</strong>
-        </p>
-      </section>
 
     </div>
   `
@@ -2716,7 +2737,7 @@ if (telaAtual === 'inicio') {
       <section class="card-container identificacao-card">
 
         <div class="identificacao-titulo">
-          <h3>📸 Registro de Partida</h3>
+          <h3>Registro de Partida</h3>
         </div>
 
         <p>
@@ -2908,53 +2929,7 @@ ${inicioExpedicao ? `
           ${dados?.nome ?? 'Elemento não identificado'}
         </p>
 
-        ${elemento.categoria === 'ARV' ? (() => {
-
-          const numeroPlaca = elemento.id
-            .match(/\d+/)?.[0]
-            .padStart(2, '0')
-
-          const arvore = numeroPlaca
-            ? curiosidadesArvores[numeroPlaca]
-            : undefined
-
-          if (!arvore) return ''
-
-          return `
-            <div class="caderno-arvore-info">
-
-              <p>
-                <strong>Nome científico:</strong>
-                <em>${arvore.cientifico}</em>
-              </p>
-
-              <div class="registro-arvore-curiosidade">
-                <strong>💡 Você sabia?</strong>
-                <p>${arvore.curiosidade}</p>
-              </div>
-
-              ${linkQrValido ? `
-                <div class="caderno-arvore-link">
-                  <p><strong>🔗 QR Code registrado</strong></p>
-
-                  <a
-                    href="${linkQrValido.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    📖 Consultar informações completas da árvore
-                  </a>
-                </div>
-              ` : `
-                <p>
-                  <small>QR Code ainda não registrado.</small>
-                </p>
-              `}
-
-            </div>
-          `
-
-        })() : ''}
+        <!-- Informações pedagógicas reservadas ao PDF -->
 
         <small>
           ${elemento.encontrado
@@ -3160,12 +3135,15 @@ ${inicioExpedicao ? `
 
     <div id="registro-arvore-identificacao"></div>
 
-    <div class="registro-arvore-curiosidade">
-      <strong>💡 Você sabia?</strong>
-      <p id="texto-curiosidade-arvore">
-        Uma curiosidade sobre esta árvore aparecerá aqui.
-      </p>
-    </div>
+<div class="registro-arvore-curiosidade">
+  <strong>💡 Você sabia?</strong>
+  <p id="texto-curiosidade-arvore">
+    Uma curiosidade sobre esta árvore aparecerá aqui.
+  </p>
+
+  <strong>🔎 Continue investigando!</strong>
+  <p id="texto-desafio-arvore"></p>
+</div>
 
     <p>
       Registre sua descoberta para consultar depois
@@ -3332,87 +3310,258 @@ ${fotosDescobertasLivres.filter(Boolean).length < 5 ? `
 
 } else if (telaAtual === 'meu-percurso') {
 
+  // Fotografias disponíveis para a montagem do caderno.
+  // Prioriza a fotografia de partida e depois as investigações.
+  const fotosMontagem = [
+    fotoPartida,
+    ...Object.values(fotosElementos)
+  ]
+    .filter((foto): foto is string =>
+      typeof foto === 'string' && foto.length > 0
+    )
+    .slice(0, 3)
+
+      // CONQUISTAS — INVESTIGAÇÕES REALIZADAS
+  const totalInvestigacoes = elementosSorteados.filter(
+    elemento => elemento.encontrado
+  ).length
+
+  // CONQUISTAS — PROGRESSO DA EXPEDIÇÃO
+const progressoExpedicao = elementosSorteados.length > 0
+  ? Math.round(
+      (totalInvestigacoes / elementosSorteados.length) * 100
+    )
+  : 0
+    
+// CONQUISTAS — FOTOGRAFIAS REGISTRADAS
+const totalFotosInvestigacoes = Object.values(fotosElementos)
+  .filter(foto => typeof foto === 'string' && foto.length > 0)
+  .length
+
+const totalFotosLivres = fotosDescobertasLivres.length
+
+const totalFotografias =
+  totalFotosInvestigacoes +
+  totalFotosLivres +
+  (fotoPartida ? 1 : 0)
 
   const trilhaRegistrada =
-  crachaSalvo !== null ||
-  inicioExpedicao !== null ||
-  fotoPartida !== null ||
-  elementosSorteados.length > 0
+    crachaSalvo !== null ||
+    inicioExpedicao !== null ||
+    fotoPartida !== null ||
+    elementosSorteados.length > 0
 
   html += `
-    <main class="tela-meu-percurso">
+    <main class="tela-meu-percurso registros-pagina">
 
-      <header class="percurso-cabecalho">
-        <span>🌿 MINHAS EXPERIÊNCIAS</span>
-        <h1>Meu percurso</h1>
+      <header class="registros-cabecalho">
+        <h1>Registros</h1>
         <p>
-          Reviva suas experiências e consulte os registros
-          das atividades realizadas no ITS.
+          Reviva a expedição da sua equipe e veja
+          tudo o que foi descoberto no ITS.
         </p>
       </header>
 
-      <section class="percurso-localidades">
-        <h2>Localidades da minha visita</h2>
+      ${trilhaRegistrada ? `
 
-        ${trilhaRegistrada ? `
-          <article class="percurso-localidade">
-            <div class="percurso-localidade-icone">🌳</div>
-            <div class="percurso-localidade-texto">
-              <h3>Trilha da Semente Peregrina</h3>
-              <p>Minha expedição e descobertas</p>
+        <section class="registros-cartao registros-caderno">
+
+          <div class="registros-cartao-titulo">
+            <div class="registros-icone">📄</div>
+
+            <div>
+              <h2>Caderno do Investigador</h2>
+              <p>
+                Reveja os registros, fotografias e descobertas
+                da equipe na Trilha da Semente Peregrina.
+              </p>
             </div>
-          </article>
-
-          <section class="percurso-atividades">
-            <h2>Registros da trilha</h2>
-
-            <button
-              type="button"
-              class="btn-primary"
-              id="btn-caderno"
-            >
-              📖 Abrir Caderno de Campo
-            </button>
-
+          </div>
 
 <button
   type="button"
-  class="btn-primary"
-  id="btn-conquistas"
-  style="margin-top: 12px;"
+  class="registros-montagem registros-galeria-botao"
+  id="btn-galeria"
+  aria-label="Abrir galeria de fotografias da expedição"
 >
-  🏅 Ver Conquistas
+
+  ${fotosMontagem.map((foto, indice) => `
+    <div class="registros-foto registros-foto-${indice + 1}">
+      <img
+        src="${foto}"
+        alt="Fotografia ${indice + 1} da expedição"
+        loading="lazy"
+      >
+    </div>
+  `).join('')}
+
+  <div class="registros-caderno-ilustracao">
+    <span>📓</span>
+    <strong>Caderno do Investigador</strong>
+  </div>
+
 </button>
 
+          <button
+            type="button"
+            class="btn-primary registros-btn-pdf"
+            id="btn-caderno"
+          >
+            📄 Abrir Caderno de Campo em PDF
+            <span aria-hidden="true">›</span>
+          </button>
 
-            <p>
-              Consulte seu Caderno de Campo
-              e acompanhe as conquistas da expedição.
-            </p>
-          </section>
-        ` : `
-          <div class="percurso-vazio">
-            <p>
-              Você ainda não iniciou uma experiência
-              registrada no ITS.
-            </p>
-            <p>
-              Explore as localidades e participe
-              das atividades para construir seu percurso.
-            </p>
+        </section>
+
+        <section class="registros-cartao registros-conquistas">
+
+          <div class="registros-cartao-titulo">
+            <div class="registros-icone">▥</div>
+
+            <div>
+              <h2>Conquistas da equipe</h2>
+              <p>
+                Veja o que a equipe já realizou
+                nesta expedição.
+              </p>
+            </div>
           </div>
-        `}
 
-      </section>
+          <div class="registros-indicadores">
+
+            <div class="registros-indicador">
+  <strong>${totalInvestigacoes}</strong>
+  <span>Investigações realizadas</span>
+</div>
+
+            <div class="registros-indicador">
+              <strong>${totalFotografias}</strong>
+<span>Fotografias registradas</span>
+            </div>
+
+            <div class="registros-indicador">
+<strong>${totalFotosLivres}</strong>
+<span>Descobertas livres</span>
+            </div>
+
+<div class="registros-indicador">
+  <strong>${progressoExpedicao}%</strong>
+  <span>Progresso da expedição</span>
+</div>
+
+          </div>
+
+        </section>
+
+      ` : `
+
+        <div class="percurso-vazio">
+          <p>
+            Você ainda não iniciou uma experiência
+            registrada no ITS.
+          </p>
+          <p>
+            Explore as localidades e participe das
+            atividades para construir seus registros.
+          </p>
+        </div>
+
+      `}
+
+    </main>
+  `
+
+} else if (telaAtual === 'galeria') {
+
+  const fotografiasGaleria: {
+    foto: string
+    titulo: string
+  }[] = []
+
+  // Fotografia de partida
+  if (fotoPartida) {
+    fotografiasGaleria.push({
+      foto: fotoPartida,
+      titulo: 'Início da expedição'
+    })
+  }
+
+  // Fotografias dos elementos investigados
+  Object.entries(fotosElementos).forEach(([id, foto]) => {
+    if (!foto) return
+
+    const elemento = catalogoElementos.find(
+      item => item.id === id
+    )
+
+    fotografiasGaleria.push({
+      foto,
+      titulo: elemento?.nome || 'Elemento investigado'
+    })
+  })
+
+  // Fotografias das descobertas livres
+  fotosDescobertasLivres.forEach((foto, indice) => {
+    if (!foto) return
+
+    fotografiasGaleria.push({
+      foto,
+      titulo: `Descoberta livre ${indice + 1}`
+    })
+  })
+
+  html += `
+    <main class="tela-galeria">
+
+      <header class="galeria-cabecalho">
+        <button
+          type="button"
+          id="btn-voltar-galeria"
+          class="galeria-voltar"
+        >
+          ← Voltar
+        </button>
+
+        <h1>Galeria de Descobertas</h1>
+        <p>
+          Fotografias registradas pela equipe
+          durante a expedição.
+        </p>
+      </header>
+
+      ${fotografiasGaleria.length > 0 ? `
+
+        <div class="galeria-grade">
+
+          ${fotografiasGaleria.map((item, indice) => `
+            <figure class="galeria-item">
+              <img
+                src="${item.foto}"
+                alt="Fotografia ${indice + 1} da expedição"
+                loading="lazy"
+              >
+              <figcaption>${item.titulo}</figcaption>
+            </figure>
+          `).join('')}
+
+        </div>
+
+      ` : `
+
+        <div class="galeria-vazia">
+          <p>
+            A equipe ainda não registrou fotografias.
+          </p>
+        </div>
+
+      `}
 
     </main>
   `
 }
 
-
 // NAVEGAÇÃO GERAL DO EXPLORE ITS
 // Preparação para a futura barra inferior
-
 
 if (
   telaAtual === 'mapa-its' ||
@@ -3421,7 +3570,8 @@ if (
   telaAtual === 'cadastro' ||
   telaAtual === 'registro-partida' ||
   telaAtual === 'trilha' ||
-  telaAtual === 'meu-percurso'
+  telaAtual === 'meu-percurso' ||
+  telaAtual === 'galeria'
 ) {
 
   html += `
@@ -3461,7 +3611,7 @@ class="nav-item"
   id="nav-percurso"
 >
   <span class="nav-icone">♧</span>
-  <span>Meu percurso</span>
+  <span>Registros</span>
 </button>
 
 
@@ -3673,6 +3823,12 @@ function bindEvents() {
   if (telaAtual === 'inicio') {
     iniciarGaleriaInicio()
   }
+
+  // REGISTROS — ABRIR GALERIA DE FOTOGRAFIAS
+  document.getElementById('btn-galeria')
+    ?.addEventListener('click', () => {
+      navegarPara('galeria')
+    })
 
 // DESCOBERTAS LIVRES — ABRIR FOTOGRAFIA AMPLIADA
 document.querySelectorAll<HTMLElement>(
@@ -4329,12 +4485,25 @@ document.querySelector('#nav-home')?.addEventListener('click', () => {
     render()
   })
 
-  document.querySelectorAll('.mascote-card').forEach(el => {
-    el.addEventListener('click', () => {
-      mascoteTempId = el.getAttribute('data-id') || mascotes[0].id
-      render()
+document.querySelectorAll<HTMLElement>('.mascote-card').forEach(el => {
+  el.addEventListener('click', () => {
+
+    // Guarda o mascote escolhido
+    mascoteTempId = el.dataset.id || mascotes[0].id
+
+    // Remove o destaque do mascote anterior
+    document.querySelectorAll('.mascote-card').forEach(card => {
+      card.classList.remove('selecionado')
     })
+
+    // Destaca somente o mascote escolhido
+    el.classList.add('selecionado')
+
+    // Não executar render() aqui!
+    // Assim os dados preenchidos permanecem intactos.
+
   })
+})
 
 // REGISTRO DE PARTIDA — ABRIR CÂMERA
 
@@ -4639,12 +4808,47 @@ document.querySelector('#btn-continuar-partida')
 document.querySelector('#form-cadastro')?.addEventListener('submit', (e) => {
   e.preventDefault()
 
-  const nome = (document.querySelector('#inp-nome') as HTMLInputElement).value
-  const turma = (document.querySelector('#inp-turma') as HTMLInputElement).value
-  const m = mascotes.find(x => x.id === mascoteTempId) || mascotes[0]
+  // Identificação da expedição
+const nome = (
+  document.querySelector('#inp-grupo') as HTMLInputElement
+).value.trim()
 
-  crachaSalvo = { nome, turma, mascote: m }
-  localStorage.setItem('exp_cracha', JSON.stringify(crachaSalvo))
+  const grupo = (
+    document.querySelector('#inp-grupo') as HTMLInputElement
+  ).value.trim()
+
+  const integrantes = (
+    document.querySelector('#inp-integrantes') as HTMLTextAreaElement
+  ).value.trim()
+
+  const turma = (
+    document.querySelector('#inp-turma') as HTMLInputElement
+  ).value.trim()
+
+  const escola = (
+    document.querySelector('#inp-escola') as HTMLInputElement
+  ).value.trim()
+
+// Companheiro escolhido pelo estudante.
+// Se não houver escolha, sorteia um mascote.
+const m: Mascote =
+  mascotes.find(m => m.id === mascoteTempId)
+  ?? mascotes[Math.floor(Math.random() * mascotes.length)]
+
+  // Salva os dados para utilização no aplicativo e no PDF
+  crachaSalvo = {
+    nome,
+    grupo,
+    integrantes,
+    turma,
+    escola,
+    mascote: m
+  }
+
+  localStorage.setItem(
+    'exp_cracha',
+    JSON.stringify(crachaSalvo)
+  )
 
   // Registra o início real da expedição apenas uma vez
   if (!inicioExpedicao) {
@@ -4671,31 +4875,20 @@ document.querySelector('#btn-sair')?.addEventListener('click', () => {
   render()
 })
 
-document.querySelector('#btn-caderno')?.addEventListener('click', () => {
-  // Registra o mapa da trilha como tela de origem
-  history.replaceState(
-    {
-      tela: 'trilha',
-      caderno: false,
-      localidade: localidadeAtual
-    },
-    '',
-    window.location.href
-  )
+// REGISTROS — BAIXAR O PDF DIRETAMENTE
+document.querySelector('#btn-caderno')
+  ?.addEventListener('click', () => {
 
-  // Abre o Caderno e registra sua entrada no histórico
-  telaAtual = 'trilha'
-  verCaderno = true
+    const botaoPDF = document.createElement('button')
+    botaoPDF.type = 'button'
+    botaoPDF.id = 'btn-gerar-pdf-caderno'
+    botaoPDF.hidden = true
 
-  history.pushState(
-    obterEstadoNavegacao(),
-    '',
-    window.location.href
-  )
+    document.body.appendChild(botaoPDF)
+    botaoPDF.click()
+    botaoPDF.remove()
 
-  window.scrollTo(0, 0)
-  render()
-})
+  })
   
 document.querySelector('#btn-voltar-estacoes')?.addEventListener('click', () => {
   verCaderno = false
@@ -4707,382 +4900,533 @@ document.querySelector('#btn-voltar-estacoes')?.addEventListener('click', () => 
 render()
 
 
-// GERAR PDF DO CADERNO DO INVESTIGADOR
-document.addEventListener('click', (evento) => {
+// =====================================================
+// EXPLORE ITS — CADERNO DO INVESTIGADOR (PDF A4)
+// Duas investigações por página + descobertas livres
+// =====================================================
+let exportacaoCadernoEmAndamento = false
+
+document.addEventListener('click', async (evento) => {
   const alvo = evento.target
-
-  if (!(alvo instanceof Element)) return
-  if (!alvo.closest('#btn-gerar-pdf-caderno')) return
-
-const pdf = new jsPDF()
-const larguraPagina = pdf.internal.pageSize.getWidth()
-const margem = 20
-let y = 30
-
-// CAPA DO CADERNO
-pdf.setFillColor(46, 93, 58)
-pdf.rect(0, 0, larguraPagina, 297, 'F')
-
-// Faixa decorativa
-pdf.setFillColor(242, 183, 5)
-pdf.rect(0, 0, larguraPagina, 8, 'F')
-
-// Identificação
-pdf.setTextColor(255, 255, 255)
-pdf.setFont('helvetica', 'bold')
-pdf.setFontSize(14)
-pdf.text('EXPLORE ITS', larguraPagina / 2, 38, {
-  align: 'center'
-})
-
-// Título principal
-pdf.setFontSize(28)
-pdf.text('Caderno do', larguraPagina / 2, 95, {
-  align: 'center'
-})
-
-pdf.text('Investigador', larguraPagina / 2, 110, {
-  align: 'center'
-})
-
-// Subtítulo
-pdf.setFont('helvetica', 'normal')
-pdf.setFontSize(15)
-pdf.text('Trilha da Semente Peregrina', larguraPagina / 2, 135, {
-  align: 'center'
-})
-
-// Elemento decorativo
-pdf.setFillColor(242, 183, 5)
-pdf.circle(larguraPagina / 2, 170, 16, 'F')
-
-pdf.setFontSize(23)
-pdf.setTextColor(46, 93, 58)
-pdf.text('ITS', larguraPagina / 2, 176, {
-  align: 'center'
-})
-
-// Data
-pdf.setTextColor(255, 255, 255)
-pdf.setFontSize(11)
-
-if (inicioExpedicao) {
-  pdf.text(
-    `Expedicao: ${new Date(inicioExpedicao).toLocaleDateString('pt-BR')}`,
-    larguraPagina / 2,
-    218,
-    { align: 'center' }
-  )
-}
-
-// Rodapé da capa
-pdf.setFontSize(11)
-pdf.text(
-  'Instituto do Tropico Subumido',
-  larguraPagina / 2,
-  260,
-  { align: 'center' }
-)
-
-pdf.text(
-  'PUC Goias',
-  larguraPagina / 2,
-  268,
-  { align: 'center' }
-)
-
-// SEGUNDA PÁGINA — NOSSA EXPEDIÇÃO
-pdf.addPage()
-
-pdf.setTextColor(46, 93, 58)
-pdf.setFont('helvetica', 'bold')
-pdf.setFontSize(18)
-pdf.text('Nossa expedicao', margem, 30)
-
-pdf.setTextColor(50, 50, 50)
-pdf.setFont('helvetica', 'normal')
-pdf.setFontSize(11)
-
-const apresentacao = pdf.splitTextToSize(
-  'Nossa equipe percorreu a Trilha da Semente Peregrina, observando a natureza, investigando elementos do Cerrado e registrando suas descobertas.',
-  larguraPagina - margem * 2
-)
-
-pdf.text(apresentacao, margem, 48)
-
-y = 48 + apresentacao.length * 6 + 10
-
-if (inicioExpedicao) {
-  const data = new Date(inicioExpedicao)
-
-  pdf.text(
-    `Data: ${data.toLocaleDateString('pt-BR')}`,
-    margem,
-    y
-  )
-
-  y += 9
-
-  pdf.text(
-    `Inicio: ${data.toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    })}`,
-    margem,
-    y
-  )
-
-  y += 9
-}
-
-
-// FOTOGRAFIA DA PARTIDA
-// Incluída apenas quando houver autorização adequada.
-const incluirFotoPartidaNoPdf = false
-
-if (incluirFotoPartidaNoPdf && fotoPartida) {
-  pdf.setFont('helvetica', 'bold')
-  pdf.setFontSize(13)
-  pdf.setTextColor(46, 93, 58)
-  pdf.text('Registro da partida', margem, y)
-
-  y += 8
+  if (!(alvo instanceof Element) || !alvo.closest('#btn-gerar-pdf-caderno')) return
+  if (exportacaoCadernoEmAndamento) return
+  exportacaoCadernoEmAndamento = true
 
   try {
-    const propriedades = pdf.getImageProperties(fotoPartida)
+    await Promise.all([recuperacaoFotosElementos, recuperacaoDescobertasLivres])
+    // Releitura garante que imagens gravadas após a inicialização estejam disponíveis.
+    await recuperarFotosElementos()
+    await recuperarDescobertasLivres()
 
-    const larguraMaxima = larguraPagina - margem * 2
-    const alturaMaxima = 110
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const W = pdf.internal.pageSize.getWidth()
+    const H = pdf.internal.pageSize.getHeight()
+    const M = 15
+    const U = W - 2 * M
+    const verde: [number, number, number] = [46, 93, 58]
+    const cinza: [number, number, number] = [55, 55, 55]
 
-    const escala = Math.min(
-      larguraMaxima / propriedades.width,
-      alturaMaxima / propriedades.height
-    )
+    const cabecalho = (pagina: number) => {
+      pdf.setFillColor(...verde)
+      pdf.rect(0, 0, W, 13, 'F')
+      pdf.setTextColor(255, 255, 255)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(9)
+      pdf.text('EXPLORE ITS  |  CADERNO DO INVESTIGADOR', M, 8.5)
+      pdf.setTextColor(...cinza)
+      pdf.setDrawColor(220, 220, 220)
+      pdf.line(M, H - 15, W - M, H - 15)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(8)
+      pdf.text('Instituto do Trópico Subúmido  |  PUC Goiás', M, H - 10)
+      pdf.text(`${pagina} / 4`, W - M, H - 10, { align: 'right' })
+    }
 
-    const larguraFoto = propriedades.width * escala
-    const alturaFoto = propriedades.height * escala
+    const texto = (conteudo: string, x: number, y: number, largura: number, tamanho = 9, alturaLinha = 4.4) => {
+      pdf.setFontSize(tamanho)
+      const linhas = pdf.splitTextToSize(conteudo, largura) as string[]
+      pdf.text(linhas, x, y)
+      return y + linhas.length * alturaLinha
+    }
 
-    pdf.addImage(
-      fotoPartida,
-      propriedades.fileType,
-      margem + (larguraMaxima - larguraFoto) / 2,
-      y,
-      larguraFoto,
-      alturaFoto
-    )
-  } catch (erro) {
-    console.error('Erro ao inserir fotografia no PDF:', erro)
-  }
-}
-
-// TERCEIRA PÁGINA — INVESTIGAÇÕES
-pdf.addPage()
-
-pdf.setTextColor(40, 40, 40)
-y = 30
-
-  const categorias: Record<CategoriaInvestigacao, string> = {
-    ARV: 'Arvore ou planta',
-    ECO: 'Processo ecologico',
-    FOR: 'Formacao natural',
-    FOL: 'Cultura e folclore'
-  }
-
-  // Registros das quatro investigações
-  elementosSorteados.forEach((elemento, indice) => {
-    const dados = catalogoElementos.find(
-      item => item.id === elemento.id
-    )
-
-// Cada investigação começa em uma página própria
-if (indice > 0) {
-  pdf.addPage()
-}
-
-y = 30
-
-// Cabeçalho da página
-pdf.setFillColor(46, 93, 58)
-pdf.rect(0, 0, larguraPagina, 12, 'F')
-
-pdf.setTextColor(255, 255, 255)
-pdf.setFont('helvetica', 'bold')
-pdf.setFontSize(9)
-pdf.text('EXPLORE ITS | CADERNO DO INVESTIGADOR', margem, 8)
-
-pdf.setTextColor(50, 50, 50)
-
-    pdf.setFont('helvetica', 'bold')
-    pdf.setFontSize(12)
-
-    pdf.text(
-      `${indice + 1}. ${categorias[elemento.categoria]}`,
-      margem,
-      y
-    )
-
-    y += 9
-
-    pdf.setFont('helvetica', 'normal')
-    pdf.setFontSize(11)
-
-    const nome = dados?.nome ?? 'Elemento nao identificado'
-
-    const linhas = pdf.splitTextToSize(
-      nome,
-      larguraPagina - margem * 2
-    )
-
-    pdf.text(linhas, margem, y)
-    y += linhas.length * 6 + 5
-// INFORMAÇÕES CIENTÍFICAS DAS ÁRVORES
-if (elemento.categoria === 'ARV') {
-  const numeroPlaca = elemento.id
-    .match(/\d+/)?.[0]
-    .padStart(2, '0')
-
-  const arvore = numeroPlaca
-    ? curiosidadesArvores[numeroPlaca]
-    : undefined
-
-  if (arvore) {
-    pdf.setFont('helvetica', 'italic')
-    pdf.setFontSize(10)
-
-    const nomeCientifico = pdf.splitTextToSize(
-      arvore.cientifico,
-      larguraPagina - margem * 2
-    )
-
-    pdf.text(nomeCientifico, margem, y)
-    y += nomeCientifico.length * 6 + 5
-
-    pdf.setFont('helvetica', 'normal')
-    pdf.setFontSize(10)
-
-    const curiosidade = pdf.splitTextToSize(
-      `Voce sabia? ${arvore.curiosidade}`,
-      larguraPagina - margem * 2
-    )
-
-    pdf.text(curiosidade, margem, y)
-    y += curiosidade.length * 6 + 8
-  }
-}
-
-    pdf.text(
-      elemento.encontrado
-        ? 'Investigacao registrada'
-        : 'A investigar',
-      margem,
-      y
-    )
-
-    y += 20
-// LINK DO QR CODE DA ÁRVORE NO PDF
-if (elemento.categoria === 'ARV') {
-  try {
-    const linksArvores: Record<string, string> = JSON.parse(
-      localStorage.getItem('exp_links_arvores') || '{}'
-    )
-
-    const endereco = linksArvores[elemento.id]
-
-    if (endereco) {
-      const url = new URL(endereco)
-
-      if (url.protocol === 'https:' || url.protocol === 'http:') {
-        // Cria uma nova página se não houver espaço
-        if (y + 18 > 270) {
-          pdf.addPage()
-          y = 25
-        }
-
-        pdf.setFont('helvetica', 'normal')
-        pdf.setFontSize(11)
-        pdf.setTextColor(30, 95, 160)
-
-        const textoLink = 'Consultar informacoes completas da arvore'
-
-        pdf.textWithLink(textoLink, margem, y, {
-          url: url.href
-        })
-
-        pdf.setDrawColor(30, 95, 160)
-        pdf.line(
-          margem,
-          y + 1,
-          margem + pdf.getTextWidth(textoLink),
-          y + 1
-        )
-
-        pdf.setTextColor(50, 50, 50)
-        y += 16
+    const imagemProporcional = (fonte: string, x: number, y: number, largura: number, altura: number) => {
+      try {
+        const props = pdf.getImageProperties(fonte)
+        if (!props.width || !props.height) return false
+        const escala = Math.min(largura / props.width, altura / props.height)
+        const w = props.width * escala
+        const h = props.height * escala
+        pdf.addImage(fonte, props.fileType, x + (largura - w) / 2, y + (altura - h) / 2, w, h)
+        return true
+      } catch (erro) {
+        console.warn('Fotografia não pôde ser inserida no Caderno:', erro)
+        return false
       }
     }
-  } catch (erro) {
-    console.warn('QR Code sem endereco valido:', erro)
-  }
-}
 
-// FOTOGRAFIA DA INVESTIGAÇÃO
-const fotoInvestigacao = fotosElementos[elemento.id]
-
-if (fotoInvestigacao) {
-  try {
-    const propriedades = pdf.getImageProperties(fotoInvestigacao)
-
-    const larguraDisponivel = larguraPagina - margem * 2
-    const alturaDisponivel = 100
-
-    const escala = Math.min(
-      larguraDisponivel / propriedades.width,
-      alturaDisponivel / propriedades.height
-    )
-
-    const larguraFoto = propriedades.width * escala
-    const alturaFoto = propriedades.height * escala
-
-    // Evita que a fotografia ultrapasse o limite da página
-    if (y + alturaFoto > 270) {
-      pdf.addPage()
-      y = 25
+    const categorias: Record<CategoriaInvestigacao, string> = {
+      ARV: 'Árvore ou planta',
+      ECO: 'Processo ecológico',
+      FOR: 'Formação natural',
+      FOL: 'Cultura e folclore'
     }
 
-    pdf.addImage(
-      fotoInvestigacao,
-      propriedades.fileType,
-      margem + (larguraDisponivel - larguraFoto) / 2,
-      y,
-      larguraFoto,
-      alturaFoto
-    )
+    let linksArvores: Record<string, string> = {}
+    try { linksArvores = JSON.parse(localStorage.getItem('exp_links_arvores') || '{}') } catch { /* links opcionais */ }
 
-    y += alturaFoto + 10
 
-  } catch (erro) {
-    console.error(
-      'Erro ao inserir fotografia da investigação no PDF:',
-      erro
+const desenharInvestigacao = (
+  indice: number,
+  topo: number,
+  altura: number
+) => {
+  const elemento = elementosSorteados[indice]
+  if (!elemento) return
+
+  const dados = catalogoElementos.find(
+    item => item.id === elemento.id
+  )
+  const pedagogico = dadosCaderno[elemento.id]
+  const foto = fotosElementos[elemento.id]
+
+  const x = M + 4
+  const largura = U - 8
+  const limite = topo + altura - 5
+
+  pdf.setDrawColor(205, 218, 198)
+  pdf.setFillColor(250, 248, 242)
+  pdf.roundedRect(M, topo, U, altura, 2, 2, 'FD')
+
+  // Identificar a orientação original da fotografia
+  let retrato = false
+
+  if (foto) {
+    try {
+      const propriedades = pdf.getImageProperties(foto)
+      retrato = propriedades.height > propriedades.width
+    } catch (erro) {
+      console.warn('Orientação da fotografia indisponível:', erro)
+    }
+  }
+
+  // Título da investigação
+  pdf.setFont('helvetica', 'bold')
+  pdf.setTextColor(...verde)
+
+  let y = topo + 8
+
+  y = texto(
+    `${indice + 1}. ${categorias[elemento.categoria]}`,
+    x, y, largura, 10, 5
+  ) + 1
+
+  // Organizar a imagem e os textos
+  const inicioConteudo = y + 2
+  const espaco = 4
+
+  const larguraImagem = retrato
+    ? largura * 0.48
+    : largura * 0.52
+
+  const larguraTexto = largura - larguraImagem - espaco
+
+  const xImagem = x
+  const xTexto = x + larguraImagem + espaco
+
+  // Fotografia à esquerda, sem cortes
+  if (foto) {
+    imagemProporcional(
+      foto,
+      xImagem,
+      inicioConteudo,
+      larguraImagem,
+      limite - inicioConteudo
     )
+  }
+
+  // Informações pedagógicas à direita
+  pdf.setFont('helvetica', 'bold')
+  pdf.setTextColor(...cinza)
+
+  let yTexto = inicioConteudo + 2
+
+  yTexto = texto(
+    dados?.nome ?? 'Elemento não identificado',
+    xTexto, yTexto, larguraTexto, 9.5, 4.6
+  ) + 2
+
+  if (pedagogico?.cientifico) {
+    pdf.setFont('helvetica', 'italic')
+    yTexto = texto(
+      pedagogico.cientifico,
+      xTexto, yTexto, larguraTexto, 8, 4
+    ) + 2
+  }
+
+  pdf.setFont('helvetica', 'normal')
+
+  if (pedagogico) {
+    pdf.setTextColor(...verde)
+
+    yTexto = texto(
+      'Você sabia?',
+      xTexto, yTexto, larguraTexto, 8.5, 4.2
+    ) + 1
+
+    pdf.setTextColor(...cinza)
+
+    yTexto = texto(
+      pedagogico.curiosidade,
+      xTexto, yTexto, larguraTexto, 8, 4
+    ) + 4
+
+    pdf.setTextColor(...verde)
+
+    yTexto = texto(
+      'Continue investigando!',
+      xTexto, yTexto, larguraTexto, 8.5, 4.2
+    ) + 1
+
+    pdf.setTextColor(...cinza)
+
+    yTexto = texto(
+      pedagogico.desafio,
+      xTexto, yTexto, larguraTexto, 8, 4
+    ) + 3
+  }
+
+  // Link complementar para árvores
+  if (
+    elemento.categoria === 'ARV' &&
+    linksArvores[elemento.id]
+  ) {
+    try {
+      const url = new URL(linksArvores[elemento.id])
+
+      if (
+        ['https:', 'http:'].includes(url.protocol) &&
+        yTexto + 5 < limite
+      ) {
+        pdf.setTextColor(30, 95, 160)
+        pdf.setFontSize(8)
+
+        pdf.textWithLink(
+          'Conheça mais sobre esta árvore',
+          xTexto,
+          yTexto,
+          { url: url.href }
+        )
+      }
+    } catch {
+      // Link inválido: ignorar
+    }
   }
 }
 
-  })
 
-  // Rodapé
-  const totalPaginas = pdf.getNumberOfPages()
+// ==========================================
+// PÁGINA 1 — CAPA DO CADERNO DO INVESTIGADOR
+// ==========================================
 
-  for (let pagina = 1; pagina <= totalPaginas; pagina++) {
-    pdf.setPage(pagina)
-    pdf.setFontSize(9)
-    pdf.setFont('helvetica', 'normal')
-    pdf.text(
-      `Explore ITS | Pagina ${pagina}`,
-      margem,
-      285
-    )
+// A primeira página do jsPDF será a capa.
+// A diagramação será acrescentada aqui.
+
+// Carrega uma imagem do projeto para inserir no PDF
+const carregarImagemCapa = async (caminho: string): Promise<string> => {
+  const resposta = await fetch(caminho)
+
+  if (!resposta.ok) {
+    throw new Error(`Não foi possível carregar a imagem: ${caminho}`)
   }
 
-  pdf.save('caderno-do-investigador.pdf')
+  const arquivo = await resposta.blob()
+
+  return await new Promise<string>((resolve, reject) => {
+    const leitor = new FileReader()
+    leitor.onload = () => resolve(leitor.result as string)
+    leitor.onerror = () => reject(new Error('Falha na leitura da imagem'))
+    leitor.readAsDataURL(arquivo)
+  })
+}
+
+// ==========================================
+// CAPA — ARTE DEFINITIVA DO INKSCAPE
+// ==========================================
+
+const caminhoCapa = `${import.meta.env.BASE_URL}capa-caderno-app.svg`
+
+const respostaCapa = await fetch(caminhoCapa)
+
+if (!respostaCapa.ok) {
+  throw new Error('Não foi possível carregar a capa do Caderno do Investigador')
+}
+
+const svgCapa = await respostaCapa.text()
+
+const blobCapa = new Blob([svgCapa], {
+  type: 'image/svg+xml;charset=utf-8'
+})
+
+const urlCapa = URL.createObjectURL(blobCapa)
+
+try {
+  const imagemCapa = new Image()
+
+  await new Promise<void>((resolve, reject) => {
+    imagemCapa.onload = () => resolve()
+    imagemCapa.onerror = () => reject(new Error('Falha ao carregar a imagem da capa'))
+    imagemCapa.src = urlCapa
+  })
+
+  const canvasCapa = document.createElement('canvas')
+  canvasCapa.width = 1240
+  canvasCapa.height = 1754
+
+  const contextoCapa = canvasCapa.getContext('2d')
+
+  if (!contextoCapa) {
+    throw new Error('Não foi possível preparar a capa do PDF')
+  }
+
+  contextoCapa.fillStyle = '#FFFFFF'
+  contextoCapa.fillRect(0, 0, canvasCapa.width, canvasCapa.height)
+
+  contextoCapa.drawImage(
+    imagemCapa,
+    0,
+    0,
+    canvasCapa.width,
+    canvasCapa.height
+  )
+
+  const capaJpeg = canvasCapa.toDataURL('image/jpeg', 0.85)
+
+  pdf.addImage(capaJpeg, 'JPEG', 0, 0, 210, 297)
+
+// ==========================================
+// CAPA — FOTOGRAFIA DE PARTIDA
+// ==========================================
+
+// Recupera a fotografia mais recente do IndexedDB
+const fotografiaPartidaPDF =
+  await lerDoBancoExplore<string>(
+    'fotografias',
+    'exp_foto_partida'
+  ) || fotoPartida
+
+if (fotografiaPartidaPDF) {
+
+  // Área da fotografia abaixo do título REGISTRO DE PARTIDA.
+  // Aceita fotos horizontais, verticais e quadradas.
+  // Mantém a imagem inteira, centralizada e sem deformação.
+
+  imagemProporcional(
+    fotografiaPartidaPDF,
+    143, 112, 50, 30
+  )
+
+}
+
+// ==========================================
+// CAPA — IDENTIFICAÇÃO DA EXPEDIÇÃO
+// ==========================================
+
+// Dados registrados no início da expedição
+const grupoCapa = crachaSalvo?.grupo?.trim() || ''
+const integrantesCapa = crachaSalvo?.integrantes?.trim() || ''
+const turmaCapa = crachaSalvo?.turma?.trim() || ''
+const escolaCapa = crachaSalvo?.escola?.trim() || ''
+
+const dataInicioCapa = inicioExpedicao
+  ? new Date(inicioExpedicao)
+  : null
+
+const dataInicioValida = dataInicioCapa &&
+  !Number.isNaN(dataInicioCapa.getTime())
+
+const dataCapa = dataInicioValida
+  ? dataInicioCapa!.toLocaleDateString('pt-BR')
+  : ''
+
+const horarioCapa = dataInicioValida
+  ? dataInicioCapa!.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  : ''
+
+// ==========================================
+// CAPA — POSICIONAMENTO PELOS MARCADORES SVG
+// ==========================================
+
+const documentoSVG = new DOMParser().parseFromString(
+  svgCapa,
+  'image/svg+xml'
+)
+
+// Recupera a posição de um marcador circular do Inkscape.
+// O SVG utiliza coordenadas A4: 210 x 297 mm.
+function posicaoMarcador(id: string): { x: number; y: number } {
+  const elemento = documentoSVG.getElementById(id)
+
+  if (!elemento) {
+    throw new Error(`Marcador não encontrado no SVG: ${id}`)
+  }
+
+  const x = Number(elemento.getAttribute('cx'))
+  const y = Number(elemento.getAttribute('cy'))
+
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    throw new Error(`Coordenadas inválidas no marcador: ${id}`)
+  }
+
+  return { x, y }
+}
+
+// Escreve o texto ao lado do marcador,
+// sem encobrir o pequeno círculo de referência.
+function escreverNoMarcador(
+  id: string,
+  conteudo: string,
+  tamanho = 9,
+  maxLinhas = 1
+) {
+  if (!conteudo) return
+
+  const posicao = posicaoMarcador(id)
+  const x = posicao.x + 3
+  const y = posicao.y + 1
+  const largura = Math.max(10, 202 - x)
+
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(tamanho)
+  pdf.setTextColor(46, 93, 58)
+
+  const linhas = pdf.splitTextToSize(conteudo, largura)
+
+  pdf.text(
+    linhas.slice(0, maxLinhas),
+    x,
+    y
+  )
+}
+
+// Grupo
+escreverNoMarcador(
+  'marcador-grupo',
+  grupoCapa,
+  10
+)
+
+// Integrantes
+escreverNoMarcador(
+  'marcador-integrantes',
+  integrantesCapa,
+  9,
+  3
+)
+
+// Série / Turma
+escreverNoMarcador(
+  'marcador-serie-turma',
+  turmaCapa,
+  9
+)
+
+// Escola — identificador atual do SVG
+escreverNoMarcador(
+  'companheiro-expedicao-6-7-3-3',
+  escolaCapa,
+  9
+)
+
+// Data
+escreverNoMarcador(
+  'marcador-data-expedicao',
+  dataCapa,
+  9
+)
+
+// Horário
+escreverNoMarcador(
+  'marcador-horario-inicio',
+  horarioCapa,
+  9
+)
+
+} finally {
+  URL.revokeObjectURL(urlCapa)
+}
+
+// ==========================================
+// PÁGINA 2 — INVESTIGAÇÕES 1 E 2
+// ==========================================
+
+pdf.addPage()
+cabecalho(2)
+    pdf.setTextColor(...verde)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(15)
+    pdf.text('Trilha da Semente Peregrina', M, 23)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(9)
+    const data = inicioExpedicao ? new Date(inicioExpedicao) : null
+    const dataValida = data && !Number.isNaN(data.getTime())
+    const identificacao = dataValida
+      ? `Expedição: ${data!.toLocaleDateString('pt-BR')}  |  Início: ${data!.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+      : 'Registro de investigação do Cerrado'
+    pdf.setTextColor(...cinza)
+    pdf.text(identificacao, M, 29)
+    desenharInvestigacao(0, 34, 117)
+    desenharInvestigacao(1, 155, 117)
+
+// PÁGINA 3 — INVESTIGAÇÕES 3–4
+    pdf.addPage()
+    cabecalho(3)
+    desenharInvestigacao(2, 20, 124)
+    desenharInvestigacao(3, 148, 124)
+
+// PÁGINA 4 — CINCO DESCOBERTAS LIVRES
+pdf.addPage()
+cabecalho(4)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setTextColor(...verde)
+    pdf.setFontSize(16)
+    pdf.text('Minhas descobertas', M, 25)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setTextColor(...cinza)
+    texto('Registros fotográficos realizados durante a exploração da trilha.', M, 33, U, 9)
+    const colunas = 2
+    const intervalo = 7
+    const larguraFoto = (U - intervalo) / colunas
+    const alturaFoto = 61
+    fotosDescobertasLivres.slice(0, 5).forEach((foto, i) => {
+      const coluna = i % 2
+      const linha = Math.floor(i / 2)
+      const x = M + coluna * (larguraFoto + intervalo)
+      const y = 41 + linha * 69
+      pdf.setDrawColor(208, 218, 201)
+      pdf.setFillColor(250, 248, 242)
+      pdf.roundedRect(x, y, larguraFoto, alturaFoto, 2, 2, 'FD')
+      if (foto) imagemProporcional(foto, x + 2, y + 2, larguraFoto - 4, alturaFoto - 9)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(...cinza)
+      pdf.setFontSize(8)
+      pdf.text(`Descoberta ${i + 1}`, x + 3, y + alturaFoto - 3)
+    })
+    pdf.setFont('helvetica', 'bold')
+    pdf.setTextColor(...verde)
+    pdf.setFontSize(10)
+    pdf.text('Para continuar investigando', M, 257)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setTextColor(...cinza)
+    texto('Qual descoberta mais despertou sua curiosidade? O que você gostaria de investigar sobre ela?', M, 263, U, 9, 4.5)
+
+    pdf.save('caderno-do-investigador.pdf')
+  } catch (erro) {
+    console.error('Falha ao gerar o Caderno do Investigador:', erro)
+    window.alert('Não foi possível gerar o PDF. Verifique o console para detalhes.')
+  } finally {
+    exportacaoCadernoEmAndamento = false
+  }
 })

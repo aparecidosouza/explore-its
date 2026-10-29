@@ -53,6 +53,9 @@ export interface MedicaoTemp {
 
 export interface Cracha {
   nome: string
+  grupo?: string
+  integrantes?: string
   turma: string
+  escola?: string
   mascote: Mascote
 }
