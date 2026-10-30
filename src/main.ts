@@ -1225,7 +1225,7 @@ localidadesMapa.forEach(({ id, nome, descricao }) => {
         <h3>${nome}</h3>
         <p>${textoDescricao}</p>
         <button type="button" disabled>
-          Conhecer este espaço →
+          Conhecer este espaço
         </button>
       `
 
@@ -2661,38 +2661,44 @@ if (telaAtual === 'inicio') {
             natureza e a cultura desse lugar.
           </p>
 
-          <div class="localidade-dados">
 
-            <div class="localidade-dado">
-              <span aria-hidden="true">🥾</span>
-              <strong>1,4 km</strong>
-              <small>de percurso</small>
-            </div>
+<div class="localidade-dados">
 
-            <div class="localidade-dado">
-              <span aria-hidden="true">📍</span>
-              <strong>6 recantos</strong>
-              <small>para descobrir</small>
-            </div>
+  <div class="localidade-dado">
+    <strong>1,4 km</strong>
+    <small>de percurso</small>
+  </div>
 
-          </div>
+  <div class="localidade-dado">
+    <strong>6 recantos</strong>
+    <small>para descobrir</small>
+  </div>
+
+  <div class="localidade-dado">
+    <strong>48 árvores</strong>
+    <small>identificadas</small>
+  </div>
+
+  <div class="localidade-dado">
+    <strong>1 nascente</strong>
+    <small>Córrego São Nicolau</small>
+  </div>
+
+</div>
 
         </section>
 
         <section class="localidade-missao">
 
           <h2 class="localidade-missao-titulo">
-            <span aria-hidden="true">🧭</span>
             SUA MISSÃO
           </h2>
 
-          <h3>Explore, investigue e descubra!</h3>
-
           <p>
-            Observe os detalhes, faça perguntas,
-            registre suas descobertas no Caderno
-            de Campo e use suas observações para
-            buscar explicações.
+            Explore a Trilha da Semente Peregrina
+            e descubra como a natureza, a ciência
+            e as histórias do Cerrado se conectam.
+            Observe com curiosidade e prepare-se para investigar!
           </p>
 
           ${inicioExpedicao ? `
@@ -3085,12 +3091,12 @@ ${inicioExpedicao ? `
         <!-- EXPLORE ITS — ELEMENTOS SORTEADOS -->
         <section class="lista-elementos-expedicao">
 
-          <h3>Sua missão de descoberta</h3>
+          <h3>REGISTRE SUAS DESCOBERTAS</h3>
 
 <p>
-  Durante a caminhada, encontre os quatro elementos
-  indicados no mapa e fotografe outras descobertas
-  que chamarem sua atenção.
+  Encontre e fotografe os quatro elementos
+  sorteados para sua equipe. Registre também
+  outras descobertas que despertarem sua curiosidade.
 </p>
 
           <div class="elementos-expedicao">
@@ -3579,7 +3585,6 @@ const totalFotografias =
         <section class="registros-cartao registros-caderno">
 
           <div class="registros-cartao-titulo">
-            <div class="registros-icone">📄</div>
 
             <div>
               <h2>Caderno do Investigador</h2>
@@ -3608,27 +3613,44 @@ const totalFotografias =
   `).join('')}
 
   <div class="registros-caderno-ilustracao">
-    <span>📓</span>
-    <strong>Caderno do Investigador</strong>
-  </div>
+  <strong>Caderno do Investigador</strong>
+</div>
 
 </button>
 
-          <button
-            type="button"
-            class="btn-primary registros-btn-pdf"
-            id="btn-caderno"
-          >
-            📄 Abrir Caderno de Campo em PDF
-            <span aria-hidden="true">›</span>
-          </button>
+          
+<button
+  type="button"
+  class="btn-primary registros-btn-pdf"
+  id="btn-caderno"
+>
+<span style="display:inline-flex; align-items:center; justify-content:center; gap:10px; font-size:16px; font-weight:700;">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <path d="m7 10 5 5 5-5"/>
+      <path d="M12 15V3"/>
+    </svg>
+    Baixar PDF
+  </span>
+</button>
+
 
         </section>
 
         <section class="registros-cartao registros-conquistas">
 
           <div class="registros-cartao-titulo">
-            <div class="registros-icone">▥</div>
 
             <div>
               <h2>Conquistas da equipe</h2>

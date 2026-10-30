@@ -6101,3 +6101,50 @@ main.tela-galeria {
   padding: 24px 16px 100px;
   box-sizing: border-box;
 }
+
+/* MINHAS DESCOBERTAS — LIMITAR A PILHA AO CARTÃO */
+
+.descobertas-livres {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.descobertas-livres .miniaturas-descobertas {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* MINHAS DESCOBERTAS — FOTOGRAFIAS SOBREPOSTAS */
+
+.descobertas-livres .galeria-caminhada {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  padding: 12px 4px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.descobertas-livres .foto-pilha {
+  flex: 0 0 24%;
+  width: 24%;
+  min-width: 0;
+  margin: 0;
+  box-sizing: border-box;
+  position: relative;
+}
+
+/* Sobreposição progressiva das fotografias */
+.descobertas-livres .foto-pilha + .foto-pilha {
+  margin-left: -9%;
+}
+
+/* Mantém as fotografias com proporção uniforme */
+.descobertas-livres .miniatura-descoberta img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
