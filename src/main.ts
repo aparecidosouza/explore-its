@@ -192,6 +192,7 @@ async function lerDoBancoExplore<T>(
 // EXPLORE ITS — LIMPAR FOTOS DAS DESCOBERTAS LIVRES
 // =====================================================
 
+
 async function limparFotosDescobertasLivres(): Promise<void> {
   const banco = await abrirBancoExplore()
 
@@ -203,9 +204,26 @@ async function limparFotosDescobertasLivres(): Promise<void> {
 
     const armazenamento = transacao.objectStore('fotografias')
 
-    // Exclui apenas as cinco fotografias livres
-    for (let indice = 1; indice <= 5; indice++) {
-      armazenamento.delete(`exp_descoberta_livre_${indice}`)
+    // Exclui os dados das seis descobertas livres
+    for (
+      let indice = 1;
+      indice <= LIMITE_DESCOBERTAS_LIVRES;
+      indice++
+    ) {
+      // Fotografia
+      armazenamento.delete(
+        `exp_descoberta_livre_${indice}`
+      )
+
+      // Nome da descoberta
+      armazenamento.delete(
+        `exp_nome_livre_${indice}`
+      )
+
+      // Descrição da descoberta
+      armazenamento.delete(
+        `exp_observacao_livre_${indice}`
+      )
     }
 
     transacao.oncomplete = () => {
@@ -497,6 +515,7 @@ type TelaApp =
   | 'cadastro'
   | 'registro-partida'
   | 'trilha'
+  | 'registro-descoberta'
   | 'meu-percurso'
   | 'galeria'
 
@@ -1259,7 +1278,6 @@ if (marcadorTrilha) {
 let elementoFotografiaAtual: string | null = null
 
 // Fotografia aguardando confirmação do estudante
-let fotografiaPendente: string | null = null
 
 // Fotografia de descoberta livre aguardando confirmação
 let fotografiaDescobertaPendente: string | null = null
@@ -1271,27 +1289,73 @@ let fotografiaDescobertaPendente: string | null = null
 let indiceDescobertaParaSubstituir: number | null = null
 
 
-// DESCOBERTAS LIVRES — FOTOGRAFIAS ARMAZENADAS
+// =====================================================
+// DESCOBERTAS LIVRES — FOTOGRAFIAS E OBSERVAÇÕES
+// =====================================================
 
+// Capacidade máxima de descobertas por expedição
+const LIMITE_DESCOBERTAS_LIVRES = 6
 
-let fotosDescobertasLivres: (string | null)[] = [
-  null, null, null, null, null
-]
+// Fotografias das seis descobertas
+let fotosDescobertasLivres: (string | null)[] =
+  Array(LIMITE_DESCOBERTAS_LIVRES).fill(null)
 
-// Recupera até cinco fotografias salvas no IndexedDB
+// Observações opcionais associadas às fotografias
+let observacoesDescobertasLivres: string[] =
+  Array(LIMITE_DESCOBERTAS_LIVRES).fill('')
+
+let nomesDescobertasLivres: string[] =
+  Array(LIMITE_DESCOBERTAS_LIVRES).fill('')
+
+// Recupera fotografias e observações do IndexedDB
+
 async function recuperarDescobertasLivres(): Promise<void> {
   try {
+    const indices = Array.from(
+      { length: LIMITE_DESCOBERTAS_LIVRES },
+      (_, indice) => indice + 1
+    )
+
+    // Recupera as seis fotografias
     const fotografias = await Promise.all(
-      Array.from({ length: 5 }, (_, indice) =>
+      indices.map(indice =>
         lerDoBancoExplore<string>(
           'fotografias',
-          `exp_descoberta_livre_${indice + 1}`
+          `exp_descoberta_livre_${indice}`
+        )
+      )
+    )
+
+    // Recupera os nomes das descobertas
+    const nomes = await Promise.all(
+      indices.map(indice =>
+        lerDoBancoExplore<string>(
+          'fotografias',
+          `exp_nome_livre_${indice}`
+        )
+      )
+    )
+
+    // Recupera as descrições das descobertas
+    const observacoes = await Promise.all(
+      indices.map(indice =>
+        lerDoBancoExplore<string>(
+          'fotografias',
+          `exp_observacao_livre_${indice}`
         )
       )
     )
 
     fotosDescobertasLivres = fotografias.map(
       foto => foto ?? null
+    )
+
+    nomesDescobertasLivres = nomes.map(
+      nome => nome ?? ''
+    )
+
+    observacoesDescobertasLivres = observacoes.map(
+      observacao => observacao ?? ''
     )
 
     console.log(
@@ -1306,7 +1370,6 @@ async function recuperarDescobertasLivres(): Promise<void> {
     )
   }
 }
-
 
 const recuperacaoDescobertasLivres = recuperarDescobertasLivres()
 
@@ -3125,27 +3188,6 @@ ${inicioExpedicao ? `
             style="display:none;"
           >
 
-          <!-- PRÉ-VISUALIZAÇÃO DA FOTOGRAFIA -->
-<div id="painel-confirmacao-foto" hidden>
-
-  <h3>📷 Confira sua fotografia</h3>
-
-  <img
-    id="imagem-confirmacao-foto"
-    alt="Fotografia da investigação"
-    style="width:100%; max-height:350px; object-fit:contain;"
-  >
-
-  <button type="button" id="btn-repetir-foto">
-    ↻ Tirar outra foto
-  </button>
-
-  <button type="button" id="btn-confirmar-foto">
-    ✓ Usar esta foto
-  </button>
-
-</div>
-
           <!-- PAINEL DE REGISTRO DA ÁRVORE -->
 <div id="painel-registro-arvore" hidden>
 
@@ -3230,7 +3272,7 @@ ${inicioExpedicao ? `
           >
 
 <p id="contador-descobertas">
-  ${fotosDescobertasLivres.filter(Boolean).length}/${5 - fotosDescobertasLivres.filter(Boolean).length}
+${fotosDescobertasLivres.filter(Boolean).length}/${LIMITE_DESCOBERTAS_LIVRES - fotosDescobertasLivres.filter(Boolean).length}
 </p>
 
 
@@ -3255,7 +3297,7 @@ ${inicioExpedicao ? `
       </div>
     `).join('')}
 
-${fotosDescobertasLivres.filter(Boolean).length < 5 ? `
+${fotosDescobertasLivres.filter(Boolean).length < LIMITE_DESCOBERTAS_LIVRES ? `
     <button
       type="button"
       class="foto-pilha foto-adicionar"
@@ -3281,47 +3323,197 @@ ${fotosDescobertasLivres.filter(Boolean).length < 5 ? `
 </div>
 
 
-          <div id="painel-visualizacao-descoberta" hidden>
-            <h3 id="titulo-visualizacao-descoberta">
-              Minha descoberta
-            </h3>
 
-            <img
-              id="imagem-visualizacao-descoberta"
-              alt="Fotografia ampliada da descoberta"
-            >
+<!-- VISUALIZAÇÃO DE DESCOBERTA JÁ REGISTRADA -->
+<div id="painel-visualizacao-descoberta" hidden>
 
-            <div class="acoes-visualizacao-descoberta">
-              <button type="button" id="btn-substituir-visualizacao">
-                📷 Trocar foto
-              </button>
+  <h3 id="titulo-visualizacao-descoberta">
+    Minha descoberta
+  </h3>
 
-              <button type="button" id="btn-excluir-visualizacao">
-                🗑️ Excluir
-              </button>
-            </div>
+  <img
+    id="imagem-visualizacao-descoberta"
+    alt="Fotografia ampliada da descoberta"
+  >
 
-            <button type="button" id="btn-fechar-visualizacao-descoberta">
-              Fechar
-            </button>
-          </div>
+  <div class="campo-observacao-descoberta">
+    <p>
+      <strong id="nome-visualizacao-descoberta"></strong>
+    </p>
 
-          <div id="painel-confirmacao-descoberta" hidden>
-            <h3>📷 Confira sua descoberta</h3>
+    <p id="texto-visualizacao-descoberta"></p>
+  </div>
 
-            <img
-              id="imagem-confirmacao-descoberta"
-              alt="Fotografia da descoberta livre"
-            >
+  <button type="button" id="btn-fechar-visualizacao-descoberta">
+    Fechar
+  </button>
 
-            <button type="button" id="btn-repetir-descoberta">
-              ↻ Tirar outra foto
-            </button>
+</div>
 
-            <button type="button" id="btn-confirmar-descoberta">
-              ✓ Usar esta foto
-            </button>
-          </div>
+
+<!-- REGISTRO DE UMA NOVA DESCOBERTA -->
+<div
+  id="painel-confirmacao-descoberta"
+  hidden
+  style="
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: #FAF8F2;
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 30px 16px;
+  "
+>
+  <div
+    style="
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 24px;
+      box-sizing: border-box;
+      background: #FFFFFF;
+      border-radius: 18px;
+      box-shadow: 0 3px 18px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    "
+  >
+    <h3 style="
+      margin: 0;
+      text-align: center;
+      color: #2E5D3A;
+      font-size: 21px;
+    ">
+      Registrar nova descoberta
+    </h3>
+
+    <img
+      id="imagem-confirmacao-descoberta"
+      alt="Fotografia da nova descoberta"
+      style="
+        display: block;
+        width: 110px;
+        height: 110px;
+        object-fit: cover;
+        border-radius: 12px;
+        margin: 0 auto;
+      "
+    >
+
+    <div
+      class="campo-observacao-descoberta"
+      style="
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 9px;
+        width: 100%;
+      "
+    >
+      <label
+        for="nome-descoberta"
+        style="display: block; text-align: left;"
+      >
+        <strong>Nome da descoberta (opcional)</strong>
+      </label>
+
+      <input
+        type="text"
+        id="nome-descoberta"
+        maxlength="70"
+        placeholder="Ex.: Jabuti-tinga, árvore, pegadas..."
+        style="
+          display: block;
+          width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
+          padding: 12px;
+          border: 1px solid #C8D2C6;
+          border-radius: 9px;
+          font-size: 16px;
+        "
+      >
+
+      <label
+        for="observacao-descoberta"
+        style="
+          display: block;
+          text-align: left;
+          margin-top: 8px;
+        "
+      >
+        <strong>O que você observou? (opcional)</strong>
+      </label>
+
+      <textarea
+        id="observacao-descoberta"
+        rows="3"
+        maxlength="250"
+        placeholder="Descreva algo que chamou sua atenção."
+        style="
+          display: block;
+          width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
+          padding: 12px;
+          border: 1px solid #C8D2C6;
+          border-radius: 9px;
+          font-size: 16px;
+          resize: vertical;
+        "
+      ></textarea>
+    </div>
+
+    <p style="
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.5;
+      text-align: center;
+      color: #555;
+    ">
+      Os campos são opcionais. Depois de salvar,
+      a descoberta não poderá ser alterada.
+    </p>
+
+    <button
+      type="button"
+      id="btn-confirmar-descoberta"
+      style="
+        width: 100%;
+        padding: 14px;
+        background: #2E5D3A;
+        color: white;
+        border: 0;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+      "
+    >
+      ✓ Salvar descoberta
+    </button>
+
+    <button
+      type="button"
+      id="btn-repetir-descoberta"
+      style="
+        width: 100%;
+        padding: 12px;
+        background: white;
+        color: #2E5D3A;
+        border: 1px solid #2E5D3A;
+        border-radius: 10px;
+        font-size: 15px;
+        cursor: pointer;
+      "
+    >
+      Cancelar
+    </button>
+  </div>
+</div>
+
 
         </section>
 
@@ -3850,52 +4042,87 @@ function bindEvents() {
       navegarPara('galeria')
     })
 
-// DESCOBERTAS LIVRES — ABRIR FOTOGRAFIA AMPLIADA
+
+// =====================================================
+// DESCOBERTAS LIVRES — VISUALIZAÇÃO E NAVEGAÇÃO
+// =====================================================
+
+// Identifica a descoberta atualmente aberta
+let indiceDescobertaVisualizada: number | null = null
+
+// Exibe a fotografia e sua observação
+
+function visualizarDescoberta(indice: number): void {
+  if (
+    !Number.isInteger(indice) ||
+    indice < 0 ||
+    indice >= LIMITE_DESCOBERTAS_LIVRES
+  ) return
+
+  const fotografia = fotosDescobertasLivres[indice]
+  if (!fotografia) return
+
+  const painel = document.querySelector<HTMLElement>(
+    '#painel-visualizacao-descoberta'
+  )
+
+  const imagem = document.querySelector<HTMLImageElement>(
+    '#imagem-visualizacao-descoberta'
+  )
+
+  const titulo = document.querySelector<HTMLElement>(
+    '#titulo-visualizacao-descoberta'
+  )
+
+  const nome = document.querySelector<HTMLElement>(
+    '#nome-visualizacao-descoberta'
+  )
+
+  const descricao = document.querySelector<HTMLElement>(
+    '#texto-visualizacao-descoberta'
+  )
+
+  if (!painel || !imagem || !titulo) return
+
+  indiceDescobertaVisualizada = indice
+
+  imagem.src = fotografia
+  titulo.textContent = `Descoberta ${indice + 1}`
+
+  if (nome) {
+    nome.textContent = nomesDescobertasLivres[indice] ?? ''
+  }
+
+  if (descricao) {
+    descricao.textContent =
+      observacoesDescobertasLivres[indice] ?? ''
+  }
+
+  painel.hidden = false
+  painel.style.display = 'block'
+}
+
+
+// Abre a fotografia ao tocar na miniatura
 document.querySelectorAll<HTMLElement>(
   '.miniatura-descoberta'
 ).forEach(cartao => {
 
   const abrirFotografia = () => {
-const indice = Number(cartao.dataset.indice)
+    const indice = Number(cartao.dataset.indice)
 
-// Permite visualizar qualquer uma das cinco descobertas
-if (!Number.isInteger(indice) || indice < 0 || indice >= 5) return
+    visualizarDescoberta(indice)
 
-    const fotografia = fotosDescobertasLivres[indice]
-
-    // Por enquanto, abre apenas posições com fotografia
-    if (!fotografia) return
-
-    const painel = document.querySelector<HTMLElement>(
+    document.querySelector<HTMLElement>(
       '#painel-visualizacao-descoberta'
-    )
-
-    const imagem = document.querySelector<HTMLImageElement>(
-      '#imagem-visualizacao-descoberta'
-    )
-
-    const titulo = document.querySelector<HTMLElement>(
-      '#titulo-visualizacao-descoberta'
-    )
-
-    if (!painel || !imagem || !titulo) return
-
-    imagem.src = fotografia
-    titulo.textContent = `Descoberta ${indice + 1}`
-
-    painel.hidden = false
-    painel.style.display = 'block'
-
-    painel.scrollIntoView({
+    )?.scrollIntoView({
       behavior: 'smooth',
       block: 'nearest'
     })
   }
 
   cartao.addEventListener('click', evento => {
-    // Evita abrir a visualização ao clicar nos botões antigos
     if ((evento.target as HTMLElement).closest('button')) return
-
     abrirFotografia()
   })
 
@@ -3909,68 +4136,62 @@ if (!Number.isInteger(indice) || indice < 0 || indice >= 5) return
   })
 })
 
-// Navegação entre descobertas por gesto horizontal
-const painelDescoberta = document.querySelector<HTMLElement>(
-  '#painel-visualizacao-descoberta'
-)
-
-const imagemDescoberta = document.querySelector<HTMLImageElement>(
-  '#imagem-visualizacao-descoberta'
-)
+// Navegação horizontal entre as descobertas registradas
+const imagemDescoberta =
+  document.querySelector<HTMLImageElement>(
+    '#imagem-visualizacao-descoberta'
+  )
 
 let inicioToqueX = 0
 let inicioToqueY = 0
 
-imagemDescoberta?.addEventListener('touchstart', evento => {
-  inicioToqueX = evento.changedTouches[0].screenX
-  inicioToqueY = evento.changedTouches[0].screenY
-}, { passive: true })
+imagemDescoberta?.addEventListener(
+  'touchstart',
+  evento => {
+    inicioToqueX = evento.changedTouches[0].screenX
+    inicioToqueY = evento.changedTouches[0].screenY
+  },
+  { passive: true }
+)
 
-imagemDescoberta?.addEventListener('touchend', evento => {
-  const diferencaX = evento.changedTouches[0].screenX - inicioToqueX
-  const diferencaY = evento.changedTouches[0].screenY - inicioToqueY
+imagemDescoberta?.addEventListener(
+  'touchend',
+  evento => {
 
-  // Ignora toques curtos e movimentos predominantemente verticais
-  if (Math.abs(diferencaX) < 60 ||
-      Math.abs(diferencaX) < Math.abs(diferencaY)) return
+    const diferencaX =
+      evento.changedTouches[0].screenX - inicioToqueX
 
-  const titulo = painelDescoberta?.querySelector<HTMLElement>(
-    '#titulo-visualizacao-descoberta'
-  )
+    const diferencaY =
+      evento.changedTouches[0].screenY - inicioToqueY
 
-  if (!titulo) return
+    if (
+      Math.abs(diferencaX) < 60 ||
+      Math.abs(diferencaX) < Math.abs(diferencaY)
+    ) return
 
-  const indiceAtual = titulo.textContent?.includes('Descoberta 2') ? 1 : 0
-  const proximoIndice = indiceAtual === 0 ? 1 : 0
-  const proximaFoto = fotosDescobertasLivres[proximoIndice]
+    if (indiceDescobertaVisualizada === null) return
 
-  if (!proximaFoto) return
+    const direcao = diferencaX < 0 ? 1 : -1
 
-  imagemDescoberta.src = proximaFoto
-  titulo.textContent = `Descoberta ${proximoIndice + 1}`
-}, { passive: true })
+    // Procura a próxima descoberta que possui fotografia
+    let proximoIndice =
+      indiceDescobertaVisualizada + direcao
 
-// DESCOBERTAS LIVRES — TROCAR FOTO AMPLIADA
-document.querySelector('#btn-substituir-visualizacao')
-  ?.addEventListener('click', () => {
+    while (
+      proximoIndice >= 0 &&
+      proximoIndice < LIMITE_DESCOBERTAS_LIVRES
+    ) {
+      if (fotosDescobertasLivres[proximoIndice]) {
+        visualizarDescoberta(proximoIndice)
+        return
+      }
 
-    const titulo = document.querySelector<HTMLElement>(
-      '#titulo-visualizacao-descoberta'
-    )
+      proximoIndice += direcao
+    }
+  },
+  { passive: true }
+)
 
-    if (!titulo) return
-
-    // Identifica qual descoberta está sendo visualizada
-    const indice = titulo.textContent?.includes('Descoberta 2') ? 1 : 0
-
-    indiceDescobertaParaSubstituir = indice
-
-    const input = document.querySelector<HTMLInputElement>(
-      '#input-descoberta-livre'
-    )
-
-    input?.click()
-  })
 
 // DESCOBERTAS LIVRES — FECHAR FOTOGRAFIA AMPLIADA
 document.querySelector('#btn-fechar-visualizacao-descoberta')
@@ -3985,47 +4206,58 @@ document.querySelector('#btn-fechar-visualizacao-descoberta')
     }
   })
 
-// DESCOBERTAS LIVRES — ESCOLHER FOTO PARA SUBSTITUIR
-document.querySelectorAll<HTMLButtonElement>(
-  '.btn-substituir-descoberta'
-).forEach(botao => {
-  botao.addEventListener('click', () => {
-    const indice = Number(botao.dataset.indice)
 
-    if (indice !== 0 && indice !== 1) return
-
-    indiceDescobertaParaSubstituir = indice
-
-    const input = document.querySelector<HTMLInputElement>(
-      '#input-descoberta-livre'
+// DESCOBERTAS LIVRES — FECHAR FOTOGRAFIA AMPLIADA
+document.querySelector('#btn-fechar-visualizacao-descoberta')
+  ?.addEventListener('click', () => {
+    const painel = document.querySelector<HTMLElement>(
+      '#painel-visualizacao-descoberta'
     )
 
-    input?.click()
+    if (painel) {
+      painel.hidden = true
+      painel.style.display = 'none'
+    }
   })
-})
 
 
-  // DESCOBERTAS LIVRES — ABRIR CÂMERA
-  const abrirCameraDescoberta = () => {
-    const input = document.querySelector<HTMLInputElement>(
-      '#input-descoberta-livre'
-    )
+// ===============================================
+// DESCOBERTAS LIVRES — REGISTRO DEFINITIVO
+// ===============================================
 
-    input?.click()
+// Abre a câmera somente quando existe vaga disponível.
+const abrirCameraDescoberta = async () => {
+  await recuperacaoDescobertasLivres
+
+  if (
+    fotosDescobertasLivres.filter(Boolean).length >=
+    LIMITE_DESCOBERTAS_LIVRES
+  ) {
+    alert('Você já registrou as seis descobertas disponíveis.')
+    return
   }
 
-  // Botão original (mantido temporariamente)
-  document.querySelector('#btn-descoberta-livre')
-    ?.addEventListener('click', abrirCameraDescoberta)
+  const input = document.querySelector<HTMLInputElement>(
+    '#input-descoberta-livre'
+  )
 
-  // Nova câmera da galeria fotográfica
-  document.querySelector('.foto-adicionar')
-    ?.addEventListener('click', abrirCameraDescoberta)
+  if (!input) return
 
+  input.value = ''
+  input.click()
+}
 
-// DESCOBERTAS LIVRES — SALVAR FOTOGRAFIA
+// Botões de captura existentes
+document.querySelector('#btn-descoberta-livre')
+  ?.addEventListener('click', abrirCameraDescoberta)
+
+document.querySelector('.foto-adicionar')
+  ?.addEventListener('click', abrirCameraDescoberta)
+
+// Processa a fotografia e abre a tela de registro.
+// A fotografia ainda NÃO é salva.
 document.querySelector<HTMLInputElement>('#input-descoberta-livre')
-  ?.addEventListener('change', async (evento) => {
+  ?.addEventListener('change', async evento => {
     const input = evento.currentTarget as HTMLInputElement
     const arquivo = input.files?.[0]
 
@@ -4044,133 +4276,193 @@ document.querySelector<HTMLInputElement>('#input-descoberta-livre')
       )
 
       const canvas = document.createElement('canvas')
-      canvas.width = Math.round(imagem.width * escala)
-      canvas.height = Math.round(imagem.height * escala)
+      canvas.width = Math.max(1, Math.round(imagem.width * escala))
+      canvas.height = Math.max(1, Math.round(imagem.height * escala))
 
       const contexto = canvas.getContext('2d')
-      if (!contexto) throw new Error('Não foi possível processar a fotografia.')
 
-      contexto.drawImage(imagem, 0, 0, canvas.width, canvas.height)
+      if (!contexto) {
+        throw new Error('Não foi possível processar a fotografia.')
+      }
 
-const fotografia = canvas.toDataURL('image/jpeg', 0.8)
+      contexto.drawImage(
+        imagem,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      )
 
-// Guarda a fotografia temporariamente, sem salvar no banco
-fotografiaDescobertaPendente = fotografia
+      fotografiaDescobertaPendente =
+        canvas.toDataURL('image/jpeg', 0.8)
 
-// Oculta a visualização anterior ao preparar uma nova foto
-const painelAnterior = document.querySelector<HTMLElement>(
-  '#painel-visualizacao-descoberta'
-)
+      const painelVisualizacao =
+        document.querySelector<HTMLElement>(
+          '#painel-visualizacao-descoberta'
+        )
 
-if (painelAnterior) {
-  painelAnterior.hidden = true
-  painelAnterior.style.display = 'none'
-}
+      if (painelVisualizacao) {
+        painelVisualizacao.hidden = true
+        painelVisualizacao.style.display = 'none'
+      }
 
-// Mostra a imagem para o estudante conferir
-const imagemConfirmacao =
-  document.querySelector<HTMLImageElement>(
-    '#imagem-confirmacao-descoberta'
-  )
+      const imagemConfirmacao =
+        document.querySelector<HTMLImageElement>(
+          '#imagem-confirmacao-descoberta'
+        )
 
-const painelConfirmacao =
-  document.querySelector<HTMLElement>(
-    '#painel-confirmacao-descoberta'
-  )
+      const painelConfirmacao =
+        document.querySelector<HTMLElement>(
+          '#painel-confirmacao-descoberta'
+        )
 
-if (!imagemConfirmacao || !painelConfirmacao) {
-  throw new Error('Painel de confirmação não encontrado.')
-}
+      const campoNome =
+        document.querySelector<HTMLInputElement>(
+          '#nome-descoberta'
+        )
 
-imagemConfirmacao.src = fotografia
-painelConfirmacao.hidden = false
-painelConfirmacao.style.display = 'block'
+      const campoObservacao =
+        document.querySelector<HTMLTextAreaElement>(
+          '#observacao-descoberta'
+        )
+
+      if (!imagemConfirmacao || !painelConfirmacao) {
+        throw new Error('Painel de registro não encontrado.')
+      }
+
+      imagemConfirmacao.src = fotografiaDescobertaPendente
+
+      if (campoNome) campoNome.value = ''
+      if (campoObservacao) campoObservacao.value = ''
+
+      painelConfirmacao.hidden = false
+      painelConfirmacao.style.display = 'block'
+
+      painelConfirmacao.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      })
+
     } catch (erro) {
-      console.error('Erro ao registrar descoberta:', erro)
-      alert('Não foi possível salvar a fotografia.')
+      fotografiaDescobertaPendente = null
+      console.error('Erro ao preparar descoberta:', erro)
+      alert('Não foi possível preparar a fotografia.')
     } finally {
       URL.revokeObjectURL(urlTemporaria)
       input.value = ''
     }
   })
 
-// DESCOBERTAS LIVRES — CONFIRMAR PRIMEIRA FOTOGRAFIA
-document.querySelector('#btn-confirmar-descoberta')
-  ?.addEventListener('click', async (evento) => {
+// Cancela a descoberta ainda não salva.
+document.querySelector('#btn-repetir-descoberta')
+  ?.addEventListener('click', () => {
+    fotografiaDescobertaPendente = null
 
+    const painel = document.querySelector<HTMLElement>(
+      '#painel-confirmacao-descoberta'
+    )
+
+    if (painel) {
+      painel.hidden = true
+      painel.style.display = 'none'
+    }
+
+    const imagem = document.querySelector<HTMLImageElement>(
+      '#imagem-confirmacao-descoberta'
+    )
+
+    if (imagem) imagem.removeAttribute('src')
+
+    const nome = document.querySelector<HTMLInputElement>(
+      '#nome-descoberta'
+    )
+
+    const observacao =
+      document.querySelector<HTMLTextAreaElement>(
+        '#observacao-descoberta'
+      )
+
+    if (nome) nome.value = ''
+    if (observacao) observacao.value = ''
+
+    navegarPara('trilha')
+  })
+
+// Salva definitivamente a descoberta.
+document.querySelector('#btn-confirmar-descoberta')
+  ?.addEventListener('click', async evento => {
     const botao = evento.currentTarget as HTMLButtonElement
     const fotografia = fotografiaDescobertaPendente
 
     if (!fotografia) {
-      alert('Nenhuma fotografia disponível para confirmação.')
+      alert('Nenhuma fotografia disponível para registro.')
       return
     }
+
+    const nome =
+      document.querySelector<HTMLInputElement>(
+        '#nome-descoberta'
+      )?.value.trim() ?? ''
+
+    const observacao =
+      document.querySelector<HTMLTextAreaElement>(
+        '#observacao-descoberta'
+      )?.value.trim() ?? ''
 
     botao.disabled = true
 
     try {
-     // Aguarda a recuperação das descobertas já armazenadas
-await recuperacaoDescobertasLivres
+      await recuperacaoDescobertasLivres
 
-// Procura a primeira posição disponível
-const indiceLivre =
-  indiceDescobertaParaSubstituir ??
-  fotosDescobertasLivres.findIndex(
-    foto => foto === null
-  )
-
-if (indiceLivre === -1) {
-  alert(
-    'Você já registrou cinco descobertas. Toque em uma fotografia para substituí-la ou excluí-la.'
-  )
-  return
-}
-
-// Salva na posição disponível
-await salvarNoBancoExplore(
-  'fotografias',
-  `exp_descoberta_livre_${indiceLivre + 1}`,
-  fotografia
-)
-
-// Atualiza a memória do aplicativo
-fotosDescobertasLivres[indiceLivre] = fotografia
-
-
-// Encerra a escolha da posição após salvar com sucesso
-indiceDescobertaParaSubstituir = null
-      fotografiaDescobertaPendente = null
-
-// Atualiza o contador
-const quantidade = fotosDescobertasLivres.filter(Boolean).length
-
-const contador = document.querySelector('#contador-descobertas')
-
-if (contador) {
-  contador.textContent = `${quantidade}/${5 - quantidade}`
-}
-
-// Reconstrói a galeria com a fotografia recém-confirmada
-render()
-
-      const painel = document.querySelector<HTMLElement>(
-        '#painel-confirmacao-descoberta'
+      // Nunca substitui uma fotografia já registrada.
+      const indiceLivre = fotosDescobertasLivres.findIndex(
+        foto => !foto
       )
 
-      if (painel) {
-        painel.hidden = true
-        painel.style.display = 'none'
+      if (indiceLivre === -1) {
+        alert('Você já registrou as seis descobertas disponíveis.')
+        return
       }
 
-      alert('Descoberta registrada com sucesso!')
+      const numero = indiceLivre + 1
+
+      // Persiste os dados antes de atualizar a galeria.
+      await salvarNoBancoExplore(
+        'fotografias',
+        `exp_descoberta_livre_${numero}`,
+        fotografia
+      )
+
+      await salvarNoBancoExplore(
+        'fotografias',
+        `exp_nome_livre_${numero}`,
+        nome
+      )
+
+      await salvarNoBancoExplore(
+        'fotografias',
+        `exp_observacao_livre_${numero}`,
+        observacao
+      )
+
+      fotosDescobertasLivres[indiceLivre] = fotografia
+      nomesDescobertasLivres[indiceLivre] = nome
+      observacoesDescobertasLivres[indiceLivre] = observacao
+
+fotografiaDescobertaPendente = null
+
+// Retorna ao mapa da trilha após salvar a descoberta.
+navegarPara('trilha')
 
     } catch (erro) {
-      console.error('Erro ao confirmar descoberta:', erro)
+      console.error('Erro ao salvar descoberta:', erro)
       alert('Não foi possível salvar a descoberta.')
     } finally {
       botao.disabled = false
     }
   })
+
+
 
   // NAVEGAÇÃO INFERIOR — INÍCIO
   document.querySelector('#nav-inicio')?.addEventListener('click', () => {
@@ -4454,20 +4746,24 @@ localStorage.removeItem('exp_fotos_elementos')
 // Limpa também as fotografias das missões na memória
 fotosElementos = {}
 versaoFotosElementos++
-fotografiaPendente = null
 elementoFotografiaAtual = null
 
-// Exclui as cinco fotografias livres do IndexedDB
+// Exclui as seis fotografias livres e suas observações do IndexedDB
 try {
   await limparFotosDescobertasLivres()
 } catch (erro) {
   console.error('Erro ao limpar as descobertas:', erro)
-  alert('Não foi possível limpar as fotografias. Tente novamente.')
+  alert('Não foi possível limpar as descobertas. Tente novamente.')
   return
 }
 
-// Limpa também as fotografias mantidas na memória
-fotosDescobertasLivres = Array(5).fill(null)
+// Reinicia as seis posições na memória
+fotosDescobertasLivres =
+  Array(LIMITE_DESCOBERTAS_LIVRES).fill(null)
+
+observacoesDescobertasLivres =
+  Array(LIMITE_DESCOBERTAS_LIVRES).fill('')
+
 fotografiaDescobertaPendente = null
 indiceDescobertaParaSubstituir = null
 
@@ -4580,7 +4876,6 @@ async function salvarFotografiaElemento(
     )
   }
 
-  fotografiaPendente = null
   elementoFotografiaAtual = null
 
   verCaderno = false
@@ -4668,98 +4963,6 @@ document.querySelector<HTMLInputElement>('#input-foto-elemento')
     }
   })
 
-// INVESTIGAÇÕES — REPETIR FOTOGRAFIA
-
-document.querySelector('#btn-repetir-foto')
-  ?.addEventListener('click', () => {
-
-    const id = elementoFotografiaAtual
-
-    if (!id) return
-
-    fotografiaPendente = null
-
-    abrirCameraElemento(id)
-  })
-
-// INVESTIGAÇÕES — CONFIRMAR FOTOGRAFIA
-
-document.querySelector('#btn-confirmar-foto')
-?.addEventListener('click', async (evento) => {
-
-    const botao = evento.currentTarget as HTMLButtonElement
-
-    // Impede uma segunda confirmação enquanto
-    // a fotografia anterior está sendo gravada.
-    if (botao.disabled) return
-
-    botao.disabled = true
-
-    const id = elementoFotografiaAtual
-    const foto = fotografiaPendente
-
-    if (!id || !foto) {
-      botao.disabled = false
-      alert('Nenhuma fotografia disponível para confirmação.')
-      return
-    }
-
-    try {
-
-      // Aguarda a recuperação e a migração
-      // das fotografias antigas.
-      await recuperacaoFotosElementos
-
-      // Reúne as fotografias existentes
-      // com a nova fotografia confirmada.
-      const fotosAtualizadas = {
-        ...fotosElementos,
-        [id]: foto
-      }
-
-      // Grava as fotografias no IndexedDB.
-      // A confirmação ocorre após a conclusão da transação.
-      await salvarNoBancoExplore(
-        'fotografias',
-        'exp_fotos_elementos',
-        fotosAtualizadas
-      )
-
-      // Mantém as fotografias disponíveis na interface.
-      fotosElementos = fotosAtualizadas
-
-      // Registra que as fotografias foram modificadas.
-      // Impede que uma leitura anterior substitua
-      // fotografias recém-registradas.
-      versaoFotosElementos++
-
-      const elemento = elementosSorteados.find(
-        item => item.id === id
-      )
-
-      if (elemento) {
-        elemento.encontrado = true
-
-        localStorage.setItem(
-          'exp_elementos_sorteados',
-          JSON.stringify(elementosSorteados)
-        )
-      }
-
-      fotografiaPendente = null
-      elementoFotografiaAtual = null
-
-      verCaderno = false
-      render()
-
-    } catch (erro) {
-      console.error('Erro ao confirmar fotografia:', erro)
-
-      botao.disabled = false
-
-      alert('Não foi possível salvar a fotografia.')
-    }
-  })
 
 // REGISTRO DE PARTIDA — RECEBER E SALVAR FOTOGRAFIA
 
@@ -5442,47 +5645,150 @@ cabecalho(2)
     desenharInvestigacao(2, 20, 124)
     desenharInvestigacao(3, 148, 124)
 
-// PÁGINA 4 — CINCO DESCOBERTAS LIVRES
+
+// ==========================================
+// PÁGINA 4 — SEIS DESCOBERTAS LIVRES
+// ==========================================
+
 pdf.addPage()
 cabecalho(4)
-    pdf.setFont('helvetica', 'bold')
-    pdf.setTextColor(...verde)
-    pdf.setFontSize(16)
-    pdf.text('Minhas descobertas', M, 25)
-    pdf.setFont('helvetica', 'normal')
-    pdf.setTextColor(...cinza)
-    texto('Registros fotográficos realizados durante a exploração da trilha.', M, 33, U, 9)
-    const colunas = 2
-    const intervalo = 7
-    const larguraFoto = (U - intervalo) / colunas
-    const alturaFoto = 61
-    fotosDescobertasLivres.slice(0, 5).forEach((foto, i) => {
-      const coluna = i % 2
-      const linha = Math.floor(i / 2)
-      const x = M + coluna * (larguraFoto + intervalo)
-      const y = 41 + linha * 69
-      pdf.setDrawColor(208, 218, 201)
-      pdf.setFillColor(250, 248, 242)
-      pdf.roundedRect(x, y, larguraFoto, alturaFoto, 2, 2, 'FD')
-      if (foto) imagemProporcional(foto, x + 2, y + 2, larguraFoto - 4, alturaFoto - 9)
-      pdf.setFont('helvetica', 'normal')
-      pdf.setTextColor(...cinza)
-      pdf.setFontSize(8)
-      pdf.text(`Descoberta ${i + 1}`, x + 3, y + alturaFoto - 3)
-    })
-    pdf.setFont('helvetica', 'bold')
-    pdf.setTextColor(...verde)
-    pdf.setFontSize(10)
-    pdf.text('Para continuar investigando', M, 257)
-    pdf.setFont('helvetica', 'normal')
-    pdf.setTextColor(...cinza)
-    texto('Qual descoberta mais despertou sua curiosidade? O que você gostaria de investigar sobre ela?', M, 263, U, 9, 4.5)
 
-    pdf.save('caderno-do-investigador.pdf')
-  } catch (erro) {
-    console.error('Falha ao gerar o Caderno do Investigador:', erro)
-    window.alert('Não foi possível gerar o PDF. Verifique o console para detalhes.')
-  } finally {
-    exportacaoCadernoEmAndamento = false
-  }
+pdf.setFont('helvetica', 'bold')
+pdf.setTextColor(...verde)
+pdf.setFontSize(16)
+pdf.text('Minhas descobertas', M, 25)
+
+pdf.setFont('helvetica', 'normal')
+pdf.setTextColor(...cinza)
+texto(
+  'Registros fotográficos realizados durante a exploração da trilha.',
+  M, 33, U, 9
+)
+
+// Mantém a estrutura original: duas colunas e três linhas
+const colunas = 2
+const intervalo = 7
+const larguraFoto = (U - intervalo) / colunas
+const alturaFoto = 61
+
+fotosDescobertasLivres
+  .slice(0, LIMITE_DESCOBERTAS_LIVRES)
+  .forEach((foto, i) => {
+
+    const coluna = i % colunas
+    const linha = Math.floor(i / colunas)
+
+    const x = M + coluna * (larguraFoto + intervalo)
+    const y = 41 + linha * 69
+
+    // Cartão com dimensões originais
+    pdf.setDrawColor(208, 218, 201)
+    pdf.setFillColor(250, 248, 242)
+    pdf.roundedRect(
+      x, y, larguraFoto, alturaFoto, 2, 2, 'FD'
+    )
+
+
+
+      // Nome e observação registrados pelo estudante
+      const nome =
+        nomesDescobertasLivres[i]?.trim() ?? ''
+
+      const observacao =
+        observacoesDescobertasLivres[i]?.trim() ?? ''
+
+      // Área fotográfica fixa para todas as descobertas.
+      // A imagem mantém sua proporção original.
+      const alturaImagem = 40
+
+      if (foto) {
+        imagemProporcional(
+          foto,
+          x + 2,
+          y + 2,
+          larguraFoto - 4,
+          alturaImagem
+        )
+      }
+
+
+      // Nome opcional: sempre na mesma posição
+      if (nome) {
+        pdf.setFont('helvetica', 'bold')
+        pdf.setFontSize(7.5)
+
+        const linhasNome = pdf.splitTextToSize(
+          nome,
+          larguraFoto - 6
+        ) as string[]
+
+        pdf.text(
+          linhasNome[0] ?? '',
+          x + 3,
+          y + 51
+        )
+      }
+
+      // Descrição opcional: até duas linhas
+      if (observacao) {
+        pdf.setFont('helvetica', 'normal')
+        pdf.setFontSize(7)
+
+        const linhas = pdf.splitTextToSize(
+          observacao,
+          larguraFoto - 6
+        ) as string[]
+
+        const linhasVisiveis = linhas.slice(0, 2)
+
+        if (linhas.length > 2) {
+          const ultima = linhasVisiveis[1] ?? ''
+
+          linhasVisiveis[1] =
+            ultima.slice(
+              0,
+              Math.max(0, ultima.length - 3)
+            ) + '...'
+        }
+
+        pdf.text(
+          linhasVisiveis,
+          x + 3,
+          y + (nome ? 55 : 51),
+          { lineHeightFactor: 1.15 }
+        )
+      }
+    })
+
+// Seção final — mantém a posição original
+pdf.setFont('helvetica', 'bold')
+pdf.setTextColor(...verde)
+pdf.setFontSize(10)
+pdf.text('Para continuar investigando', M, 257)
+
+pdf.setFont('helvetica', 'normal')
+pdf.setTextColor(...cinza)
+
+texto(
+  'Qual descoberta mais despertou sua curiosidade? O que você gostaria de investigar sobre ela?',
+  M, 263, U, 9, 4.5
+)
+
+// Salva o Caderno do Investigador
+pdf.save('caderno-do-investigador.pdf')
+
+} catch (erro) {
+  console.error(
+    'Falha ao gerar o Caderno do Investigador:',
+    erro
+  )
+
+  window.alert(
+    'Não foi possível gerar o PDF. Verifique o console para detalhes.'
+  )
+
+} finally {
+  exportacaoCadernoEmAndamento = false
+}
+
 })
