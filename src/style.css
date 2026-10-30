@@ -6148,3 +6148,292 @@ main.tela-galeria {
   aspect-ratio: 3 / 4;
   object-fit: cover;
 }
+
+/* =====================================================
+   EXPLORE ITS — PADRÃO VISUAL DOS BOTÕES
+   Versão inicial — ações principais e fotográficas
+   ===================================================== */
+
+/* Botões principais */
+.cartao-localidade-its button,
+.registro-arvore-conteudo button,
+#btn-foto-partida,
+#btn-continuar-partida {
+  min-height: 52px;
+  padding: 12px 18px;
+
+  border-radius: 12px;
+
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+
+  box-sizing: border-box;
+}
+
+/* Botões de confirmação de fotografias */
+#painel-confirmacao-foto button {
+  min-height: 52px;
+  padding: 10px 8px;
+
+  border-radius: 12px;
+
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+
+  box-sizing: border-box;
+}
+
+/* Botões desativados */
+#btn-continuar-partida:disabled,
+.cartao-localidade-its button:disabled {
+  background: #E0E5DC;
+  color: #718174;
+  border-color: #E0E5DC;
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+
+/* ==========================================================
+   EXPLORE ITS — PADRONIZAÇÃO VISUAL DOS BOTÕES
+   ========================================================== */
+
+/* 1. BOTÕES PRINCIPAIS */
+
+#btn-explorar-its.inicio-figma-botao,
+#btn-continuar-expedicao,
+#btn-iniciar-expedicao,
+#btn-caderno.registros-btn-pdf,
+.cartao-localidade-its button,
+.registro-arvore-conteudo button:not(#btn-fechar-registro-arvore),
+#btn-foto-partida,
+#btn-continuar-partida,
+#btn-confirmar-foto {
+
+  min-height: 52px;
+  padding: 12px 18px;
+
+  background: #2E5D3A;
+  color: #FFFFFF;
+  border: 1px solid #2E5D3A;
+  border-radius: 12px;
+
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+/* 2. BOTÕES PRINCIPAIS DE LARGURA TOTAL */
+
+#btn-explorar-its.inicio-figma-botao,
+#btn-continuar-expedicao,
+#btn-iniciar-expedicao,
+#btn-caderno.registros-btn-pdf,
+.cartao-localidade-its button,
+.registro-arvore-conteudo button:not(#btn-fechar-registro-arvore),
+#btn-foto-partida,
+#btn-continuar-partida {
+
+  width: 100%;
+}
+
+/* 3. ALINHAMENTO DOS BOTÕES */
+
+#btn-explorar-its.inicio-figma-botao,
+#btn-continuar-expedicao,
+#btn-iniciar-expedicao,
+#btn-caderno.registros-btn-pdf,
+#btn-foto-partida,
+#btn-continuar-partida {
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+}
+
+/* 4. BOTÕES SECUNDÁRIOS */
+
+#btn-nova-expedicao,
+#btn-repetir-foto,
+#btn-fechar-registro-arvore {
+
+  min-height: 52px;
+  padding: 12px 18px;
+
+  background: transparent;
+  color: #2E5D3A;
+  border: 1px solid #2E5D3A;
+  border-radius: 12px;
+
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+/* Nova expedição ocupa a largura disponível */
+
+#btn-nova-expedicao {
+  width: 100%;
+}
+
+/* 5. BOTÕES DE CONFIRMAÇÃO DA FOTOGRAFIA */
+
+#painel-confirmacao-foto button {
+  min-height: 52px;
+  padding: 10px 8px;
+  border-radius: 12px;
+
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+
+  box-sizing: border-box;
+}
+
+/* 6. ÍCONE DO BOTÃO BAIXAR PDF */
+
+#btn-caderno.registros-btn-pdf svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* 7. BOTÕES DESATIVADOS */
+
+#btn-continuar-partida:disabled,
+.cartao-localidade-its button:disabled,
+#btn-continuar-expedicao:disabled,
+#btn-iniciar-expedicao:disabled,
+#btn-caderno:disabled,
+#btn-foto-partida:disabled {
+
+  background: #E0E5DC;
+  color: #718174;
+  border-color: #E0E5DC;
+
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+/* 8. ACESSIBILIDADE — FOCO PELO TECLADO */
+
+#btn-explorar-its:focus-visible,
+#btn-continuar-expedicao:focus-visible,
+#btn-iniciar-expedicao:focus-visible,
+#btn-caderno:focus-visible,
+#btn-foto-partida:focus-visible,
+#btn-continuar-partida:focus-visible,
+#btn-nova-expedicao:focus-visible {
+
+  outline: 3px solid #F2B705;
+  outline-offset: 3px;
+}
+
+/* ==========================================
+   AJUSTE FINAL — BOTÃO BAIXAR PDF
+   ========================================== */
+
+#btn-caderno.registros-btn-pdf {
+  min-height: 52px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+#btn-caderno.registros-btn-pdf > span {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+#btn-caderno.registros-btn-pdf svg {
+  width: 20px;
+  height: 20px;
+}
+
+
+/* =====================================================
+   EXPLORE ITS — CÂMERA DO REGISTRO DE PARTIDA
+   Mesmo padrão visual das investigações
+   ===================================================== */
+
+.tela-identificacao:has(#btn-foto-partida)
+#btn-foto-partida.registro-partida-foto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  min-height: 0;
+  height: auto;
+
+  padding: 12px;
+  margin: 22px 0;
+
+  background: #FFFDF8;
+  border: 2px dashed #D8D3C4;
+  border-radius: 16px;
+
+  color: #705B40;
+  box-sizing: border-box;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* Mesmo tamanho e cor do ícone das investigações */
+
+.tela-identificacao:has(#btn-foto-partida)
+#btn-foto-partida .elemento-camera-svg {
+  width: 46px;
+  height: 46px;
+  color: #705B40;
+  flex-shrink: 0;
+}
+
+/* Legenda abaixo do ícone */
+
+.tela-identificacao:has(#btn-foto-partida)
+#btn-foto-partida small {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #705B40;
+}
+
+/* Fotografia registrada ocupa o quadro */
+
+.tela-identificacao:has(#btn-foto-partida)
+#btn-foto-partida img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Destaque acessível ao navegar pelo teclado */
+
+.tela-identificacao:has(#btn-foto-partida)
+#btn-foto-partida:focus-visible {
+  outline: 3px solid #F2B705;
+  outline-offset: 3px;
+}

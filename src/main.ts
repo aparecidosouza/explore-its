@@ -2419,7 +2419,7 @@ if (telaAtual === 'inicio') {
 </div>
 
         <button id="btn-explorar-its" class="inicio-figma-botao">
-          COMEÇAR A EXPLORAR</span>
+          Começar a explorar</span>
         </button>
 
         <div class="inicio-figma-rodape">
@@ -2720,7 +2720,7 @@ if (telaAtual === 'inicio') {
               id="btn-iniciar-expedicao"
               class="btn-primary localidade-iniciar"
             >
-              Começar expedição →
+              Começar a expedição
             </button>
           `}
 
@@ -2849,20 +2849,41 @@ if (telaAtual === 'inicio') {
   style="display:none;"
 >
 
-        <div class="registro-partida-foto">
-          ${fotoPartida
-            ? `<img src="${fotoPartida}" alt="Fotografia do grupo">`
-            : `<p>📷 Nenhuma fotografia registrada</p>`
-          }
-        </div>
 
-        <button
-          type="button"
-          id="btn-foto-partida"
-          class="btn-primary"
-        >
-          📷 ${fotoPartida ? 'Refazer fotografia' : 'Tirar fotografia'}
-        </button>
+<!-- QUADRO FOTOGRÁFICO CLICÁVEL — REGISTRO DE PARTIDA -->
+<button
+  type="button"
+  id="btn-foto-partida"
+  class="registro-partida-foto"
+  aria-label="${fotoPartida ? 'Refazer fotografia do grupo' : 'Fotografar o grupo'}"
+>
+  ${fotoPartida
+    ? `
+      <img
+        src="${fotoPartida}"
+        alt="Fotografia do grupo"
+      >
+    `
+    : `
+      <svg
+        class="elemento-camera-svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M14 4H9L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-3-3z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+
+      <small>Tocar para fotografar</small>
+    `
+  }
+</button>
+
 
         <button
           type="button"
@@ -2870,7 +2891,7 @@ if (telaAtual === 'inicio') {
           class="btn-primary"
           ${!fotoPartida ? 'disabled' : ''}
         >
-          Continuar expedição →
+          Continuar a expedição
         </button>
 
       </section>
@@ -3556,7 +3577,7 @@ const totalFotosInvestigacoes = Object.values(fotosElementos)
   .filter(foto => typeof foto === 'string' && foto.length > 0)
   .length
 
-const totalFotosLivres = fotosDescobertasLivres.length
+const totalFotosLivres = fotosDescobertasLivres.filter(Boolean).length
 
 const totalFotografias =
   totalFotosInvestigacoes +
@@ -3624,7 +3645,7 @@ const totalFotografias =
   class="btn-primary registros-btn-pdf"
   id="btn-caderno"
 >
-<span style="display:inline-flex; align-items:center; justify-content:center; gap:10px; font-size:16px; font-weight:700;">
+  <span style="display:inline-flex; align-items:center; justify-content:center; gap:10px;">
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width="20"
@@ -3680,7 +3701,7 @@ const totalFotografias =
 
 <div class="registros-indicador">
   <strong>${progressoExpedicao}%</strong>
-  <span>Progresso da expedição</span>
+  <span>Investigações concluídas</span>
 </div>
 
           </div>
@@ -4762,6 +4783,19 @@ try {
   return
 }
 
+// Apaga também a fotografia de partida do IndexedDB
+try {
+  await salvarNoBancoExplore(
+    'fotografias',
+    'exp_foto_partida',
+    null
+  )
+} catch (erro) {
+  console.error('Erro ao limpar a fotografia de partida:', erro)
+  alert('Não foi possível apagar a fotografia de partida.')
+  return
+}
+
 // Limpa também as fotografias antigas do localStorage
 localStorage.removeItem('exp_fotos_elementos')
 
@@ -4784,6 +4818,9 @@ fotosDescobertasLivres =
   Array(LIMITE_DESCOBERTAS_LIVRES).fill(null)
 
 observacoesDescobertasLivres =
+  Array(LIMITE_DESCOBERTAS_LIVRES).fill('')
+
+nomesDescobertasLivres =
   Array(LIMITE_DESCOBERTAS_LIVRES).fill('')
 
 fotografiaDescobertaPendente = null
@@ -5484,6 +5521,13 @@ try {
 
   pdf.addImage(capaJpeg, 'JPEG', 0, 0, 210, 297)
 
+// Prepara os marcadores do SVG para posicionar
+// a fotografia e os textos da capa.
+const documentoSVG = new DOMParser().parseFromString(
+  svgCapa,
+  'image/svg+xml'
+)
+
 // ==========================================
 // CAPA — FOTOGRAFIA DE PARTIDA
 // ==========================================
@@ -5497,13 +5541,19 @@ const fotografiaPartidaPDF =
 
 if (fotografiaPartidaPDF) {
 
-  // Área da fotografia abaixo do título REGISTRO DE PARTIDA.
-  // Aceita fotos horizontais, verticais e quadradas.
-  // Mantém a imagem inteira, centralizada e sem deformação.
+  // Centro do marcador Registro de Partida no SVG.
+  const centroFotoX = 154.61
+  const centroFotoY = 126.83
+
+  const larguraFoto = 50
+  const alturaFoto = 30
 
   imagemProporcional(
     fotografiaPartidaPDF,
-    143, 112, 50, 30
+    centroFotoX - larguraFoto / 2,
+    centroFotoY - alturaFoto / 2,
+    larguraFoto,
+    alturaFoto
   )
 
 }
@@ -5540,11 +5590,6 @@ const horarioCapa = dataInicioValida
 // CAPA — POSICIONAMENTO PELOS MARCADORES SVG
 // ==========================================
 
-const documentoSVG = new DOMParser().parseFromString(
-  svgCapa,
-  'image/svg+xml'
-)
-
 // Recupera a posição de um marcador circular do Inkscape.
 // O SVG utiliza coordenadas A4: 210 x 297 mm.
 function posicaoMarcador(id: string): { x: number; y: number } {
@@ -5564,6 +5609,34 @@ function posicaoMarcador(id: string): { x: number; y: number } {
   return { x, y }
 }
 
+// ==========================================
+// CAPA — FONTE KALAM
+// ==========================================
+
+const respostaFonteKalam = await fetch(
+  `${import.meta.env.BASE_URL}fonts/Kalam-Regular.ttf`
+)
+
+if (!respostaFonteKalam.ok) {
+  throw new Error('Não foi possível carregar a fonte Kalam')
+}
+
+const arquivoFonteKalam = await respostaFonteKalam.arrayBuffer()
+const bytesFonteKalam = new Uint8Array(arquivoFonteKalam)
+const partesFonteKalam: string[] = []
+
+for (let i = 0; i < bytesFonteKalam.length; i += 8192) {
+  partesFonteKalam.push(
+    String.fromCharCode(...bytesFonteKalam.subarray(i, i + 8192))
+  )
+}
+
+const fonteKalamBase64 = btoa(partesFonteKalam.join(''))
+
+pdf.addFileToVFS('Kalam-Regular.ttf', fonteKalamBase64)
+pdf.addFont('Kalam-Regular.ttf', 'Kalam', 'normal')
+
+
 // Escreve o texto ao lado do marcador,
 // sem encobrir o pequeno círculo de referência.
 function escreverNoMarcador(
@@ -5579,9 +5652,10 @@ function escreverNoMarcador(
   const y = posicao.y + 1
   const largura = Math.max(10, 202 - x)
 
-  pdf.setFont('helvetica', 'normal')
-  pdf.setFontSize(tamanho)
-  pdf.setTextColor(46, 93, 58)
+// Dados da expedição — Kalam em marrom-tijolo
+pdf.setFont('Kalam', 'normal')
+pdf.setFontSize(tamanho)
+pdf.setTextColor(147, 75, 50) // #934B32
 
   const linhas = pdf.splitTextToSize(conteudo, largura)
 
@@ -5596,14 +5670,14 @@ function escreverNoMarcador(
 escreverNoMarcador(
   'marcador-grupo',
   grupoCapa,
-  10
+  12
 )
 
 // Integrantes
 escreverNoMarcador(
   'marcador-integrantes',
   integrantesCapa,
-  9,
+  11,
   3
 )
 
@@ -5611,28 +5685,28 @@ escreverNoMarcador(
 escreverNoMarcador(
   'marcador-serie-turma',
   turmaCapa,
-  9
+  11
 )
 
 // Escola — identificador atual do SVG
 escreverNoMarcador(
   'companheiro-expedicao-6-7-3-3',
   escolaCapa,
-  9
+  11
 )
 
 // Data
 escreverNoMarcador(
   'marcador-data-expedicao',
   dataCapa,
-  9
+  11
 )
 
 // Horário
 escreverNoMarcador(
   'marcador-horario-inicio',
   horarioCapa,
-  9
+  11
 )
 
 } finally {
