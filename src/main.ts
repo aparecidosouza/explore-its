@@ -1998,7 +1998,7 @@ camadaSorteados.setAttribute(
 )
 
 // Tamanho inicial dos pictogramas nas unidades do mapa SVG
-const tamanhoPictograma = 15
+const tamanhoPictograma = 20
 
 elementosSorteados.forEach((elemento, indice) => {
 
@@ -3565,12 +3565,45 @@ ${fotosDescobertasLivres.filter(Boolean).length < LIMITE_DESCOBERTAS_LIVRES ? `
     elemento => elemento.encontrado
   ).length
 
-  // CONQUISTAS — PROGRESSO DA EXPEDIÇÃO
-const progressoExpedicao = elementosSorteados.length > 0
-  ? Math.round(
-      (totalInvestigacoes / elementosSorteados.length) * 100
-    )
-  : 0
+
+  // CONQUISTAS — PROGRESSO DOS 12 REGISTROS
+
+  // 1 fotografia de partida
+  const registroPartidaConcluido = fotoPartida ? 1 : 0
+
+  // 4 fotografias das investigações sorteadas
+  const registrosInvestigacoes = elementosSorteados.filter(
+    elemento => {
+      const foto = fotosElementos[elemento.id]
+      return typeof foto === 'string' && foto.length > 0
+    }
+  ).length
+
+  // 6 fotografias das descobertas livres
+  const registrosDescobertas = fotosDescobertasLivres
+    .filter(Boolean)
+    .length
+
+  // 1 registro de QR Code
+  const linksArvores: Record<string, string> = JSON.parse(
+    localStorage.getItem('exp_links_arvores') || '{}'
+  )
+
+  const registroQrConcluido = elementosSorteados.some(
+    elemento => Boolean(linksArvores[elemento.id])
+  ) ? 1 : 0
+
+  // Total de 12 registros previstos
+  const totalRegistrosConcluidos =
+    registroPartidaConcluido +
+    registrosInvestigacoes +
+    registrosDescobertas +
+    registroQrConcluido
+
+  const progressoExpedicao = Math.round(
+    (totalRegistrosConcluidos / 12) * 100
+  )
+
     
 // CONQUISTAS — FOTOGRAFIAS REGISTRADAS
 const totalFotosInvestigacoes = Object.values(fotosElementos)
@@ -3701,7 +3734,7 @@ const totalFotografias =
 
 <div class="registros-indicador">
   <strong>${progressoExpedicao}%</strong>
-  <span>Investigações concluídas</span>
+  <span>Progresso dos registros</span>
 </div>
 
           </div>
@@ -4834,6 +4867,7 @@ localStorage.removeItem('exp_id_expedicao')
 localStorage.removeItem('exp_respostas')
 localStorage.removeItem('exp_medicoes')
 localStorage.removeItem('exp_elementos_sorteados')
+localStorage.removeItem('exp_links_arvores')
 localStorage.removeItem('exp_foto_partida')
 
 // Reinicia os dados mantidos na memória
