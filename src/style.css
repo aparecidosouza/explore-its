@@ -3308,11 +3308,11 @@ body:has(.tela-inicio-its.inicio-figma) #app {
   position: relative;
   width: 100%;
   max-width: 390px;
-  aspect-ratio: 390 / 844;
-  min-height: 0;
+  min-height: 216.4103cqw; /* altura original de 844px para largura de 390px */
+  height: auto;
   margin: 0 auto;
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
   background: var(--inicio-marfim);
   color: #3A3A3A;
   container-type: inline-size;
